@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import { successResponse, errorResponse, handleApiError } from '@/lib/api-helpers';
 import { sendVerificationEmail } from '@/lib/email';
