@@ -55,7 +55,7 @@ export default function Navbar() {
                   className="w-8 h-8 md:w-9 md:h-9"
                 />
               </div>
-              <span className="hidden sm:block text-sm md:text-base font-heading font-bold tracking-wide text-text-primary">
+              <span className="hidden sm:block text-sm md:text-base font-heading font-normal tracking-wide text-text-primary">
                 THE MARKET{' '}
                 <span className="text-accent-primary">ARCHITECTS</span>
               </span>

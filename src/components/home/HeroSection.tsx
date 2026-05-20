@@ -72,7 +72,7 @@ export default function HeroSection() {
           {/* Heading — tighter size to match reference */}
           <motion.h1
             variants={item}
-            className="text-4xl sm:text-5xl md:text-6xl font-heading font-extrabold leading-[1.05] tracking-tight mb-5"
+            className="text-4xl sm:text-5xl md:text-6xl font-heading font-normal leading-[1.05] tracking-tight mb-5"
           >
             <span className="block text-white">THE MARKET</span>
             <span className="block text-accent-primary">ARCHITECTS</span>
