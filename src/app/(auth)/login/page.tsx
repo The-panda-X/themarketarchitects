@@ -69,9 +69,8 @@ export default function LoginPage() {
               height={52}
               style={{ filter: 'drop-shadow(0 0 10px rgba(230,57,70,0.55))' }}
             />
-            <span className="text-base font-heading font-bold tracking-wide leading-tight">
-              THE MARKET<br />
-              <span className="text-accent-primary">ARCHITECTS</span>
+            <span className="text-base font-heading font-bold tracking-wide">
+              THE MARKET <span className="text-accent-primary">ARCHITECTS</span>
             </span>
           </Link>
         </div>
