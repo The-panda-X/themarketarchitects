@@ -294,6 +294,8 @@ export interface ServicePlan {
   popular?: boolean;
   accountSizes: string[];
   guarantee?: string;
+  successRate?: number;
+  deliveryDays?: number;
 }
 
 export interface PropFirm {

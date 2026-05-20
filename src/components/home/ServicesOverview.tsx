@@ -1,110 +1,186 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Target, BarChart3, TrendingUp, ArrowRight } from 'lucide-react';
-import GlassCard from '@/components/ui/GlassCard';
-import Button from '@/components/ui/Button';
-import ScrollReveal from '@/components/effects/ScrollReveal';
-import { StaggerContainer, StaggerItem } from '@/components/effects/ScrollReveal';
+import { Check, ArrowRight, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS } from '@/lib/constants';
+import { ServiceType, type ServicePlan } from '@/types';
 
-const services = [
-  {
-    icon: Target,
-    title: 'Challenge Passing',
-    description:
-      'Our expert traders pass your prop firm challenge — Phase 1, Phase 2, and verification. All major firms supported.',
-    price: 'From $299',
-    href: '/dashboard/purchase',
-    features: ['All major prop firms', 'Phase 1 & 2 passing', '7–14 day completion'],
-  },
-  {
-    icon: BarChart3,
-    title: 'Account Management',
-    description:
-      'Hands-off funded account management with consistent returns. We trade, you earn your profit split.',
-    price: 'From $499/mo',
-    href: '/dashboard/purchase',
-    features: ['Consistent monthly returns', 'Risk management included', 'Up to 80/20 profit split'],
-  },
-  {
-    icon: TrendingUp,
-    title: 'Account Growth',
-    description:
-      'Aggressive growth strategies for funded accounts. Maximize your earning potential with our senior traders.',
-    price: 'Custom Pricing',
-    href: '/contact',
-    features: ['Aggressive growth strategy', 'Dedicated senior trader', 'Custom risk profiles'],
-  },
-];
+const TABS = [
+  { id: 'all', label: 'All Services' },
+  { id: ServiceType.CHALLENGE_PASSING, label: 'Challenge Passing' },
+  { id: ServiceType.ACCOUNT_MANAGEMENT, label: 'Account Management' },
+  { id: ServiceType.ACCOUNT_GROWTH, label: 'Account Growth' },
+] as const;
+
+const GROWTH_PLAN: ServicePlan = {
+  id: 'growth',
+  name: 'Account Growth Plan',
+  tier: 'elite',
+  serviceType: ServiceType.ACCOUNT_GROWTH,
+  price: 0,
+  description: 'Systematic account growth strategy to compound your funded capital over time.',
+  features: [
+    'Structured scaling plan',
+    'Compounding strategy',
+    'Senior trader dedicated',
+    'Custom risk profiles',
+    'Weekly performance reports',
+    'VIP 24/7 support',
+  ],
+  accountSizes: ['Any size'],
+  successRate: 96,
+};
+
+const ALL_PLANS = [...CHALLENGE_PASSING_PLANS, ...ACCOUNT_MANAGEMENT_PLANS, GROWTH_PLAN];
+
+function categoryLabel(type: ServiceType) {
+  if (type === ServiceType.CHALLENGE_PASSING) return 'Challenge Passing';
+  if (type === ServiceType.ACCOUNT_MANAGEMENT) return 'Account Management';
+  return 'Growth';
+}
+
+function PlanCard({ plan }: { plan: ServicePlan }) {
+  const isFeatured = !!plan.popular;
+
+  return (
+    <div
+      className={`relative flex flex-col rounded-xl border p-6 transition-all duration-300 group
+        ${isFeatured
+          ? 'border-accent-primary/50 bg-accent-primary/5 shadow-[0_0_40px_-8px_rgba(230,57,70,0.25)]'
+          : 'border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]'
+        }`}
+    >
+      {/* Most Popular badge */}
+      {isFeatured && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span className="inline-flex items-center gap-1 bg-accent-primary text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase">
+            ★ Most Popular
+          </span>
+        </div>
+      )}
+
+      {/* Category label */}
+      <p className="text-[10px] font-bold tracking-widest uppercase text-accent-primary mb-3">
+        {categoryLabel(plan.serviceType)}
+      </p>
+
+      {/* Name & description */}
+      <h3 className="text-base font-bold text-white mb-1">{plan.name}</h3>
+      <p className="text-xs text-white/50 mb-4 leading-relaxed">{plan.description}</p>
+
+      {/* Account size + success rate */}
+      <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/[0.06]">
+        <div>
+          <p className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">Account Size</p>
+          <p className="text-sm font-bold text-white">{plan.accountSizes.join(' / ')}</p>
+        </div>
+        {plan.successRate && (
+          <div className="text-right">
+            <p className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">Success Rate</p>
+            <p className="text-sm font-bold text-accent-primary">{plan.successRate}%</p>
+          </div>
+        )}
+      </div>
+
+      {/* Features */}
+      <ul className="space-y-2 mb-6 flex-1">
+        {plan.features.map((f) => (
+          <li key={f} className="flex items-center gap-2 text-xs text-white/60">
+            <Check className="h-3.5 w-3.5 text-accent-primary shrink-0" />
+            {f}
+          </li>
+        ))}
+      </ul>
+
+      {/* Price + delivery */}
+      <div className="flex items-end justify-between mb-5">
+        <div>
+          {plan.originalPrice && (
+            <p className="text-xs text-white/30 line-through">${plan.originalPrice}</p>
+          )}
+          <p className="text-2xl font-bold font-mono text-white">
+            {plan.price === 0 ? 'Custom' : `$${plan.price}`}
+          </p>
+        </div>
+        {plan.deliveryDays && (
+          <span className="inline-flex items-center gap-1 text-xs text-white/40">
+            <Clock className="h-3 w-3" /> {plan.deliveryDays} days
+          </span>
+        )}
+      </div>
+
+      {/* CTA */}
+      <Link
+        href={plan.price === 0 ? '/contact' : '/dashboard/purchase'}
+        className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-200
+          ${isFeatured
+            ? 'bg-accent-primary hover:bg-accent-hover text-white shadow-glow hover:shadow-glow-lg'
+            : 'border border-white/15 hover:border-accent-primary/50 text-white/80 hover:text-white hover:bg-white/[0.04]'
+          }`}
+      >
+        {plan.price === 0 ? 'Contact Us' : 'Get Started'} <ArrowRight className="h-3.5 w-3.5" />
+      </Link>
+    </div>
+  );
+}
 
 export default function ServicesOverview() {
-  return (
-    <section id="services" className="py-20 md:py-28">
-      <div className="section-container section-padding">
-        {/* Header */}
-        <ScrollReveal>
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
-              Our Services
-            </h2>
-            <div className="w-16 h-1 bg-accent-primary rounded-full mx-auto mb-4" />
-            <p className="text-text-secondary max-w-xl mx-auto">
-              Professional trading services designed to get you funded and keep you profitable.
-            </p>
-          </div>
-        </ScrollReveal>
+  const [activeTab, setActiveTab] = useState<string>('all');
 
-        {/* Cards */}
-        <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <StaggerItem key={service.title}>
-              <GlassCard
-                hover
-                glow="red"
-                padding="none"
-                className="h-full flex flex-col group"
-              >
-                <div className="p-6 pb-0 flex-1">
-                  <div className="h-12 w-12 rounded-xl bg-accent-primary/10 flex items-center justify-center mb-5 group-hover:bg-accent-primary/15 transition-colors">
-                    <service.icon className="h-6 w-6 text-accent-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{service.title}</h3>
-                  <p className="text-sm text-text-secondary leading-relaxed mb-5">
-                    {service.description}
-                  </p>
-                  <ul className="space-y-2 mb-5">
-                    {service.features.map((feature) => (
-                      <li
-                        key={feature}
-                        className="flex items-center gap-2 text-sm text-text-secondary"
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-accent-primary shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="p-6 pt-0 mt-auto">
-                  <div className="flex items-center justify-between pt-5 border-t border-white/[0.06]">
-                    <span className="text-lg font-bold font-mono text-accent-primary">
-                      {service.price}
-                    </span>
-                    <Link href={service.href}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<ArrowRight className="h-4 w-4" />}
-                        iconPosition="right"
-                      >
-                        Learn More
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </GlassCard>
-            </StaggerItem>
+  const filtered = activeTab === 'all'
+    ? ALL_PLANS
+    : ALL_PLANS.filter((p) => p.serviceType === activeTab);
+
+  return (
+    <section id="services" className="py-24 bg-black">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+
+        {/* Header */}
+        <div className="text-center mb-12">
+          <p className="text-xs font-bold tracking-widest uppercase text-accent-primary mb-3">Our Services</p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-extrabold text-white mb-4">
+            Choose Your Path <span className="text-accent-primary">to Funding</span>
+          </h2>
+          <p className="text-white/50 max-w-lg mx-auto text-sm leading-relaxed">
+            Professional prop firm services backed by a 97% success rate and a results guarantee.
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200
+                ${activeTab === tab.id
+                  ? 'bg-accent-primary text-white shadow-glow-sm'
+                  : 'border border-white/10 text-white/50 hover:border-white/25 hover:text-white/80'
+                }`}
+            >
+              {tab.label}
+            </button>
           ))}
-        </StaggerContainer>
+        </div>
+
+        {/* Cards grid */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+          >
+            {filtered.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} />
+            ))}
+          </motion.div>
+        </AnimatePresence>
+
       </div>
     </section>
   );

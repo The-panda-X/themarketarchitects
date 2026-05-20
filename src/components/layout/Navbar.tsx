@@ -43,17 +43,21 @@ export default function Navbar() {
         <div className="section-container">
           <nav className="flex items-center justify-between h-16 md:h-20 section-padding">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 shrink-0">
-              <Image
-                src="/assets/logos/logo.png"
-                alt="The Market Architects"
-                width={36}
-                height={36}
-                className="w-8 h-8 md:w-9 md:h-9"
-              />
+            <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+              <div className="relative transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(230,57,70,0.9)] group-hover:scale-110">
+                <Image
+                  src="/assets/logos/logo.png"
+                  alt="The Market Architects"
+                  width={36}
+                  height={36}
+                  className="w-8 h-8 md:w-9 md:h-9"
+                />
+              </div>
               <span className="hidden sm:block text-sm md:text-base font-heading font-bold tracking-wide text-text-primary">
-                THE MARKET{' '}
-                <span className="text-accent-primary">ARCHITECTS</span>
+                THE{' '}
+                <span className="text-accent-primary">MARKET</span>
+                <br className="hidden" />
+                {' '}ARCHITECTS
               </span>
             </Link>
 
@@ -99,9 +103,9 @@ export default function Navbar() {
                   Login
                 </Button>
               </Link>
-              <Link href="/register">
-                <Button variant="primary" size="sm" glow>
-                  Get Started
+              <Link href="/dashboard">
+                <Button variant="secondary" size="sm">
+                  Dashboard
                 </Button>
               </Link>
             </div>
