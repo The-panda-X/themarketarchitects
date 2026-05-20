@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-      allowDangerousEmailAccountLinking: false,
+      allowDangerousEmailAccountLinking: true,
     }),
     CredentialsProvider({
       name: 'credentials',
@@ -85,14 +85,24 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === 'google') {
         if (!user.email) return false;
         const existingUser = await prisma.user.findUnique({
-          where: { email: user.email ?? '' },
+          where: { email: user.email },
+          include: { accounts: true },
         });
 
-        if (existingUser && !existingUser.emailVerified) {
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: { emailVerified: new Date() },
-          });
+        if (existingUser) {
+          const hasGoogleAccount = existingUser.accounts.some(
+            (a: { provider: string }) => a.provider === 'google'
+          );
+          if (!hasGoogleAccount && existingUser.passwordHash) {
+            // User registered with email/password — allow linking via Google
+            // since allowDangerousEmailAccountLinking is enabled
+          }
+          if (!existingUser.emailVerified) {
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { emailVerified: new Date() },
+            });
+          }
         }
       }
       return true;
