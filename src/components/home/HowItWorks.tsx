@@ -1,129 +1,91 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
-import { ClipboardList, KeyRound, LineChart, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
 import ScrollReveal from '@/components/effects/ScrollReveal';
 
 const steps = [
   {
-    number: 1,
-    icon: ClipboardList,
-    title: 'Choose Your Plan',
-    description:
-      'Select your prop firm, account size, and service tier. We support all major firms and account sizes from $25K to $400K+.',
+    number: '01',
+    title: 'Choose Your Service',
+    description: 'Select the prop firm challenge or management plan that fits your needs.',
   },
   {
-    number: 2,
-    icon: KeyRound,
-    title: 'Submit Credentials',
-    description:
-      'Securely share your trading account details through our encrypted portal. Your credentials are protected with AES-256 encryption.',
+    number: '02',
+    title: 'Secure Checkout',
+    description: 'Complete payment securely and submit your challenge/account credentials.',
   },
   {
-    number: 3,
-    icon: LineChart,
-    title: 'We Trade & Pass',
-    description:
-      'Our professional traders handle everything — meeting profit targets, respecting drawdown limits, and following all challenge rules.',
+    number: '03',
+    title: 'We Execute',
+    description: 'Our expert traders work on your account with strict risk parameters.',
   },
   {
-    number: 4,
-    icon: Trophy,
-    title: 'Get Funded',
-    description:
-      'Receive your funded account and start earning. Track real-time progress on your dashboard with detailed analytics and proof.',
+    number: '04',
+    title: 'You Get Paid',
+    description: 'Receive your funded account or profit split directly to your wallet.',
   },
 ];
 
 export default function HowItWorks() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start end', 'end center'],
-  });
-  const lineHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
-
   return (
-    <section ref={sectionRef} className="py-20 md:py-28 gradient-mesh-bg">
-      <div className="section-container section-padding">
+    <section className="py-24 md:py-32 bg-black">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+
         {/* Header */}
         <ScrollReveal>
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
+          <div className="text-center mb-20">
+            <span className="inline-block px-4 py-1.5 rounded-full border border-accent-primary/30 bg-accent-primary/10 text-[10px] font-bold tracking-widest uppercase text-accent-primary mb-6">
               How It Works
+            </span>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-heading font-extrabold leading-tight">
+              <span className="block text-white">Simple Process,</span>
+              <span className="block font-display italic text-accent-primary">Proven Results</span>
             </h2>
-            <div className="w-16 h-1 bg-accent-primary rounded-full mx-auto mb-4" />
-            <p className="text-text-secondary max-w-xl mx-auto">
-              Four simple steps to your funded trading account.
+            <p className="text-white/50 mt-4 text-sm max-w-md mx-auto">
+              Get funded in 4 simple steps. We handle the hard part.
             </p>
           </div>
         </ScrollReveal>
 
-        {/* Timeline */}
-        <div className="relative max-w-3xl mx-auto">
-          {/* Vertical line (desktop) */}
-          <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-white/[0.06] -translate-x-1/2">
-            <motion.div
-              className="w-full bg-accent-primary rounded-full origin-top"
-              style={{ height: lineHeight }}
-            />
-          </div>
+        {/* Steps */}
+        <div className="relative">
+          {/* Connecting line — desktop */}
+          <div className="hidden md:block absolute top-10 left-0 right-0 h-px bg-white/[0.07] z-0" />
 
-          {/* Mobile line */}
-          <div className="md:hidden absolute left-6 top-0 bottom-0 w-px bg-white/[0.06]">
-            <motion.div
-              className="w-full bg-accent-primary rounded-full origin-top"
-              style={{ height: lineHeight }}
-            />
-          </div>
-
-          {/* Steps */}
-          <div className="space-y-12 md:space-y-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 md:gap-6 relative z-10">
             {steps.map((step, i) => (
-              <ScrollReveal
-                key={step.number}
-                direction={i % 2 === 0 ? 'left' : 'right'}
-                delay={i * 0.1}
-              >
-                <div
-                  className={`relative flex items-start gap-6 md:gap-0 ${
-                    i % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
-                  }`}
+              <ScrollReveal key={step.number} delay={i * 0.12}>
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col items-center text-center"
                 >
                   {/* Number circle */}
-                  <div className="absolute left-6 md:left-1/2 -translate-x-1/2 z-10">
-                    <div className="h-12 w-12 rounded-full bg-bg-primary border-2 border-accent-primary flex items-center justify-center shadow-glow-sm">
-                      <span className="text-sm font-bold font-mono text-accent-primary">
+                  <div className="relative mb-6">
+                    <div className="w-20 h-20 rounded-full border border-accent-primary/25 bg-accent-primary/5 flex items-center justify-center">
+                      <span className="text-lg font-bold font-mono text-accent-primary/70">
                         {step.number}
                       </span>
                     </div>
+                    {/* Glow ring on hover */}
+                    <div className="absolute inset-0 rounded-full bg-accent-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
 
-                  {/* Content card */}
-                  <div
-                    className={`ml-16 md:ml-0 md:w-[calc(50%-40px)] ${
-                      i % 2 === 0 ? 'md:pr-0' : 'md:pl-0'
-                    }`}
-                  >
-                    <div className="glass-card p-6 hover:bg-white/[0.06] transition-colors duration-300">
-                      <div className="flex items-center gap-3 mb-3">
-                        <step.icon className="h-5 w-5 text-accent-primary shrink-0" />
-                        <h3 className="text-lg font-semibold">{step.title}</h3>
-                      </div>
-                      <p className="text-sm text-text-secondary leading-relaxed">
-                        {step.description}
-                      </p>
-                    </div>
-                  </div>
+                  {/* Title */}
+                  <h3 className="text-sm font-bold text-accent-primary mb-2 tracking-wide">
+                    {step.title}
+                  </h3>
 
-                  {/* Spacer for opposite side */}
-                  <div className="hidden md:block md:w-[calc(50%-40px)]" />
-                </div>
+                  {/* Description */}
+                  <p className="text-xs text-white/45 leading-relaxed max-w-[180px]">
+                    {step.description}
+                  </p>
+                </motion.div>
               </ScrollReveal>
             ))}
           </div>
         </div>
+
       </div>
     </section>
   );

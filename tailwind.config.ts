@@ -40,6 +40,7 @@ const config: Config = {
         sans: ['var(--font-inter)'],
         heading: ['var(--font-space-grotesk)'],
         mono: ['var(--font-jetbrains-mono)'],
+        display: ['var(--font-playfair)'],
       },
       boxShadow: {
         glow: '0 0 30px rgba(230, 57, 70, 0.4)',

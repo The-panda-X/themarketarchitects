@@ -88,7 +88,7 @@ export default function HeroSection() {
           <motion.div variants={item} className="flex flex-col sm:flex-row items-center gap-4 mb-16">
             <Link
               href="/dashboard/purchase"
-              className="inline-flex items-center gap-2 bg-accent-primary hover:bg-accent-hover text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200 shadow-glow hover:shadow-glow-lg text-sm tracking-wide"
+              className="inline-flex items-center gap-2 bg-accent-primary hover:bg-accent-hover text-white font-semibold px-8 py-3 rounded-lg transition-colors duration-200 text-sm tracking-wide btn-glow-pulse"
             >
               Start Your Journey <ArrowRight className="h-4 w-4" />
             </Link>
