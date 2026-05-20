@@ -67,7 +67,7 @@ export default function AboutPage() {
         {/* Hero */}
         <div className="text-center mb-20">
           <FloatingAboutLogo />
-          <h1 className="text-4xl sm:text-5xl font-heading font-bold mb-6">
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold mb-6">
             Built by Traders, <span className="text-accent-primary">For Traders</span>
           </h1>
           <p className="text-text-secondary text-lg max-w-3xl mx-auto leading-relaxed">
