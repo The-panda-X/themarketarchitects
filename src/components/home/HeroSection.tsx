@@ -56,7 +56,7 @@ export default function HeroSection() {
             <motion.div
               animate={{ y: [0, -14, 0] }}
               transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-              className="relative w-40 h-40 sm:w-52 sm:h-52 mx-auto"
+              className="relative w-48 h-48 sm:w-64 sm:h-64 mx-auto"
               style={{ filter: 'drop-shadow(0 0 28px rgba(230, 57, 70, 0.55))' }}
             >
               <Image
