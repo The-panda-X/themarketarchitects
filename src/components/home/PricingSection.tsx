@@ -94,15 +94,15 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
   return (
     <div className={`rounded-xl border p-7 flex flex-col relative transition-all duration-300 group
       ${isPopular
-        ? 'border-[rgba(230,57,70,0.50)] bg-[#120404] shadow-[0_0_30px_rgba(230,57,70,0.10)] hover:border-[rgba(230,57,70,0.70)] hover:shadow-[0_0_40px_rgba(230,57,70,0.15)]'
+        ? 'border-[rgba(230,57,70,0.50)] bg-[#120404] shadow-[0_0_30px_rgba(230,57,70,0.10)] hover:border-[rgba(230,57,70,0.70)] hover:shadow-[0_0_40px_rgba(230,57,70,0.15)] mt-5'
         : 'border-[rgba(230,57,70,0.25)] bg-[#0d0303] hover:border-[rgba(230,57,70,0.45)] hover:shadow-[0_0_30px_rgba(230,57,70,0.08)]'
       } glass-shine hover:scale-[1.01]`}
     >
       {/* Most Popular badge */}
       {isPopular && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <span
-            className="text-white text-xs font-semibold px-4 py-1 rounded-full"
+            className="text-white text-xs font-semibold px-4 py-1.5 rounded-full"
             style={{ background: 'linear-gradient(135deg, #e63946 0%, #c1121f 100%)', boxShadow: '0 0 14px rgba(230,57,70,0.5)' }}
           >
             ★ MOST POPULAR
@@ -230,7 +230,7 @@ export default function PricingSection() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
         >
           {filtered.map((plan) => (
             <PlanCard key={plan.id} plan={plan} />
