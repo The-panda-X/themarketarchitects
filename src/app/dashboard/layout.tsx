@@ -1,5 +1,6 @@
 import DashboardSidebar from '@/components/layout/DashboardSidebar';
 import DashboardTopbar from '@/components/layout/DashboardTopbar';
+import AdminPanelRedirect from '@/components/layout/AdminPanelRedirect';
 
 export default function DashboardLayout({
   children,
@@ -8,6 +9,7 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex h-screen overflow-hidden bg-bg-primary">
+      <AdminPanelRedirect />
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardTopbar />

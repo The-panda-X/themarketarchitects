@@ -23,7 +23,9 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Shield,
 } from 'lucide-react';
+import { setLastPanel } from '@/hooks/useLastPanel';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
 import Avatar from '@/components/ui/Avatar';
@@ -139,6 +141,7 @@ export default function DashboardSidebar() {
           {collapsed && <div className="border-t border-white/[0.04] my-3" />}
 
           {toolItems.map((item) => {
+
             const isActive = pathname === item.href;
 
             return (
@@ -175,6 +178,37 @@ export default function DashboardSidebar() {
               </Link>
             );
           })}
+
+          {/* Admin Panel switch — only for admins */}
+          {user?.role === 'ADMIN' && (
+            <>
+              <div className="border-t border-white/[0.04] my-3" />
+              <Link
+                href="/admin"
+                onClick={() => setLastPanel('admin')}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
+                  'text-accent-gold hover:bg-accent-gold/10',
+                  collapsed && 'justify-center px-0'
+                )}
+                title={collapsed ? 'Admin Panel' : undefined}
+              >
+                <Shield className="h-[18px] w-[18px] shrink-0 text-accent-gold" />
+                <AnimatePresence>
+                  {!collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      className="whitespace-nowrap overflow-hidden"
+                    >
+                      Admin Panel
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Bottom: User + Collapse */}

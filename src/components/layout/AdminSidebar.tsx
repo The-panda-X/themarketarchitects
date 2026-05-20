@@ -25,6 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
 import Avatar from '@/components/ui/Avatar';
+import { setLastPanel } from '@/hooks/useLastPanel';
 
 const adminNavItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -121,18 +122,31 @@ export default function AdminSidebar() {
           );
         })}
 
-        {/* Back to main */}
-        {!collapsed && (
-          <div className="pt-4 mt-4 border-t border-white/[0.04]">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-text-tertiary hover:text-text-secondary hover:bg-white/[0.04] transition-colors"
-            >
-              <LayoutDashboard className="h-[18px] w-[18px]" />
-              Back to Dashboard
-            </Link>
-          </div>
-        )}
+        {/* Back to User Dashboard */}
+        <div className="border-t border-white/[0.04] my-3" />
+        <Link
+          href="/dashboard"
+          onClick={() => setLastPanel('dashboard')}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors',
+            collapsed && 'justify-center px-0'
+          )}
+          title={collapsed ? 'User Dashboard' : undefined}
+        >
+          <LayoutDashboard className="h-[18px] w-[18px] shrink-0" />
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="whitespace-nowrap overflow-hidden"
+              >
+                User Dashboard
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Link>
       </nav>
 
       {/* Bottom */}
