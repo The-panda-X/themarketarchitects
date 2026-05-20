@@ -1,6 +1,7 @@
 'use client';
 
 import { DollarSign, CheckCircle2, ExternalLink } from 'lucide-react';
+import SectionBadge from '@/components/ui/SectionBadge';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -25,6 +26,7 @@ export default function PayoutProof() {
         {/* Header */}
         <ScrollReveal>
           <div className="text-center mb-14">
+            <SectionBadge>Verified Results</SectionBadge>
             <div className="flex items-center justify-center gap-3 mb-4">
               <h2 className="text-3xl md:text-4xl font-heading font-bold">
                 Verified Results

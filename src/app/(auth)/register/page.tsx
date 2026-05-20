@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -180,7 +180,7 @@ export default function RegisterPage() {
             <input
               type="checkbox"
               {...register('acceptTerms')}
-              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-accent-primary focus:ring-accent-primary/30 focus:ring-offset-0"
+              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-accent-primary focus:ring-[rgba(230,57,70,0.30)] focus:ring-offset-0"
             />
             <span className="text-xs text-text-tertiary leading-relaxed">
               I agree to the{' '}

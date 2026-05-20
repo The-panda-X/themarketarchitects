@@ -7,6 +7,7 @@ import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import ScrollReveal from '@/components/effects/ScrollReveal';
 import { cn } from '@/lib/utils';
+import SectionBadge from '@/components/ui/SectionBadge';
 
 const testimonials = [
   {
@@ -92,6 +93,7 @@ export default function Testimonials() {
         {/* Header */}
         <ScrollReveal>
           <div className="text-center mb-14">
+            <SectionBadge>Testimonials</SectionBadge>
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
               What Our Clients Say
             </h2>

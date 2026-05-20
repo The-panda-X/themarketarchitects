@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,7 +12,7 @@ export default function CTABanner() {
       <div className="relative z-10 section-container section-padding">
         <ScrollReveal>
           {/* Glass card — matches reference */}
-          <div className="rounded-2xl border border-accent-primary/25 bg-[#0d0303] backdrop-blur-xl glass-shine transition-all duration-300 hover:border-accent-primary/40 hover:shadow-[0_0_30px_rgba(230,57,70,0.08)] p-12 text-center relative overflow-hidden">
+          <div className="rounded-2xl border border-[rgba(230,57,70,0.25)] bg-[#0d0303] backdrop-blur-xl glass-shine transition-all duration-300 hover:border-[rgba(230,57,70,0.40)] hover:shadow-[0_0_30px_rgba(230,57,70,0.08)] p-12 text-center relative overflow-hidden">
 
             {/* Radial red glow overlay */}
             <div

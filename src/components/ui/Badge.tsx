@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { cn } from '@/lib/utils';
 
@@ -14,7 +14,7 @@ interface BadgeProps {
 
 const variantStyles: Record<BadgeVariant, string> = {
   default: 'bg-white/10 text-text-secondary border-white/10',
-  red: 'bg-accent-primary/10 text-accent-primary border-accent-primary/20',
+  red: 'bg-accent-primary/10 text-accent-primary border-[rgba(230,57,70,0.20)]',
   green: 'bg-success/10 text-success border-success/20',
   yellow: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20',
   blue: 'bg-blue-400/10 text-blue-400 border-blue-400/20',

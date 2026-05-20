@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { Bell, Check, CheckCheck, Trash2, Info, AlertCircle, DollarSign, Target } from 'lucide-react';
@@ -105,7 +105,7 @@ export default function NotificationsPage() {
                 className={`w-full text-left p-4 rounded-xl border transition-all ${
                   notification.read
                     ? 'border-white/[0.04] bg-transparent hover:bg-white/[0.02]'
-                    : 'border-accent-primary/20 bg-accent-primary/[0.03] hover:bg-accent-primary/[0.05]'
+                    : 'border-[rgba(230,57,70,0.20)] bg-accent-primary/[0.03] hover:bg-accent-primary/[0.05]'
                 }`}
               >
                 <div className="flex items-start gap-3">

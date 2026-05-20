@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check, ArrowRight, Shield, Zap } from 'lucide-react';
 import { CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS, HOMEPAGE_FAQ } from '@/lib/constants';
@@ -68,7 +68,7 @@ export default function PricingPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Hero */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-primary/10 border border-accent-primary/20 text-accent-primary text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-primary/10 border border-[rgba(230,57,70,0.20)] text-accent-primary text-sm font-medium mb-6">
             <Zap className="h-4 w-4" /> Transparent Pricing
           </div>
           <h1 className="text-4xl sm:text-5xl font-heading font-bold mb-4">

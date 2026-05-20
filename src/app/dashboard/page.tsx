@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -218,7 +218,7 @@ export default function DashboardPage() {
                     className={`p-3 rounded-lg border transition-colors ${
                       n.read
                         ? 'border-white/[0.04] bg-transparent'
-                        : 'border-accent-primary/20 bg-accent-primary/[0.03]'
+                        : 'border-[rgba(230,57,70,0.20)] bg-accent-primary/[0.03]'
                     }`}
                   >
                     <p className="text-sm font-medium leading-snug">{n.title}</p>

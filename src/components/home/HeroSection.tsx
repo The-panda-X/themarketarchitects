@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -42,7 +42,7 @@ export default function HeroSection() {
 
           {/* Trust pill */}
           <motion.div variants={item} className="mb-10">
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-accent-primary/30 bg-black/60 text-xs font-semibold tracking-widest uppercase text-white/80">
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-[rgba(230,57,70,0.30)] bg-black/60 text-xs font-semibold tracking-widest uppercase text-white/80">
               <span className="w-1.5 h-1.5 rounded-full bg-accent-primary animate-pulse" />
               2,400+ Challenges Passed &bull; 97% Success Rate
             </span>
@@ -94,7 +94,7 @@ export default function HeroSection() {
             </Link>
             <a
               href="#services"
-              className="inline-flex items-center gap-2 border border-white/20 hover:border-accent-primary/60 text-white/80 hover:text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200 text-sm tracking-wide"
+              className="inline-flex items-center gap-2 border border-white/20 hover:border-[rgba(230,57,70,0.60)] text-white/80 hover:text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200 text-sm tracking-wide"
             >
               View Our Results
             </a>

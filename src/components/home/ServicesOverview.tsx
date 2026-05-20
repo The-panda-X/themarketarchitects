@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -6,6 +6,7 @@ import { Check, ArrowRight, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS } from '@/lib/constants';
 import { ServiceType, type ServicePlan } from '@/types';
+import SectionBadge from '@/components/ui/SectionBadge';
 
 const TABS = [
   { id: 'all', label: 'All Services' },
@@ -48,7 +49,7 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
     <div
       className={`relative flex flex-col rounded-xl border p-6 transition-all duration-300 group
         ${isFeatured
-          ? 'border-accent-primary/50 bg-accent-primary/5 shadow-[0_0_40px_-8px_rgba(230,57,70,0.25)]'
+          ? 'border-[rgba(230,57,70,0.50)] bg-accent-primary/5 shadow-[0_0_40px_-8px_rgba(230,57,70,0.25)]'
           : 'border-[rgba(230,57,70,0.28)] bg-white/[0.03] hover:border-[rgba(230,57,70,0.55)] hover:bg-white/[0.05]'
         }`}
     >
@@ -117,7 +118,7 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
         className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-200
           ${isFeatured
             ? 'bg-accent-primary hover:bg-accent-hover text-white shadow-glow hover:shadow-glow-lg'
-            : 'border border-white/15 hover:border-accent-primary/50 text-white/80 hover:text-white hover:bg-white/[0.04]'
+            : 'border border-white/15 hover:border-[rgba(230,57,70,0.50)] text-white/80 hover:text-white hover:bg-white/[0.04]'
           }`}
       >
         {plan.price === 0 ? 'Contact Us' : 'Get Started'} <ArrowRight className="h-3.5 w-3.5" />
@@ -139,7 +140,7 @@ export default function ServicesOverview() {
 
         {/* Header */}
         <div className="text-center mb-12">
-          <p className="text-xs font-bold tracking-widest uppercase text-accent-primary mb-3">Our Services</p>
+          <SectionBadge>Our Services</SectionBadge>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-extrabold text-white mb-4">
             Choose Your Path <span className="text-accent-primary">to Funding</span>
           </h2>

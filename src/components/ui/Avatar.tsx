@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Image from 'next/image';
 import { cn, getInitials } from '@/lib/utils';
@@ -53,7 +53,7 @@ export default function Avatar({ src, name, size = 'md', className }: AvatarProp
     <div
       className={cn(
         'shrink-0 rounded-full flex items-center justify-center font-semibold',
-        'bg-accent-primary/20 text-accent-primary border border-accent-primary/20',
+        'bg-accent-primary/20 text-accent-primary border border-[rgba(230,57,70,0.20)]',
         sizeStyles[size],
         className
       )}

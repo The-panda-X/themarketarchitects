@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,6 +6,7 @@ import { ChevronDown } from 'lucide-react';
 import { HOMEPAGE_FAQ } from '@/lib/constants';
 import ScrollReveal from '@/components/effects/ScrollReveal';
 import { cn } from '@/lib/utils';
+import SectionBadge from '@/components/ui/SectionBadge';
 
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -15,6 +16,7 @@ export default function FAQSection() {
       <div className="section-container section-padding">
         <ScrollReveal>
           <div className="text-center mb-14">
+            <SectionBadge>FAQ</SectionBadge>
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
               Frequently Asked Questions
             </h2>
@@ -35,7 +37,7 @@ export default function FAQSection() {
                   key={i}
                   className={cn(
                     'glass-card overflow-hidden transition-colors duration-200',
-                    isOpen && 'border-accent-primary/20'
+                    isOpen && 'border-[rgba(230,57,70,0.20)]'
                   )}
                 >
                   <button

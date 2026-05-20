@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import { motion } from 'framer-motion';
 import ScrollReveal from '@/components/effects/ScrollReveal';
+import SectionBadge from '@/components/ui/SectionBadge';
 
 const steps = [
   {
@@ -34,9 +35,7 @@ export default function HowItWorks() {
         {/* Header */}
         <ScrollReveal>
           <div className="text-center mb-20">
-            <span className="inline-block px-4 py-1.5 rounded-full border border-accent-primary/30 bg-accent-primary/10 text-[10px] font-bold tracking-widest uppercase text-accent-primary mb-6">
-              How It Works
-            </span>
+            <SectionBadge className="mb-6">How It Works</SectionBadge>
             <h2 className="text-4xl sm:text-5xl md:text-6xl font-heading font-extrabold leading-tight">
               <span className="block text-white">Simple Process,</span>
               <span className="block font-display italic text-accent-primary">Proven Results</span>
@@ -62,7 +61,7 @@ export default function HowItWorks() {
                 >
                   {/* Number circle */}
                   <div className="relative mb-6">
-                    <div className="w-20 h-20 rounded-full border border-accent-primary/25 bg-accent-primary/5 flex items-center justify-center">
+                    <div className="w-20 h-20 rounded-full border border-[rgba(230,57,70,0.25)] bg-accent-primary/5 flex items-center justify-center">
                       <span className="text-lg font-bold font-mono text-accent-primary/70">
                         {step.number}
                       </span>

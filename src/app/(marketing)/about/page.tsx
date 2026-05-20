@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Shield, TrendingUp, Users, Trophy, Target, CheckCircle } from 'lucide-react';
 import { TRUST_STATS } from '@/lib/constants';
@@ -81,7 +81,7 @@ export default function AboutPage() {
           {TRUST_STATS.map((stat) => (
             <div
               key={stat.label}
-              className="text-center p-6 rounded-2xl border border-accent-primary/25 bg-accent-primary/[0.04] glass-shine"
+              className="text-center p-6 rounded-2xl border border-[rgba(230,57,70,0.25)] bg-accent-primary/[0.04] glass-shine"
             >
               <p className="text-3xl font-bold font-mono text-accent-primary">
                 {('prefix' in stat ? stat.prefix : '')}{stat.value.toLocaleString()}{stat.suffix}
@@ -119,7 +119,7 @@ export default function AboutPage() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="p-6 rounded-2xl border border-accent-primary/25 bg-accent-primary/[0.04] glass-shine text-center"
+                className="p-6 rounded-2xl border border-[rgba(230,57,70,0.25)] bg-accent-primary/[0.04] glass-shine text-center"
               >
                 <p className="text-2xl font-bold font-mono text-accent-gold">{item.value}</p>
                 <p className="text-text-tertiary text-sm mt-1">{item.label}</p>
@@ -135,9 +135,9 @@ export default function AboutPage() {
             {values.map(({ icon: Icon, title, description }) => (
               <div
                 key={title}
-                className="flex gap-4 p-6 rounded-2xl border border-accent-primary/20 bg-accent-primary/[0.03] glass-shine"
+                className="flex gap-4 p-6 rounded-2xl border border-[rgba(230,57,70,0.20)] bg-accent-primary/[0.03] glass-shine"
               >
-                <div className="p-3 rounded-xl bg-accent-primary/10 border border-accent-primary/20 h-fit shrink-0">
+                <div className="p-3 rounded-xl bg-accent-primary/10 border border-[rgba(230,57,70,0.20)] h-fit shrink-0">
                   <Icon className="h-5 w-5 text-accent-primary" />
                 </div>
                 <div>
@@ -156,10 +156,10 @@ export default function AboutPage() {
             {teamMembers.map((member) => (
               <div
                 key={member.name}
-                className="text-center p-6 rounded-2xl border border-accent-primary/25 bg-accent-primary/[0.04] glass-shine hover:border-accent-primary/50 hover:bg-accent-primary/[0.07] transition-all duration-300"
+                className="text-center p-6 rounded-2xl border border-[rgba(230,57,70,0.25)] bg-accent-primary/[0.04] glass-shine hover:border-[rgba(230,57,70,0.50)] hover:bg-accent-primary/[0.07] transition-all duration-300"
               >
                 {/* Avatar */}
-                <div className="relative w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-accent-primary/40 bg-[#1a0505]"
+                <div className="relative w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-[rgba(230,57,70,0.40)] bg-[#1a0505]"
                   style={{ boxShadow: '0 0 16px rgba(230,57,70,0.3)' }}
                 >
                   <img
@@ -177,7 +177,7 @@ export default function AboutPage() {
         </div>
 
         {/* Promise */}
-        <div className="rounded-2xl border border-accent-primary/30 bg-accent-primary/[0.05] glass-shine p-10 text-center">
+        <div className="rounded-2xl border border-[rgba(230,57,70,0.30)] bg-accent-primary/[0.05] glass-shine p-10 text-center">
           <Trophy className="h-12 w-12 text-accent-gold mx-auto mb-4" />
           <h3 className="text-2xl font-heading font-bold mb-3">Our Promise to You</h3>
           <p className="text-text-secondary max-w-2xl mx-auto mb-6">
