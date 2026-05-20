@@ -74,7 +74,7 @@ export default function ContactPage() {
           {/* Contact Methods */}
           <div className="lg:col-span-2 space-y-6">
             {contactMethods.map(({ icon: Icon, label, value, description }) => (
-              <div key={label} className="flex gap-4 p-5 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+              <div key={label} className="flex gap-4 p-5 rounded-2xl border border-[rgba(230,57,70,0.28)] bg-white/[0.03]">
                 <div className="p-2.5 rounded-xl bg-accent-primary/10 h-fit">
                   <Icon className="h-5 w-5 text-accent-primary" />
                 </div>
@@ -86,7 +86,7 @@ export default function ContactPage() {
               </div>
             ))}
 
-            <div className="p-5 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+            <div className="p-5 rounded-2xl border border-[rgba(230,57,70,0.28)] bg-white/[0.03]">
               <p className="font-semibold text-sm mb-2">Already a client?</p>
               <p className="text-text-secondary text-sm">
                 Log in to your dashboard and open a support ticket for faster, personalised assistance.
@@ -117,7 +117,7 @@ export default function ContactPage() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5 p-8 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+              <form onSubmit={handleSubmit} className="space-y-5 p-8 rounded-2xl border border-[rgba(230,57,70,0.28)] bg-white/[0.03]">
                 <h2 className="text-xl font-heading font-bold mb-2">Send us a Message</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input

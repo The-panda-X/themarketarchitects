@@ -33,7 +33,7 @@ export default function Avatar({ src, name, size = 'md', className }: AvatarProp
     return (
       <div
         className={cn(
-          'relative shrink-0 rounded-full overflow-hidden border border-white/[0.1]',
+          'relative shrink-0 rounded-full overflow-hidden border border-[rgba(230,57,70,0.30)]',
           sizeStyles[size],
           className
         )}

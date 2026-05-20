@@ -45,7 +45,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               'disabled:opacity-50 disabled:cursor-not-allowed',
               error
                 ? 'border-danger/50 focus:ring-danger/30 focus:border-danger/50'
-                : 'border-white/[0.08] hover:border-white/[0.15]',
+                : 'border-[rgba(230,57,70,0.28)] hover:border-[rgba(230,57,70,0.40)]',
               icon && iconPosition === 'left' && 'pl-10',
               icon && iconPosition === 'right' && 'pr-10',
               className

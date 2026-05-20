@@ -2,63 +2,77 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import Button from '@/components/ui/Button';
 import ScrollReveal from '@/components/effects/ScrollReveal';
-import ParticleField from '@/components/effects/ParticleField';
 
 export default function CTABanner() {
   return (
     <section className="py-20 md:py-28 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-accent-muted/30 via-bg-primary to-bg-primary" />
-      <ParticleField
-        particleCount={20}
-        color="230, 57, 70"
-        maxSize={2}
-        speed={0.2}
-        className="opacity-40"
-      />
-
-      {/* Faint phoenix watermark */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/4 opacity-[0.04] pointer-events-none">
-        <Image
-          src="/assets/logos/logo.png"
-          alt=""
-          width={500}
-          height={500}
-          className="w-[500px] h-[500px]"
-        />
-      </div>
-
       <div className="relative z-10 section-container section-padding">
         <ScrollReveal>
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-5xl font-heading font-bold mb-5 leading-tight">
-              Ready to Get{' '}
-              <span className="text-gradient-red">Funded?</span>
-            </h2>
-            <p className="text-lg text-text-secondary mb-10 max-w-lg mx-auto">
-              Join thousands of traders who trust us to pass their prop firm
-              challenges. Start today and get funded within days.
-            </p>
+          {/* Glass card — matches reference */}
+          <div className="rounded-2xl border border-accent-primary/25 bg-[#0d0303] backdrop-blur-xl glass-shine transition-all duration-300 hover:border-accent-primary/40 hover:shadow-[0_0_30px_rgba(230,57,70,0.08)] p-12 text-center relative overflow-hidden">
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            {/* Radial red glow overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-20"
+              style={{
+                background: 'radial-gradient(ellipse at 50% 0%, rgba(230,57,70,0.6) 0%, transparent 70%)',
+              }}
+            />
+
+            <div className="relative z-10">
+              {/* Floating logo */}
+              <motion.div
+                animate={{ y: [0, -14, 0] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="mx-auto mb-6 w-20 h-20"
+                style={{ filter: 'drop-shadow(0 0 20px rgba(230,57,70,0.4))' }}
+              >
+                <Image
+                  src="/assets/logos/logo.png"
+                  alt="TMA"
+                  width={80}
+                  height={80}
+                  className="object-contain w-full h-full"
+                />
+              </motion.div>
+
+              {/* Heading */}
+              <h2 className="font-heading font-normal text-4xl md:text-6xl text-white mb-4 leading-tight">
+                Ready to Get{' '}
+                <span className="text-gradient-red">Funded?</span>
+              </h2>
+
+              {/* Subtitle */}
+              <p className="text-text-secondary text-lg mb-8 max-w-xl mx-auto">
+                Join 1,200+ traders who trust The Market Architects to build their funded trading career.
+              </p>
+
+              {/* CTA button */}
               <Link href="/dashboard/purchase">
-                <Button
-                  variant="primary"
-                  size="xl"
-                  glow
-                  icon={<ArrowRight className="h-5 w-5" />}
-                  iconPosition="right"
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 px-10 py-5 text-xl font-semibold tracking-wide rounded-lg text-white transition-all duration-300 cursor-pointer btn-glow-pulse hover:scale-105 relative overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #e63946 0%, #c1121f 100%)',
+                    boxShadow: '0 0 24px rgba(230,57,70,0.5)',
+                  }}
                 >
-                  Start Your Challenge
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button variant="secondary" size="xl">
-                  Contact Us
-                </Button>
+                  {/* Glossy shine */}
+                  <span
+                    className="absolute top-0 left-0 right-0 pointer-events-none"
+                    style={{
+                      height: '48%',
+                      background: 'linear-gradient(to bottom, rgba(255,255,255,0.13) 0%, transparent 100%)',
+                      borderRadius: 'inherit',
+                    }}
+                  />
+                  <span className="relative z-10 flex items-center gap-2">
+                    Get Started Today <ArrowRight className="h-5 w-5" />
+                  </span>
+                </button>
               </Link>
             </div>
           </div>

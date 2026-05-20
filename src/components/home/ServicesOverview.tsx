@@ -49,7 +49,7 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
       className={`relative flex flex-col rounded-xl border p-6 transition-all duration-300 group
         ${isFeatured
           ? 'border-accent-primary/50 bg-accent-primary/5 shadow-[0_0_40px_-8px_rgba(230,57,70,0.25)]'
-          : 'border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]'
+          : 'border-[rgba(230,57,70,0.28)] bg-white/[0.03] hover:border-[rgba(230,57,70,0.55)] hover:bg-white/[0.05]'
         }`}
     >
       {/* Most Popular badge */}
@@ -157,7 +157,7 @@ export default function ServicesOverview() {
               className={`px-5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200
                 ${activeTab === tab.id
                   ? 'bg-accent-primary text-white shadow-glow-sm'
-                  : 'border border-white/10 text-white/50 hover:border-white/25 hover:text-white/80'
+                  : 'border border-[rgba(230,57,70,0.30)] text-white/50 hover:border-[rgba(230,57,70,0.60)] hover:text-white/80'
                 }`}
             >
               {tab.label}

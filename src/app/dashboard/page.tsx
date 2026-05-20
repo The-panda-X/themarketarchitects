@@ -156,7 +156,7 @@ export default function DashboardPage() {
                     <Link key={challenge.id} href={`/dashboard/challenges/${challenge.id}`}>
                       <motion.div
                         whileHover={{ scale: 1.01 }}
-                        className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-colors"
+                        className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-[rgba(230,57,70,0.28)] transition-colors"
                       >
                         <div className="p-2.5 rounded-lg bg-accent-primary/10">
                           <StatusIcon className="h-5 w-5 text-accent-primary" />

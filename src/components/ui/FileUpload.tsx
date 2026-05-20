@@ -101,7 +101,7 @@ export default function FileUpload({
           'relative flex flex-col items-center justify-center gap-2 px-6 py-8 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200',
           dragActive
             ? 'border-accent-primary bg-accent-primary/5'
-            : 'border-white/[0.1] bg-white/[0.02] hover:border-white/[0.2] hover:bg-white/[0.04]',
+            : 'border-[rgba(230,57,70,0.30)] bg-white/[0.02] hover:border-[rgba(230,57,70,0.55)] hover:bg-white/[0.04]',
           (error || fileError) && 'border-danger/40'
         )}
       >

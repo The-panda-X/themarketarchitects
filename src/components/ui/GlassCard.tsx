@@ -11,9 +11,9 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: 'bg-[#0d0303] backdrop-blur-xl border border-accent-primary/25 glass-shine',
-  strong:  'bg-[#120404] backdrop-blur-2xl border border-accent-primary/30 glass-shine',
-  subtle:  'bg-[#0a0202] backdrop-blur-lg  border border-accent-primary/15 glass-shine',
+  default: 'bg-[#0d0303] backdrop-blur-xl border border-[rgba(230,57,70,0.35)] glass-shine shadow-[0_0_18px_rgba(230,57,70,0.06)]',
+  strong:  'bg-[#120404] backdrop-blur-2xl border border-[rgba(230,57,70,0.45)] glass-shine shadow-[0_0_24px_rgba(230,57,70,0.09)]',
+  subtle:  'bg-[#0a0202] backdrop-blur-lg  border border-[rgba(230,57,70,0.25)] glass-shine shadow-[0_0_12px_rgba(230,57,70,0.04)]',
 };
 
 const paddingStyles = {
@@ -44,7 +44,7 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
           variantStyles[variant],
           paddingStyles[padding],
           hover &&
-            'hover:border-accent-primary/50 hover:shadow-[0_0_30px_rgba(230,57,70,0.08)] hover:scale-[1.01] hover:-translate-y-0.5',
+            'hover:border-[rgba(230,57,70,0.60)] hover:shadow-[0_0_30px_rgba(230,57,70,0.12)] hover:scale-[1.01] hover:-translate-y-0.5',
           glow === 'red' && hover && 'hover:shadow-glow-sm',
           glow === 'gold' && hover && 'hover:shadow-glow-gold',
           className

@@ -107,7 +107,7 @@ export default function HeroSection() {
               {PROP_FIRMS.filter(f => f.id !== 'other').map((firm) => (
                 <span
                   key={firm.id}
-                  className="text-[11px] font-semibold text-white/35 hover:text-white/65 transition-colors duration-200 border border-white/[0.08] hover:border-white/20 px-3 py-1.5 rounded-md"
+                  className="text-[11px] font-semibold text-white/35 hover:text-white/65 transition-colors duration-200 border border-[rgba(230,57,70,0.28)] hover:border-[rgba(230,57,70,0.55)] px-3 py-1.5 rounded-md"
                 >
                   {firm.name}
                 </span>

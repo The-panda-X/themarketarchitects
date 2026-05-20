@@ -68,7 +68,7 @@ export default async function BlogPostPage({ params }: Props) {
         </h1>
 
         {/* Meta */}
-        <div className="flex items-center gap-4 text-sm text-text-tertiary mb-8 pb-8 border-b border-white/[0.08]">
+        <div className="flex items-center gap-4 text-sm text-text-tertiary mb-8 pb-8 border-b border-[rgba(230,57,70,0.28)]">
           <span className="flex items-center gap-1.5"><User className="h-4 w-4" />{post.author}</span>
           {post.publishedAt && (
             <span className="flex items-center gap-1.5">

@@ -14,7 +14,7 @@ function PlanCard({ plan, featured }: { plan: (typeof CHALLENGE_PASSING_PLANS)[0
     <div className={`relative flex flex-col rounded-2xl border p-8 ${
       featured
         ? 'border-accent-primary bg-accent-primary/5 shadow-[0_0_40px_-10px] shadow-accent-primary/20'
-        : 'border-white/[0.08] bg-white/[0.03]'
+        : 'border-[rgba(230,57,70,0.28)] bg-white/[0.03]'
     }`}>
       {featured && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
@@ -120,7 +120,7 @@ export default function PricingPage() {
           <h2 className="text-2xl font-heading font-bold text-center mb-10">Frequently Asked Questions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {HOMEPAGE_FAQ.slice(0, 6).map((faq) => (
-              <div key={faq.question} className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+              <div key={faq.question} className="p-6 rounded-2xl border border-[rgba(230,57,70,0.28)] bg-white/[0.03]">
                 <h4 className="font-semibold text-sm mb-2">{faq.question}</h4>
                 <p className="text-text-secondary text-sm">{faq.answer}</p>
               </div>

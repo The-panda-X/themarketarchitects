@@ -59,7 +59,7 @@ export default async function BlogPage() {
               <Link
                 key={post.id}
                 href={`/blog/${post.slug}`}
-                className="group flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.03] overflow-hidden hover:border-white/[0.15] hover:bg-white/[0.05] transition-all duration-200"
+                className="group flex flex-col rounded-2xl border border-[rgba(230,57,70,0.28)] bg-white/[0.03] overflow-hidden hover:border-[rgba(230,57,70,0.40)] hover:bg-white/[0.05] transition-all duration-200"
               >
                 {post.coverImage ? (
                   <div className="relative h-48 overflow-hidden">

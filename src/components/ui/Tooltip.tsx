@@ -49,7 +49,7 @@ export default function Tooltip({
             transition={{ duration: 0.1 }}
             className={cn(
               'absolute z-50 px-3 py-1.5 text-xs font-medium text-text-primary',
-              'bg-bg-elevated border border-white/[0.08] rounded-lg shadow-lg whitespace-nowrap',
+              'bg-bg-elevated border border-[rgba(230,57,70,0.28)] rounded-lg shadow-lg whitespace-nowrap',
               positionStyles[position],
               className
             )}

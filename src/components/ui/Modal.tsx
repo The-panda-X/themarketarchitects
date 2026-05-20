@@ -73,7 +73,7 @@ export default function Modal({
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className={cn(
-              'relative w-full bg-bg-card/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-2xl',
+              'relative w-full bg-bg-card/95 backdrop-blur-2xl border border-[rgba(230,57,70,0.28)] rounded-2xl shadow-2xl',
               sizeStyles[size],
               className
             )}
