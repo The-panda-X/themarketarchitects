@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 ﻿import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse } from '@/lib/api-helpers';
 

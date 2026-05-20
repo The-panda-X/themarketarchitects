@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 ﻿import { type NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
