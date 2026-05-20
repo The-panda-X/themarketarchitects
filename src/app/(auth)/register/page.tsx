@@ -55,8 +55,13 @@ export default function RegisterPage() {
         return;
       }
 
-      addToast('Account created! Please check your email.', 'success');
-      router.push('/verify-email?email=' + encodeURIComponent(data.email));
+      if (result.data?.emailVerified) {
+        addToast('Account created! You can now sign in.', 'success');
+        router.push('/login');
+      } else {
+        addToast('Account created! Please check your email.', 'success');
+        router.push('/verify-email?email=' + encodeURIComponent(data.email));
+      }
     } catch {
       addToast('Something went wrong. Please try again.', 'error');
     } finally {

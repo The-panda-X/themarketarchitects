@@ -2,15 +2,22 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { registerSchema } from '@/lib/validations';
 import { sendVerificationEmail } from '@/lib/email';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
+
+const serverRegisterSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  referralCode: z.string().optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const parsed = registerSchema.safeParse(body);
+    const parsed = serverRegisterSchema.safeParse(body);
 
     if (!parsed.success) {
       return errorResponse(parsed.error.errors[0].message, 400);
@@ -38,6 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const emailServiceEnabled = !!process.env.RESEND_API_KEY;
 
     const user = await prisma.user.create({
       data: {
@@ -45,24 +53,24 @@ export async function POST(request: NextRequest) {
         name,
         passwordHash,
         referredBy: referrerId,
+        // Auto-verify if no email service is configured
+        emailVerified: emailServiceEnabled ? null : new Date(),
       },
     });
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    if (emailServiceEnabled) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    await prisma.verificationToken.create({
-      data: {
-        identifier: normalizedEmail,
-        token,
-        expires,
-      },
-    });
+      await prisma.verificationToken.create({
+        data: { identifier: normalizedEmail, token, expires },
+      });
 
-    try {
-      await sendVerificationEmail(normalizedEmail, token);
-    } catch {
-      // Email send failure shouldn't block registration
+      try {
+        await sendVerificationEmail(normalizedEmail, token);
+      } catch {
+        // Email send failure shouldn't block registration
+      }
     }
 
     if (referrerId) {
@@ -75,7 +83,13 @@ export async function POST(request: NextRequest) {
     }
 
     return successResponse(
-      { userId: user.id, message: 'Account created. Please check your email to verify.' },
+      {
+        userId: user.id,
+        emailVerified: !emailServiceEnabled,
+        message: emailServiceEnabled
+          ? 'Account created. Please check your email to verify.'
+          : 'Account created. You can now sign in.',
+      },
       201
     );
   } catch (error) {
