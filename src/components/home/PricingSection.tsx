@@ -92,15 +92,12 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
   const isPopular = plan.popular;
 
   return (
-    <div className={`rounded-xl border p-7 flex flex-col relative transition-all duration-300 group
-      ${isPopular
-        ? 'border-[rgba(230,57,70,0.50)] bg-[#120404] shadow-[0_0_30px_rgba(230,57,70,0.10)] hover:border-[rgba(230,57,70,0.70)] hover:shadow-[0_0_40px_rgba(230,57,70,0.15)] mt-5'
-        : 'border-[rgba(230,57,70,0.25)] bg-[#0d0303] hover:border-[rgba(230,57,70,0.45)] hover:shadow-[0_0_30px_rgba(230,57,70,0.08)]'
-      } glass-shine hover:scale-[1.01]`}
-    >
-      {/* Most Popular badge */}
+    /* Outer wrapper — relative + pt so badge floats above without being clipped */
+    <div className={`relative ${isPopular ? 'pt-5' : ''}`}>
+
+      {/* Most Popular badge — on the WRAPPER, never inside overflow:hidden card */}
       {isPopular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
           <span
             className="text-white text-xs font-semibold px-4 py-1.5 rounded-full"
             style={{ background: 'linear-gradient(135deg, #e63946 0%, #c1121f 100%)', boxShadow: '0 0 14px rgba(230,57,70,0.5)' }}
@@ -109,6 +106,13 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
           </span>
         </div>
       )}
+
+    <div className={`rounded-xl border p-7 flex flex-col transition-all duration-300 group h-full
+      ${isPopular
+        ? 'border-[rgba(230,57,70,0.50)] bg-[#120404] shadow-[0_0_30px_rgba(230,57,70,0.10)] hover:border-[rgba(230,57,70,0.70)] hover:shadow-[0_0_40px_rgba(230,57,70,0.15)]'
+        : 'border-[rgba(230,57,70,0.25)] bg-[#0d0303] hover:border-[rgba(230,57,70,0.45)] hover:shadow-[0_0_30px_rgba(230,57,70,0.08)]'
+      } glass-shine hover:scale-[1.01]`}
+    >
 
       {/* Category + Title */}
       <div className="mb-4">
@@ -173,6 +177,7 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
           </button>
         )}
       </Link>
+    </div>
     </div>
   );
 }
