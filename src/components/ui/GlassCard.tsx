@@ -11,9 +11,9 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: 'bg-white/[0.05] backdrop-blur-xl border border-accent-primary/20 glass-shine',
-  strong: 'bg-white/[0.08] backdrop-blur-2xl border border-accent-primary/25 glass-shine',
-  subtle: 'bg-white/[0.03] backdrop-blur-lg border border-accent-primary/12 glass-shine',
+  default: 'bg-[#0d0303] backdrop-blur-xl border border-accent-primary/25 glass-shine',
+  strong:  'bg-[#120404] backdrop-blur-2xl border border-accent-primary/30 glass-shine',
+  subtle:  'bg-[#0a0202] backdrop-blur-lg  border border-accent-primary/15 glass-shine',
 };
 
 const paddingStyles = {
@@ -40,18 +40,25 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       <div
         ref={ref}
         className={cn(
-          'rounded-2xl transition-all duration-300',
+          'rounded-2xl transition-all duration-300 relative overflow-hidden',
           variantStyles[variant],
           paddingStyles[padding],
           hover &&
-            'hover:bg-accent-primary/[0.06] hover:border-accent-primary/40 hover:scale-[1.01] hover:-translate-y-0.5',
+            'hover:border-accent-primary/50 hover:shadow-[0_0_30px_rgba(230,57,70,0.08)] hover:scale-[1.01] hover:-translate-y-0.5',
           glow === 'red' && hover && 'hover:shadow-glow-sm',
           glow === 'gold' && hover && 'hover:shadow-glow-gold',
           className
         )}
         {...props}
       >
-        {children}
+        {/* Radial red glow overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at 50% 0%, rgba(230,57,70,0.07) 0%, transparent 70%)',
+          }}
+        />
+        <div className="relative z-10">{children}</div>
       </div>
     );
   }
