@@ -35,7 +35,7 @@ const stats = [
 
 export default function TrustIndicators() {
   return (
-    <section className="relative -mt-16 z-10 section-container section-padding">
+    <section className="relative z-10 section-container section-padding py-8">
       <ScrollReveal>
         <GlassCard variant="strong" padding="none" className="overflow-hidden">
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-white/[0.06]">
