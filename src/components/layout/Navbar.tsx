@@ -56,10 +56,8 @@ export default function Navbar() {
                 />
               </div>
               <span className="hidden sm:block text-sm md:text-base font-heading font-bold tracking-wide text-text-primary">
-                THE{' '}
-                <span className="text-accent-primary">MARKET</span>
-                <br className="hidden" />
-                {' '}ARCHITECTS
+                THE MARKET{' '}
+                <span className="text-accent-primary">ARCHITECTS</span>
               </span>
             </Link>
 
