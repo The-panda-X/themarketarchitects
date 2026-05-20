@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { Shield, TrendingUp, Users, Trophy, Target, CheckCircle } from 'lucide-react';
 import { TRUST_STATS } from '@/lib/constants';
+import FloatingAboutLogo from '@/components/about/FloatingAboutLogo';
 
 export const metadata: Metadata = {
   title: 'About Us',
@@ -35,25 +37,25 @@ const teamMembers = [
     name: 'Marcus A.',
     title: 'Head Trader & Founder',
     description: '8 years institutional FX experience. Personally oversees Elite challenge accounts.',
-    initials: 'MA',
+    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=MarcusA&backgroundColor=1a0505',
   },
   {
     name: 'James L.',
     title: 'Senior Prop Trader',
     description: 'Specialist in FTMO and FundedNext. 300+ challenges passed with a 97% success rate.',
-    initials: 'JL',
+    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=JamesL&backgroundColor=1a0505',
   },
   {
     name: 'Sofia R.',
     title: 'Account Manager',
     description: 'Manages funded account clients and monthly payout reporting.',
-    initials: 'SR',
+    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=SofiaR&backgroundColor=1a0505',
   },
   {
     name: 'Daniel K.',
     title: 'Risk & Compliance',
     description: 'Ensures all trading activity stays within firm rules and drawdown limits.',
-    initials: 'DK',
+    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DanielK&backgroundColor=1a0505',
   },
 ];
 
@@ -61,8 +63,10 @@ export default function AboutPage() {
   return (
     <div className="pt-24 pb-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
+
         {/* Hero */}
         <div className="text-center mb-20">
+          <FloatingAboutLogo />
           <h1 className="text-4xl sm:text-5xl font-heading font-bold mb-6">
             Built by Traders, <span className="text-accent-primary">For Traders</span>
           </h1>
@@ -75,7 +79,10 @@ export default function AboutPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
           {TRUST_STATS.map((stat) => (
-            <div key={stat.label} className="text-center p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+            <div
+              key={stat.label}
+              className="text-center p-6 rounded-2xl border border-accent-primary/25 bg-accent-primary/[0.04] glass-shine"
+            >
               <p className="text-3xl font-bold font-mono text-accent-primary">
                 {('prefix' in stat ? stat.prefix : '')}{stat.value.toLocaleString()}{stat.suffix}
               </p>
@@ -110,7 +117,10 @@ export default function AboutPage() {
               { label: 'Prop Firms', value: '20+' },
               { label: 'Avg. Completion', value: '8 Days' },
             ].map((item) => (
-              <div key={item.label} className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] text-center">
+              <div
+                key={item.label}
+                className="p-6 rounded-2xl border border-accent-primary/25 bg-accent-primary/[0.04] glass-shine text-center"
+              >
                 <p className="text-2xl font-bold font-mono text-accent-gold">{item.value}</p>
                 <p className="text-text-tertiary text-sm mt-1">{item.label}</p>
               </div>
@@ -123,8 +133,11 @@ export default function AboutPage() {
           <h2 className="text-3xl font-heading font-bold text-center mb-10">Our Values</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {values.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="flex gap-4 p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
-                <div className="p-3 rounded-xl bg-accent-primary/10 h-fit">
+              <div
+                key={title}
+                className="flex gap-4 p-6 rounded-2xl border border-accent-primary/20 bg-accent-primary/[0.03] glass-shine"
+              >
+                <div className="p-3 rounded-xl bg-accent-primary/10 border border-accent-primary/20 h-fit shrink-0">
                   <Icon className="h-5 w-5 text-accent-primary" />
                 </div>
                 <div>
@@ -141,20 +154,30 @@ export default function AboutPage() {
           <h2 className="text-3xl font-heading font-bold text-center mb-10">The Team</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {teamMembers.map((member) => (
-              <div key={member.name} className="text-center p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
-                <div className="w-16 h-16 rounded-full bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-accent-primary font-bold">{member.initials}</span>
+              <div
+                key={member.name}
+                className="text-center p-6 rounded-2xl border border-accent-primary/25 bg-accent-primary/[0.04] glass-shine hover:border-accent-primary/50 hover:bg-accent-primary/[0.07] transition-all duration-300"
+              >
+                {/* Avatar */}
+                <div className="relative w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-accent-primary/40 bg-[#1a0505]"
+                  style={{ boxShadow: '0 0 16px rgba(230,57,70,0.3)' }}
+                >
+                  <img
+                    src={member.avatar}
+                    alt={member.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <h3 className="font-semibold">{member.name}</h3>
-                <p className="text-accent-primary text-xs mt-0.5">{member.title}</p>
-                <p className="text-text-secondary text-sm mt-3">{member.description}</p>
+                <p className="text-accent-primary text-xs mt-0.5 font-medium">{member.title}</p>
+                <p className="text-text-secondary text-sm mt-3 leading-relaxed">{member.description}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Promise */}
-        <div className="rounded-2xl border border-accent-primary/20 bg-accent-primary/5 p-10 text-center">
+        <div className="rounded-2xl border border-accent-primary/30 bg-accent-primary/[0.05] glass-shine p-10 text-center">
           <Trophy className="h-12 w-12 text-accent-gold mx-auto mb-4" />
           <h3 className="text-2xl font-heading font-bold mb-3">Our Promise to You</h3>
           <p className="text-text-secondary max-w-2xl mx-auto mb-6">
@@ -169,6 +192,7 @@ export default function AboutPage() {
             ))}
           </div>
         </div>
+
       </div>
     </div>
   );

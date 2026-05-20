@@ -11,9 +11,9 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: 'bg-white/[0.05] backdrop-blur-xl border border-white/[0.08]',
-  strong: 'bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12]',
-  subtle: 'bg-white/[0.03] backdrop-blur-lg border border-white/[0.05]',
+  default: 'bg-white/[0.05] backdrop-blur-xl border border-accent-primary/20 glass-shine',
+  strong: 'bg-white/[0.08] backdrop-blur-2xl border border-accent-primary/25 glass-shine',
+  subtle: 'bg-white/[0.03] backdrop-blur-lg border border-accent-primary/12 glass-shine',
 };
 
 const paddingStyles = {
@@ -44,7 +44,7 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
           variantStyles[variant],
           paddingStyles[padding],
           hover &&
-            'hover:bg-white/[0.08] hover:border-white/[0.15] hover:scale-[1.01] hover:-translate-y-0.5',
+            'hover:bg-accent-primary/[0.06] hover:border-accent-primary/40 hover:scale-[1.01] hover:-translate-y-0.5',
           glow === 'red' && hover && 'hover:shadow-glow-sm',
           glow === 'gold' && hover && 'hover:shadow-glow-gold',
           className
