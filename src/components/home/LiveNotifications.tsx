@@ -48,21 +48,19 @@ export default function LiveNotifications() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="glass-card p-4 border-success/20 shadow-lg"
+            className="glass-card px-3 py-2 border-success/20 shadow-lg"
           >
-            <div className="flex items-start gap-3">
-              <div className="h-8 w-8 rounded-full bg-success/10 flex items-center justify-center shrink-0">
-                <PartyPopper className="h-4 w-4 text-success" />
+            <div className="flex items-center gap-2.5">
+              <div className="h-6 w-6 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                <PartyPopper className="h-3 w-3 text-success" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-text-primary font-medium">
+                <p className="text-xs text-text-primary font-medium leading-tight">
                   {notification.name}{' '}
                   <span className="text-text-secondary font-normal">
                     {notification.action}
                   </span>
-                </p>
-                <p className="text-xs text-text-tertiary mt-0.5">
-                  {notification.timestamp}
+                  <span className="text-text-tertiary ml-1.5">{notification.timestamp}</span>
                 </p>
               </div>
             </div>
