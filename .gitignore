@@ -1,0 +1,82 @@
+# ─── Dependencies ────────────────────────────────────────────────────────────
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ─── Next.js build output ────────────────────────────────────────────────────
+/.next/
+/out/
+/build
+
+# ─── Environment & secrets ───────────────────────────────────────────────────
+# All .env variants — only .env.example is safe to commit
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+
+# ─── Keys, certs & credentials ───────────────────────────────────────────────
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.cert
+*.jks
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+serviceAccountKey.json
+google-credentials.json
+firebase-adminsdk*.json
+
+# ─── Claude Code local config ────────────────────────────────────────────────
+# Contains local tool permissions, session memory — never public
+.claude/
+
+# ─── Prisma ──────────────────────────────────────────────────────────────────
+prisma/migrations/
+
+# ─── Testing & coverage ──────────────────────────────────────────────────────
+/coverage
+/.nyc_output
+
+# ─── Debug logs ──────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# ─── TypeScript ──────────────────────────────────────────────────────────────
+*.tsbuildinfo
+next-env.d.ts
+
+# ─── Vercel ──────────────────────────────────────────────────────────────────
+.vercel
+
+# ─── OS files ────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.user

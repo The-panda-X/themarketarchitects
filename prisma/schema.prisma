@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ChallengeStatus {
+  PENDING
+  IN_PROGRESS
+  PHASE_1
+  PHASE_2
+  PASSED
+  FAILED
+  FUNDED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  IN_PROGRESS
+  COMPLETED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  STRIPE
+  PAYPAL
+  CRYPTO
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ServiceType {
+  CHALLENGE_PASSING
+  ACCOUNT_MANAGEMENT
+  ACCOUNT_GROWTH
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String?
+  passwordHash     String?
+  avatar           String?
+  role             Role      @default(USER)
+  emailVerified    DateTime?
+  twoFactorEnabled Boolean   @default(false)
+  twoFactorSecret  String?
+  referralCode     String    @unique @default(cuid())
+  referredBy       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]
+  challenges    Challenge[]
+  tickets       SupportTicket[]
+  notifications Notification[]
+  referrals     Referral[]   @relation("referrer")
+  payments      Payment[]
+  adminLogs     AdminLog[]
+
+  @@index([email])
+  @@index([referralCode])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String
+  serviceType    ServiceType
+  planName       String
+  planDetails    Json
+  accountSize    String?
+  firmName       String?
+  status         OrderStatus @default(PENDING_PAYMENT)
+  totalAmount    Float
+  discountAmount Float       @default(0)
+  couponCode     String?
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id])
+  challenge   Challenge?
+  payments    Payment[]
+  credentials Credential[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Challenge {
+  id              String          @id @default(cuid())
+  orderId         String          @unique
+  userId          String
+  firmName        String
+  accountSize     String
+  status          ChallengeStatus @default(PENDING)
+  currentPhase    Int             @default(1)
+  startDate       DateTime?
+  endDate         DateTime?
+  targetProfit    Float?
+  currentProfit   Float           @default(0)
+  maxDrawdown     Float?
+  currentDrawdown Float           @default(0)
+  daysTraded      Int             @default(0)
+  winRate         Float           @default(0)
+  proofImages     String[]
+  adminNotes      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  order      Order       @relation(fields: [orderId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  dailyStats DailyStat[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model DailyStat {
+  id          String    @id @default(cuid())
+  challengeId String
+  date        DateTime
+  profit      Float
+  loss        Float
+  tradesCount Int
+  winCount    Int
+  lossCount   Int
+  notes       String?
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String
+  userId          String
+  amount          Float
+  currency        String        @default("USD")
+  method          PaymentMethod
+  stripePaymentId String?
+  status          String
+  invoiceUrl      String?
+  createdAt       DateTime      @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([orderId])
+}
+
+model Credential {
+  id          String   @id @default(cuid())
+  orderId     String
+  platform    String
+  server      String?
+  loginId     String
+  password    String
+  notes       String?
+  submittedAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+}
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  discountPercent Float?
+  discountAmount  Float?
+  maxUses         Int?
+  usedCount       Int       @default(0)
+  validFrom       DateTime  @default(now())
+  validUntil      DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+}
+
+model SupportTicket {
+  id        String       @id @default(cuid())
+  userId    String
+  subject   String
+  message   String
+  status    TicketStatus @default(OPEN)
+  priority  String       @default("medium")
+  responses Json[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+}
+
+model BlogPost {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  excerpt     String
+  content     String
+  coverImage  String?
+  author      String
+  tags        String[]
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([published])
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  avatar    String?
+  title     String
+  content   String
+  rating    Int      @default(5)
+  verified  Boolean  @default(false)
+  featured  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Referral {
+  id            String   @id @default(cuid())
+  referrerId    String
+  referredEmail String
+  orderId       String?
+  commission    Float    @default(0)
+  paid          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  referrer User @relation("referrer", fields: [referrerId], references: [id])
+
+  @@index([referrerId])
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+model SiteStats {
+  id                String @id @default("global")
+  totalClients      Int    @default(0)
+  totalPayouts      Float  @default(0)
+  challengesPassed  Int    @default(0)
+  successRate       Float  @default(0)
+  totalFundedAmount Float  @default(0)
+}

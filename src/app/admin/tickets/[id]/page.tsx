@@ -1,0 +1,176 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, User, Shield, Send } from 'lucide-react';
+import GlassCard from '@/components/ui/GlassCard';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Textarea from '@/components/ui/Textarea';
+import Select from '@/components/ui/Select';
+import Skeleton from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
+import { formatRelativeTime } from '@/lib/utils';
+
+interface TicketDetail {
+  id: string;
+  subject: string;
+  message: string;
+  priority: string;
+  status: string;
+  createdAt: string;
+  user: { id: string; email: string; name: string | null };
+  responses: Array<{ sender: string; senderName: string; message: string; timestamp: string }>;
+}
+
+const statusVariant: Record<string, 'yellow' | 'blue' | 'green' | 'default'> = {
+  OPEN: 'yellow',
+  IN_PROGRESS: 'blue',
+  RESOLVED: 'green',
+  CLOSED: 'default',
+};
+
+export default function AdminTicketDetailPage() {
+  const params = useParams();
+  const { addToast } = useToast();
+  const [ticket, setTicket] = useState<TicketDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [reply, setReply] = useState('');
+  const [replyStatus, setReplyStatus] = useState('IN_PROGRESS');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/admin/tickets/${params.id}`)
+      .then((r) => r.json())
+      .then((d) => { setTicket(d.data); setReplyStatus(d.data?.status ?? 'IN_PROGRESS'); })
+      .finally(() => setLoading(false));
+  }, [params.id]);
+
+  const handleReply = async () => {
+    if (!reply.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/tickets/${params.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: reply, status: replyStatus }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setTicket(d.data);
+        setReply('');
+        addToast('Reply sent.', 'success');
+      } else {
+        addToast('Failed to send reply.', 'error');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="space-y-4 max-w-3xl">
+      <Skeleton className="h-8 w-32" />
+      <Skeleton className="h-32 rounded-2xl" />
+      <Skeleton className="h-48 rounded-2xl" />
+    </div>
+  );
+
+  if (!ticket) return <p className="text-text-secondary">Ticket not found.</p>;
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div className="flex items-center gap-4">
+        <Link href="/admin/tickets">
+          <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>Tickets</Button>
+        </Link>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl font-heading font-bold">{ticket.subject}</h1>
+            <Badge variant={statusVariant[ticket.status] ?? 'default'}>{ticket.status.replace('_', ' ')}</Badge>
+            <Badge variant="default" size="sm">{ticket.priority}</Badge>
+          </div>
+          <Link href={`/admin/users/${ticket.user.id}`} className="text-xs text-accent-primary hover:underline mt-1 block">
+            {ticket.user.email} {ticket.user.name ? `(${ticket.user.name})` : ''}
+          </Link>
+        </div>
+      </div>
+
+      {/* Original Message */}
+      <GlassCard padding="md">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-full bg-accent-primary/10 shrink-0">
+            <User className="h-4 w-4 text-accent-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{ticket.user.name ?? ticket.user.email}</p>
+              <span className="text-xs text-text-tertiary">{formatRelativeTime(ticket.createdAt)}</span>
+            </div>
+            <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap">{ticket.message}</p>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Responses */}
+      {ticket.responses.map((resp, i) => (
+        <GlassCard key={i} padding="md" variant={resp.sender === 'admin' ? 'strong' : 'default'}>
+          <div className="flex items-start gap-3">
+            <div className={`p-2 rounded-full shrink-0 ${resp.sender === 'admin' ? 'bg-accent-gold/10' : 'bg-accent-primary/10'}`}>
+              {resp.sender === 'admin' ? (
+                <Shield className="h-4 w-4 text-accent-gold" />
+              ) : (
+                <User className="h-4 w-4 text-accent-primary" />
+              )}
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">{resp.senderName}</p>
+                {resp.sender === 'admin' && <Badge variant="gold" size="sm">Staff</Badge>}
+                <span className="text-xs text-text-tertiary">{formatRelativeTime(resp.timestamp)}</span>
+              </div>
+              <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap">{resp.message}</p>
+            </div>
+          </div>
+        </GlassCard>
+      ))}
+
+      {/* Reply */}
+      {ticket.status !== 'CLOSED' && (
+        <GlassCard padding="md">
+          <h3 className="text-sm font-semibold mb-3">Admin Reply</h3>
+          <div className="space-y-3">
+            <Textarea
+              placeholder="Type your reply to the user..."
+              rows={4}
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <Select
+                value={replyStatus}
+                onChange={(e) => setReplyStatus(e.target.value)}
+                className="w-44"
+              >
+                <option value="IN_PROGRESS">Set In Progress</option>
+                <option value="RESOLVED">Mark Resolved</option>
+                <option value="CLOSED">Close Ticket</option>
+              </Select>
+              <Button
+                variant="primary"
+                size="sm"
+                loading={submitting}
+                onClick={handleReply}
+                icon={<Send className="h-4 w-4" />}
+                iconPosition="right"
+              >
+                Send Reply
+              </Button>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+    </div>
+  );
+}

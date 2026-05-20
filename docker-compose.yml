@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tma_user
+      POSTGRES_PASSWORD: tma_secure_password
+      POSTGRES_DB: market_architects
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgresql://tma_user:tma_secure_password@db:5432/market_architects"
+
+volumes:
+  postgres_data:
