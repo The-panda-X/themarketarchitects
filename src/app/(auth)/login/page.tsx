@@ -61,15 +61,17 @@ export default function LoginPage() {
       <div className="p-8">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex flex-col items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 group">
             <Image
               src="/assets/logos/logo.png"
               alt="The Market Architects"
-              width={48}
-              height={48}
+              width={52}
+              height={52}
+              style={{ filter: 'drop-shadow(0 0 10px rgba(230,57,70,0.55))' }}
             />
-            <span className="text-sm font-heading font-bold tracking-wide">
-              THE MARKET <span className="text-accent-primary">ARCHITECTS</span>
+            <span className="text-base font-heading font-bold tracking-wide leading-tight">
+              THE MARKET<br />
+              <span className="text-accent-primary">ARCHITECTS</span>
             </span>
           </Link>
         </div>
