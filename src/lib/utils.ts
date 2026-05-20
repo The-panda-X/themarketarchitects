@@ -67,13 +67,11 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export function generateId(length = 12): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+export function generateId(length = 24): string {
+  const { randomBytes } = require('crypto');
+  return randomBytes(Math.ceil(length / 2))
+    .toString('hex')
+    .slice(0, length);
 }
 
 export function getInitials(name: string | null): string {

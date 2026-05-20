@@ -29,7 +29,8 @@ export default function Toggle({
         type="button"
         role="switch"
         aria-checked={enabled}
-        onClick={() => !disabled && onChange(!enabled)}
+        disabled={disabled}
+        onClick={() => onChange(!enabled)}
         className={cn(
           'relative inline-flex shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200',
           trackSize,

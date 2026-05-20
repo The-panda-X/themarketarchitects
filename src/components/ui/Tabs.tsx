@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -27,9 +28,12 @@ export default function Tabs({
   size = 'md',
   className,
 }: TabsProps) {
+  const instanceId = useId();
+
   if (variant === 'pills') {
     return (
       <div
+        role="tablist"
         className={cn(
           'inline-flex rounded-xl bg-white/[0.05] border border-white/[0.06] p-1 gap-1',
           className
@@ -38,6 +42,8 @@ export default function Tabs({
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => onChange(tab.id)}
             className={cn(
               'relative flex items-center gap-2 rounded-lg font-medium transition-all duration-200',
@@ -49,7 +55,7 @@ export default function Tabs({
           >
             {activeTab === tab.id && (
               <motion.div
-                layoutId="pill-bg"
+                layoutId={`pill-bg-${instanceId}`}
                 className="absolute inset-0 bg-accent-primary/80 rounded-lg"
                 transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
               />
@@ -77,10 +83,12 @@ export default function Tabs({
   }
 
   return (
-    <div className={cn('flex border-b border-white/[0.06]', className)}>
+    <div role="tablist" className={cn('flex border-b border-white/[0.06]', className)}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
+          role="tab"
+          aria-selected={activeTab === tab.id}
           onClick={() => onChange(tab.id)}
           className={cn(
             'relative flex items-center gap-2 font-medium transition-colors duration-200',
@@ -99,7 +107,7 @@ export default function Tabs({
           )}
           {activeTab === tab.id && (
             <motion.div
-              layoutId="tab-underline"
+              layoutId={`tab-underline-${instanceId}`}
               className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-primary shadow-glow-sm"
               transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
             />

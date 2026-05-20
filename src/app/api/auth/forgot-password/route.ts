@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
 
     try {
       await sendPasswordResetEmail(normalizedEmail, token);
-    } catch {
-      // silent fail
+    } catch (emailErr) {
+      console.error('Failed to send password reset email:', emailErr);
     }
 
     return successResponse({ message: 'If that email exists, a reset link was sent.' });

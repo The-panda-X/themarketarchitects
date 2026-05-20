@@ -55,9 +55,12 @@ export async function createCheckoutSession({
 }
 
 export async function constructWebhookEvent(body: string, signature: string) {
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is not set');
+  }
   return getStripe().webhooks.constructEvent(
     body,
     signature,
-    process.env.STRIPE_WEBHOOK_SECRET!
+    process.env.STRIPE_WEBHOOK_SECRET
   );
 }

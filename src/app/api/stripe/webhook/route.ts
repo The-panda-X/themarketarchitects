@@ -27,7 +27,16 @@ export async function POST(req: NextRequest) {
         const checkoutSession = event.data.object as Stripe.Checkout.Session;
         const { orderId, userId } = checkoutSession.metadata ?? {};
 
-        if (!orderId || !userId) break;
+        if (!orderId || !userId) {
+          console.error('Webhook missing metadata:', { sessionId: checkoutSession.id });
+          break;
+        }
+
+        const stripePaymentId = checkoutSession.payment_intent as string;
+        const existingPayment = await prisma.payment.findFirst({
+          where: { stripePaymentId },
+        });
+        if (existingPayment) break;
 
         const order = await prisma.order.update({
           where: { id: orderId },
@@ -41,10 +50,17 @@ export async function POST(req: NextRequest) {
             amount: (checkoutSession.amount_total ?? 0) / 100,
             currency: checkoutSession.currency?.toUpperCase() ?? 'USD',
             method: 'STRIPE',
-            stripePaymentId: checkoutSession.payment_intent as string,
+            stripePaymentId,
             status: 'succeeded',
           },
         });
+
+        if (order.couponCode) {
+          await prisma.coupon.updateMany({
+            where: { code: order.couponCode, isActive: true },
+            data: { usedCount: { increment: 1 } },
+          });
+        }
 
         await prisma.notification.create({
           data: {

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { successResponse, handleApiError } from '@/lib/api-helpers';
+import { successResponse, errorResponse, handleApiError } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
       const post = await prisma.blogPost.findFirst({
         where: { slug, published: true },
       });
+      if (!post) return errorResponse('Post not found', 404);
       return successResponse(post);
     }
 

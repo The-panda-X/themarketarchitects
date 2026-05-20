@@ -3,6 +3,7 @@
 import {
   createContext,
   useCallback,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -28,10 +29,9 @@ export const ToastContext = createContext<ToastContextValue>({
   removeToast: () => {},
 });
 
-let toastId = 0;
-
 export default function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastIdRef = useRef(0);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -39,7 +39,7 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToast = useCallback(
     (message: string, type: ToastType = 'info', duration = 5000) => {
-      const id = `toast-${++toastId}`;
+      const id = `toast-${++toastIdRef.current}`;
       const toast: Toast = { id, message, type, duration };
       setToasts((prev) => [...prev, toast]);
 

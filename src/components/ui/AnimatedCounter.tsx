@@ -32,6 +32,7 @@ export default function AnimatedCounter({
 
     const startTime = performance.now();
     const startValue = 0;
+    let rafId: number;
 
     function animate(currentTime: number) {
       const elapsed = currentTime - startTime;
@@ -43,11 +44,12 @@ export default function AnimatedCounter({
       setCount(current);
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        rafId = requestAnimationFrame(animate);
       }
     }
 
-    requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
   }, [isInView, value, duration]);
 
   const formatted = decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toLocaleString();

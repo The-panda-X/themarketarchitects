@@ -15,6 +15,7 @@ export async function GET() {
       prisma.referral.findMany({
         where: { referrerId: userId },
         orderBy: { createdAt: 'desc' },
+        take: 50,
       }),
     ]);
 

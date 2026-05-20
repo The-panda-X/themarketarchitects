@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, type InputHTMLAttributes } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -13,7 +13,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, hint, icon, iconPosition = 'left', id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const inputId = id || generatedId;
 
     return (
       <div className="w-full">
@@ -34,6 +35,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${inputId}-error` : undefined}
             className={cn(
               'w-full rounded-lg border bg-white/[0.05] backdrop-blur-sm px-4 py-2.5 text-sm text-text-primary',
               'placeholder:text-text-tertiary',
@@ -55,7 +58,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
         </div>
-        {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+        {error && <p id={`${inputId}-error`} className="mt-1.5 text-xs text-danger" role="alert">{error}</p>}
         {hint && !error && <p className="mt-1.5 text-xs text-text-tertiary">{hint}</p>}
       </div>
     );

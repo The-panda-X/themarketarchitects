@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
-﻿import { type NextRequest } from 'next/server';
+import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { OrderStatus } from '@/types';
 
 export async function GET(
   _req: Request,
@@ -37,8 +38,16 @@ export async function PATCH(
     const { status, notes } = body;
 
     const updateData: Record<string, unknown> = {};
-    if (status) updateData.status = status;
+    if (status) {
+      if (!Object.values(OrderStatus).includes(status)) {
+        return errorResponse('Invalid order status', 400);
+      }
+      updateData.status = status;
+    }
     if (notes !== undefined) updateData.notes = notes;
+
+    const existing = await prisma.order.findUnique({ where: { id: params.id } });
+    if (!existing) return errorResponse('Order not found', 404);
 
     const order = await prisma.order.update({
       where: { id: params.id },

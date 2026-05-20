@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
 
       try {
         await sendVerificationEmail(email.toLowerCase(), newToken);
-      } catch {
-        // silent fail
+      } catch (emailErr) {
+        console.error('Failed to send verification email:', emailErr);
       }
 
       return successResponse({ message: 'Verification email sent.' });

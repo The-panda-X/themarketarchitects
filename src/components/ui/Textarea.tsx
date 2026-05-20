@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useId, type TextareaHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -11,7 +11,8 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, hint, id, ...props }, ref) => {
-    const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const textareaId = id || generatedId;
 
     return (
       <div className="w-full">
@@ -26,6 +27,8 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={textareaId}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${textareaId}-error` : undefined}
           className={cn(
             'w-full rounded-lg border bg-white/[0.05] backdrop-blur-sm px-4 py-2.5 text-sm text-text-primary',
             'placeholder:text-text-tertiary',
@@ -39,7 +42,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           )}
           {...props}
         />
-        {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+        {error && <p id={`${textareaId}-error`} className="mt-1.5 text-xs text-danger" role="alert">{error}</p>}
         {hint && !error && <p className="mt-1.5 text-xs text-text-tertiary">{hint}</p>}
       </div>
     );

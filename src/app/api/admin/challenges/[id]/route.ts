@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
-﻿import { type NextRequest } from 'next/server';
+import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { updateChallengeSchema } from '@/lib/validations';
 
 export async function GET(
   _req: Request,
@@ -34,16 +35,15 @@ export async function PATCH(
     const adminSession = await requireAdmin();
     const body = await req.json();
 
-    const allowedFields = [
-      'status', 'currentPhase', 'currentProfit', 'currentDrawdown',
-      'targetProfit', 'maxDrawdown', 'daysTraded', 'winRate',
-      'adminNotes', 'startDate', 'endDate', 'proofImages',
-    ];
-
-    const updateData: Record<string, unknown> = {};
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) updateData[field] = body[field];
+    const parsed = updateChallengeSchema.safeParse(body);
+    if (!parsed.success) {
+      return errorResponse(parsed.error.errors[0].message, 400);
     }
+
+    const updateData: Record<string, unknown> = { ...parsed.data };
+    if (body.startDate !== undefined) updateData.startDate = body.startDate ? new Date(body.startDate) : null;
+    if (body.endDate !== undefined) updateData.endDate = body.endDate ? new Date(body.endDate) : null;
+    if (Array.isArray(body.proofImages)) updateData.proofImages = body.proofImages;
 
     const challenge = await prisma.challenge.update({
       where: { id: params.id },

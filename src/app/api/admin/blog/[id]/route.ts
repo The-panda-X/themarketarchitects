@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { blogPostSchema } from '@/lib/validations';
 
 export async function GET(
   _req: Request,
@@ -28,16 +29,15 @@ export async function PATCH(
     const existing = await prisma.blogPost.findUnique({ where: { id: params.id } });
     if (!existing) return errorResponse('Post not found', 404);
 
-    const updateData: Record<string, unknown> = {};
-    const fields = ['title', 'slug', 'excerpt', 'content', 'coverImage', 'author', 'tags'];
-    for (const f of fields) {
-      if (body[f] !== undefined) updateData[f] = body[f];
+    const partialSchema = blogPostSchema.partial();
+    const parsed = partialSchema.safeParse(body);
+    if (!parsed.success) {
+      return errorResponse(parsed.error.errors[0].message, 400);
     }
-    if (body.published !== undefined) {
-      updateData.published = body.published;
-      if (body.published && !existing.published) {
-        updateData.publishedAt = new Date();
-      }
+
+    const updateData: Record<string, unknown> = { ...parsed.data };
+    if (parsed.data.published && !existing.published) {
+      updateData.publishedAt = new Date();
     }
 
     const post = await prisma.blogPost.update({ where: { id: params.id }, data: updateData });

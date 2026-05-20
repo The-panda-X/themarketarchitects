@@ -10,6 +10,7 @@ export async function GET() {
       where: { userId: session.user.id },
       include: { order: { select: { planName: true, serviceType: true } } },
       orderBy: { createdAt: 'desc' },
+      take: 50,
     });
 
     return successResponse(challenges);

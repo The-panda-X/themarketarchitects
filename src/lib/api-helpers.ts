@@ -47,11 +47,17 @@ export function handleApiError(error: unknown) {
   return errorResponse('Internal server error', 500);
 }
 
+const ALLOWED_SORT_FIELDS = new Set([
+  'createdAt', 'updatedAt', 'name', 'email', 'status', 'totalAmount', 'amount', 'title', 'publishedAt',
+]);
+
 export function parsePagination(searchParams: URLSearchParams) {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '20', 10)));
-  const sort = searchParams.get('sort') ?? 'createdAt';
-  const order = (searchParams.get('order') ?? 'desc') as 'asc' | 'desc';
+  const rawSort = searchParams.get('sort') ?? 'createdAt';
+  const sort = ALLOWED_SORT_FIELDS.has(rawSort) ? rawSort : 'createdAt';
+  const rawOrder = searchParams.get('order');
+  const order: 'asc' | 'desc' = rawOrder === 'asc' ? 'asc' : 'desc';
 
   return { page, limit, sort, order, skip: (page - 1) * limit };
 }

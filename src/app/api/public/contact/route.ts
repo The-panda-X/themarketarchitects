@@ -1,24 +1,29 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
+import prisma from '@/lib/prisma';
 import { successResponse, errorResponse, handleApiError } from '@/lib/api-helpers';
-import { sendVerificationEmail } from '@/lib/email';
+import { contactFormSchema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, subject, message } = await req.json();
+    const body = await req.json();
+    const parsed = contactFormSchema.safeParse(body);
 
-    if (!name?.trim() || !email?.trim() || !subject?.trim() || !message?.trim()) {
-      return errorResponse('All fields are required', 400);
+    if (!parsed.success) {
+      return errorResponse(parsed.error.errors[0].message, 400);
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return errorResponse('Invalid email address', 400);
-    }
+    const { name, email, subject, message } = parsed.data;
 
-    // Send notification to support email using the existing email utility
-    // In production you would use a dedicated sendContactEmail function
-    // For now we log and return success (email would be sent via Resend)
+    await prisma.notification.create({
+      data: {
+        userId: 'system',
+        title: `Contact: ${subject}`,
+        message: `From ${name} (${email}): ${message.substring(0, 200)}`,
+        type: 'info',
+      },
+    });
+
     console.log('[Contact Form]', { name, email, subject, message: message.substring(0, 100) });
 
     return successResponse({ success: true });

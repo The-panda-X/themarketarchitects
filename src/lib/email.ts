@@ -3,6 +3,9 @@ import { Resend } from 'resend';
 let _resend: Resend | null = null;
 function getResend() {
   if (!_resend) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is not set');
+    }
     _resend = new Resend(process.env.RESEND_API_KEY);
   }
   return _resend;
@@ -61,8 +64,8 @@ export async function sendOrderConfirmationEmail(
       body: `
         <p>Your order has been confirmed and our team is getting started.</p>
         <div style="background:#1a1a2e;padding:16px;border-radius:8px;margin:16px 0;">
-          <p style="margin:4px 0;"><strong>Order ID:</strong> ${orderDetails.orderId}</p>
-          <p style="margin:4px 0;"><strong>Plan:</strong> ${orderDetails.planName}</p>
+          <p style="margin:4px 0;"><strong>Order ID:</strong> ${escapeHtml(orderDetails.orderId)}</p>
+          <p style="margin:4px 0;"><strong>Plan:</strong> ${escapeHtml(orderDetails.planName)}</p>
           <p style="margin:4px 0;"><strong>Amount:</strong> $${orderDetails.amount.toFixed(2)}</p>
         </div>
         <p>You can track your progress from your <a href="${APP_URL}/dashboard" style="color:#dc2626;">dashboard</a>.</p>
@@ -82,11 +85,20 @@ export async function sendChallengeUpdateEmail(
     html: emailTemplate({
       title: 'Challenge Update',
       body: `
-        <p>${details.message}</p>
+        <p>${escapeHtml(details.message)}</p>
         <p>View full details on your <a href="${APP_URL}/dashboard/challenges/${details.challengeId}" style="color:#dc2626;">dashboard</a>.</p>
       `,
     }),
   });
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function emailTemplate({ title, body }: { title: string; body: string }) {

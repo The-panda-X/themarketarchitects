@@ -100,15 +100,13 @@ async function main() {
     { profit: 1400, loss: 400, tradesCount: 9, winCount: 7, lossCount: 2 },
   ];
 
-  for (let i = 0; i < dailyStatsData.length; i++) {
-    await prisma.dailyStat.create({
-      data: {
-        challengeId: challenge.id,
-        date: new Date(Date.now() - (4 - i) * 24 * 60 * 60 * 1000),
-        ...dailyStatsData[i],
-      },
-    });
-  }
+  await prisma.dailyStat.createMany({
+    data: dailyStatsData.map((stat, i) => ({
+      challengeId: challenge.id,
+      date: new Date(Date.now() - (4 - i) * 24 * 60 * 60 * 1000),
+      ...stat,
+    })),
+  });
 
   await prisma.payment.create({
     data: {
@@ -165,9 +163,7 @@ async function main() {
     },
   ];
 
-  for (const t of testimonials) {
-    await prisma.testimonial.create({ data: t });
-  }
+  await prisma.testimonial.createMany({ data: testimonials });
 
   await prisma.coupon.create({
     data: {

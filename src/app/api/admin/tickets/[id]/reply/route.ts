@@ -31,8 +31,8 @@ export async function POST(
     const updated = await prisma.supportTicket.update({
       where: { id: params.id },
       data: {
-        responses: [...(ticket.responses as object[]), newResponse],
-        status: status ?? 'IN_PROGRESS',
+        responses: JSON.parse(JSON.stringify([...(Array.isArray(ticket.responses) ? ticket.responses : []), newResponse])),
+        status: ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].includes(status) ? status : 'IN_PROGRESS',
       },
     });
 
