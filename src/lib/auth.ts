@@ -82,30 +82,24 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account }) {
-      if (account?.provider === 'google') {
-        if (!user.email) return false;
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email },
-          include: { accounts: true },
-        });
-
-        if (existingUser) {
-          const hasGoogleAccount = existingUser.accounts.some(
-            (a: { provider: string }) => a.provider === 'google'
-          );
-          if (!hasGoogleAccount && existingUser.passwordHash) {
-            // User registered with email/password — allow linking via Google
-            // since allowDangerousEmailAccountLinking is enabled
-          }
-          if (!existingUser.emailVerified) {
+      try {
+        if (account?.provider === 'google') {
+          if (!user.email) return false;
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+          if (existingUser && !existingUser.emailVerified) {
             await prisma.user.update({
               where: { id: existingUser.id },
               data: { emailVerified: new Date() },
             });
           }
         }
+        return true;
+      } catch (error) {
+        console.error('SignIn callback error:', error);
+        return true;
       }
-      return true;
     },
     async redirect({ url, baseUrl }) {
       if (url.startsWith('/')) return `${baseUrl}${url}`;
