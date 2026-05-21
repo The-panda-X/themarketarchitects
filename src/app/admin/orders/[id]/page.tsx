@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, KeyRound } from 'lucide-react';
+import { ArrowLeft, User, KeyRound, Trophy, ExternalLink } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
+import Input from '@/components/ui/Input';
 import Skeleton from '@/components/ui/Skeleton';
 import useToast from '@/hooks/useToast';
 import { formatDate } from '@/lib/utils';
@@ -38,11 +39,24 @@ export default function AdminOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [newStatus, setNewStatus] = useState('');
   const [saving, setSaving] = useState(false);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [creatingChallenge, setCreatingChallenge] = useState(false);
+  const [challengeForm, setChallengeForm] = useState({ targetProfit: '', maxDrawdown: '' });
 
   useEffect(() => {
     fetch(`/api/admin/orders/${params.id}`)
       .then((r) => r.json())
-      .then((d) => { setOrder(d.data); setNewStatus(d.data?.status ?? ''); })
+      .then((d) => {
+        setOrder(d.data);
+        setNewStatus(d.data?.status ?? '');
+        // Check if a challenge already exists for this order
+        if (d.data?.id) {
+          fetch(`/api/admin/orders/${params.id}/challenge`)
+            .then((r) => r.json())
+            .then((cd) => { if (cd.data?.id) setChallengeId(cd.data.id); })
+            .catch(() => {});
+        }
+      })
       .finally(() => setLoading(false));
   }, [params.id]);
 
@@ -62,6 +76,30 @@ export default function AdminOrderDetailPage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCreateChallenge = async () => {
+    setCreatingChallenge(true);
+    try {
+      const res = await fetch('/api/admin/challenges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order?.id,
+          targetProfit: challengeForm.targetProfit || undefined,
+          maxDrawdown: challengeForm.maxDrawdown || undefined,
+        }),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        setChallengeId(d.data.id);
+        addToast('Challenge created! User has been notified.', 'success');
+      } else {
+        addToast(d.error ?? 'Failed to create challenge.', 'error');
+      }
+    } finally {
+      setCreatingChallenge(false);
     }
   };
 
@@ -132,6 +170,58 @@ export default function AdminOrderDetailPage() {
           </GlassCard>
         </div>
       </div>
+
+      {/* Challenge */}
+      {order.serviceType === 'CHALLENGE_PASSING' && (
+        <GlassCard padding="lg">
+          <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-accent-primary" />Challenge
+          </h3>
+          {challengeId ? (
+            <div className="flex items-center gap-3">
+              <Badge variant="green" size="sm">Challenge Created</Badge>
+              <Link href={`/admin/challenges/${challengeId}`} className="flex items-center gap-1 text-sm text-accent-primary hover:underline">
+                View Challenge <ExternalLink className="h-3 w-3" />
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-text-secondary">
+                No challenge has been created for this order yet. Fill in the targets below and click <strong>Create Challenge</strong> — the user will be notified automatically.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Target Profit ($) — optional"
+                  type="number"
+                  placeholder="e.g. 1000"
+                  value={challengeForm.targetProfit}
+                  onChange={(e) => setChallengeForm((f) => ({ ...f, targetProfit: e.target.value }))}
+                />
+                <Input
+                  label="Max Drawdown (%) — optional"
+                  type="number"
+                  placeholder="e.g. 10"
+                  value={challengeForm.maxDrawdown}
+                  onChange={(e) => setChallengeForm((f) => ({ ...f, maxDrawdown: e.target.value }))}
+                />
+              </div>
+              <p className="text-xs text-text-tertiary">
+                Firm: <span className="text-text-primary">{order.firmName ?? '—'}</span> &nbsp;|&nbsp;
+                Size: <span className="text-text-primary">{order.accountSize ?? '—'}</span>
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                loading={creatingChallenge}
+                onClick={handleCreateChallenge}
+                icon={<Trophy className="h-4 w-4" />}
+              >
+                Create Challenge
+              </Button>
+            </div>
+          )}
+        </GlassCard>
+      )}
 
       {/* Credentials */}
       {order.credentials.length > 0 && (
