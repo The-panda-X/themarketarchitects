@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { NAV_LINKS } from '@/lib/constants';
@@ -14,6 +15,7 @@ interface MobileNavProps {
 
 export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <AnimatePresence>
@@ -68,16 +70,26 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
                 transition={{ delay: NAV_LINKS.length * 0.06, duration: 0.3 }}
                 className="flex flex-col gap-3 w-full mt-6 pt-6 border-t border-white/[0.06]"
               >
-                <Link href="/login" onClick={onClose}>
-                  <Button variant="secondary" fullWidth>
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register" onClick={onClose}>
-                  <Button variant="primary" fullWidth glow>
-                    Get Started
-                  </Button>
-                </Link>
+                {session ? (
+                  <Link href="/dashboard" onClick={onClose}>
+                    <Button variant="primary" fullWidth glow>
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={onClose}>
+                      <Button variant="secondary" fullWidth>
+                        Login
+                      </Button>
+                    </Link>
+                    <Link href="/register" onClick={onClose}>
+                      <Button variant="primary" fullWidth glow>
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </motion.div>
             </div>
           </nav>
