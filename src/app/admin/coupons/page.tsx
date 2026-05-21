@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { Plus, ToggleLeft, ToggleRight, Trash2, Copy, Check } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -29,6 +29,18 @@ export default function AdminCouponsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyCode = async (code: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedId(id);
+      addToast(`Copied "${code}"`, 'success');
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      addToast('Failed to copy.', 'error');
+    }
+  };
   const [form, setForm] = useState({
     code: '',
     discountPercent: '',
@@ -150,6 +162,15 @@ export default function AdminCouponsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-semibold text-sm text-accent-primary">{coupon.code}</span>
+                    <button
+                      onClick={() => copyCode(coupon.code, coupon.id)}
+                      title="Copy code"
+                      className="p-1 rounded text-text-tertiary hover:text-accent-primary transition-colors"
+                    >
+                      {copiedId === coupon.id
+                        ? <Check className="h-3.5 w-3.5 text-success" />
+                        : <Copy className="h-3.5 w-3.5" />}
+                    </button>
                     <Badge variant={coupon.isActive ? 'green' : 'default'} size="sm">
                       {coupon.isActive ? 'Active' : 'Inactive'}
                     </Badge>
