@@ -15,6 +15,7 @@ interface DbPost {
   coverImage: string | null;
   author: string;
   tags: string[];
+  published: boolean;
   publishedAt: Date | string | null;
 }
 
@@ -27,14 +28,16 @@ interface PostCard {
   slug: string | null;   // null = demo / no live page
   author?: string;
   publishedAt?: Date | string | null;
+  status?: 'published' | 'scheduled'; // undefined = demo post
 }
 
 interface BlogContentProps {
   dbPosts: DbPost[];
+  dbCategories: string[]; // categories derived from real posts
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const CATEGORIES = ['All Posts', 'Prop Firm Guide', 'Trading Tips'];
+const DEFAULT_CATEGORIES = ['Prop Firm Guide', 'Trading Tips'];
 
 const DEMO_FEATURED: PostCard = {
   title: 'How to Pass FTMO in 10 Days',
@@ -85,6 +88,7 @@ function estimateReadTime(excerpt: string | null): string {
 }
 
 function dbToCard(p: DbPost): PostCard {
+  const isScheduled = !p.published && p.publishedAt !== null && new Date(p.publishedAt as string) > new Date();
   return {
     title: p.title,
     category: p.tags[0] ?? 'Article',
@@ -94,15 +98,19 @@ function dbToCard(p: DbPost): PostCard {
     slug: p.slug,
     author: p.author,
     publishedAt: p.publishedAt,
+    status: isScheduled ? 'scheduled' : 'published',
   };
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function BlogContent({ dbPosts }: BlogContentProps) {
+export default function BlogContent({ dbPosts, dbCategories }: BlogContentProps) {
   const [activeCategory, setActiveCategory] = useState('All Posts');
 
   const useDemo = dbPosts.length === 0;
   const allCards: PostCard[] = useDemo ? [] : dbPosts.map(dbToCard);
+
+  // Use real categories from DB when available, fall back to defaults for demo
+  const categories = ['All Posts', ...(useDemo ? DEFAULT_CATEGORIES : dbCategories)];
 
   const featured: PostCard | null = useDemo ? DEMO_FEATURED : (allCards[0] ?? null);
   const gridPosts: PostCard[]     = useDemo ? DEMO_POSTS    : allCards.slice(1);
@@ -133,7 +141,7 @@ export default function BlogContent({ dbPosts }: BlogContentProps) {
 
         {/* ── Filter Tabs ── */}
         <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -218,7 +226,7 @@ function FeaturedCard({ post, isDemo }: { post: PostCard; isDemo: boolean }) {
             <span>{formatDate(post.publishedAt as string)}</span>
           )}
         </div>
-        {isDemo ? (
+        {isDemo || post.status === 'scheduled' ? (
           <span className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-white/10 text-text-tertiary w-fit cursor-default">
             Coming Soon
           </span>
@@ -231,7 +239,7 @@ function FeaturedCard({ post, isDemo }: { post: PostCard; isDemo: boolean }) {
     </div>
   );
 
-  if (isDemo || !post.slug) return content;
+  if (isDemo || !post.slug || post.status === 'scheduled') return content;
   return <Link href={`/blog/${post.slug}`}>{content}</Link>;
 }
 
@@ -267,8 +275,8 @@ function GridCard({ post, isDemo }: { post: PostCard; isDemo: boolean }) {
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" /> {post.readTime}
           </span>
-          {isDemo ? (
-            <span className="text-text-tertiary">Demo</span>
+          {isDemo || post.status === 'scheduled' ? (
+            <span className="text-text-tertiary">Coming Soon</span>
           ) : (
             <span className="flex items-center gap-1 text-accent-primary hover:text-red-300 transition-colors">
               Read <ArrowRight className="h-3 w-3" />
@@ -279,6 +287,6 @@ function GridCard({ post, isDemo }: { post: PostCard; isDemo: boolean }) {
     </div>
   );
 
-  if (isDemo || !post.slug) return <div>{content}</div>;
+  if (isDemo || !post.slug || post.status === 'scheduled') return <div>{content}</div>;
   return <Link href={`/blog/${post.slug}`}>{content}</Link>;
 }

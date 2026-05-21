@@ -127,6 +127,7 @@ export const blogPostSchema = z.object({
   author: z.string().min(1, 'Author is required'),
   tags: z.array(z.string()).default([]),
   published: z.boolean().default(false),
+  scheduledAt: z.string().optional().nullable(), // ISO datetime string for future publish
 });
 
 // Coupon schemas

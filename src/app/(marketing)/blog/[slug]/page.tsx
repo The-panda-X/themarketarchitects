@@ -1,12 +1,56 @@
+import React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Calendar, User, ArrowLeft, Tag } from 'lucide-react';
 import prisma from '@/lib/prisma';
 import { formatDate } from '@/lib/utils';
 
 export const revalidate = 60;
+
+// ── Content renderer — handles markdown images + plain paragraphs ─────────────
+function BlogContent({ content }: { content: string }) {
+  // Split on markdown image syntax: ![alt text](url)
+  const IMAGE_RE = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = IMAGE_RE.exec(content)) !== null) {
+    // Text before this image
+    if (match.index > lastIndex) {
+      parts.push(
+        <span key={key++} className="whitespace-pre-wrap">
+          {content.slice(lastIndex, match.index)}
+        </span>
+      );
+    }
+    // The image itself
+    parts.push(
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        key={key++}
+        src={match[2]}
+        alt={match[1]}
+        className="w-full rounded-xl my-6 object-cover"
+      />
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Remaining text after the last image
+  if (lastIndex < content.length) {
+    parts.push(
+      <span key={key++} className="whitespace-pre-wrap">
+        {content.slice(lastIndex)}
+      </span>
+    );
+  }
+
+  return <>{parts}</>;
+}
 
 interface Props {
   params: { slug: string };
@@ -79,8 +123,13 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* Cover Image */}
         {post.coverImage && (
-          <div className="relative h-64 sm:h-80 rounded-2xl overflow-hidden mb-10">
-            <Image src={post.coverImage} alt={post.title} fill className="object-cover" />
+          <div className="rounded-2xl overflow-hidden mb-10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              className="w-full h-64 sm:h-80 object-cover"
+            />
           </div>
         )}
 
@@ -90,8 +139,8 @@ export default async function BlogPostPage({ params }: Props) {
         </p>
 
         {/* Content */}
-        <div className="prose prose-invert prose-sm max-w-none text-text-secondary leading-relaxed whitespace-pre-wrap">
-          {post.content}
+        <div className="prose prose-invert prose-sm max-w-none text-text-secondary leading-relaxed">
+          <BlogContent content={post.content} />
         </div>
 
         {/* Footer CTA */}

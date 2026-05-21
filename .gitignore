@@ -1,3 +1,7 @@
+# ─── Uploaded media ──────────────────────────────────────────────────────────
+/public/uploads/blog/*
+!/public/uploads/blog/.gitkeep
+
 # ─── Dependencies ────────────────────────────────────────────────────────────
 /node_modules
 /.pnp

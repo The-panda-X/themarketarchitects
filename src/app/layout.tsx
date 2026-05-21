@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Space_Grotesk, JetBrains_Mono, Playfair_Display } from 'next/font/google';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/next';
 import Providers from '@/components/providers/Providers';
 import './globals.css';
 
@@ -83,6 +84,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-bg-primary font-sans text-text-primary antialiased">
         <Providers>{children}</Providers>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

@@ -10,29 +10,46 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-async function getPublishedPosts() {
+async function getPostsAndCategories() {
   try {
-    return await prisma.blogPost.findMany({
-      where: { published: true },
+    const posts = await prisma.blogPost.findMany({
+      where: {
+        OR: [
+          { published: true },
+          { published: false, publishedAt: { gt: new Date() } },
+        ],
+      },
       orderBy: { publishedAt: 'desc' },
       take: 20,
       select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        coverImage: true,
-        author: true,
-        tags: true,
+        id:          true,
+        title:       true,
+        slug:        true,
+        excerpt:     true,
+        coverImage:  true,
+        author:      true,
+        tags:        true,
+        published:   true,
         publishedAt: true,
       },
     });
+
+    // Derive unique categories from the first tag of each post
+    const categories = [
+      ...new Set(
+        posts
+          .map((p) => p.tags[0])
+          .filter((t): t is string => Boolean(t))
+      ),
+    ];
+
+    return { posts, categories };
   } catch {
-    return [];
+    return { posts: [], categories: [] };
   }
 }
 
 export default async function BlogPage() {
-  const posts = await getPublishedPosts();
-  return <BlogContent dbPosts={posts} />;
+  const { posts, categories } = await getPostsAndCategories();
+  return <BlogContent dbPosts={posts} dbCategories={categories} />;
 }

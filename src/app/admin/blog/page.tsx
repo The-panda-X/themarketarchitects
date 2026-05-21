@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Clock } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -96,16 +96,26 @@ export default function AdminBlogPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium text-sm truncate">{post.title}</h3>
-                    <Badge variant={post.published ? 'green' : 'default'} size="sm">
-                      {post.published ? 'Published' : 'Draft'}
-                    </Badge>
+                    {post.published ? (
+                      <Badge variant="green" size="sm">Published</Badge>
+                    ) : post.publishedAt && new Date(post.publishedAt) > new Date() ? (
+                      <Badge variant="yellow" size="sm">
+                        <Clock className="h-3 w-3 mr-1 inline-block" />
+                        Scheduled
+                      </Badge>
+                    ) : (
+                      <Badge variant="default" size="sm">Draft</Badge>
+                    )}
                     {post.tags.slice(0, 2).map((tag) => (
                       <Badge key={tag} variant="default" size="sm">{tag}</Badge>
                     ))}
                   </div>
                   <p className="text-xs text-text-tertiary mt-0.5">
                     By {post.author} · {formatDate(post.createdAt)}
-                    {post.publishedAt ? ` · Published ${formatDate(post.publishedAt)}` : ''}
+                    {post.published && post.publishedAt ? ` · Published ${formatDate(post.publishedAt)}` : ''}
+                    {!post.published && post.publishedAt && new Date(post.publishedAt) > new Date()
+                      ? ` · Publishes ${formatDate(post.publishedAt)}`
+                      : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">

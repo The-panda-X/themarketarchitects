@@ -32,8 +32,19 @@ export async function POST(req: NextRequest) {
     const parsed = blogPostSchema.safeParse(body);
     if (!parsed.success) return errorResponse(parsed.error.errors[0].message, 400);
 
-    const { title, slug: rawSlug, excerpt, content, coverImage, author, tags, published } = parsed.data;
+    const { title, slug: rawSlug, excerpt, content, coverImage, author, tags, published, scheduledAt } = parsed.data;
     const slug = rawSlug ?? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+    // Determine publishedAt:
+    // - published now  → current timestamp
+    // - scheduled      → the future datetime the admin chose
+    // - draft          → null
+    let publishedAt: Date | null = null;
+    if (published) {
+      publishedAt = new Date();
+    } else if (scheduledAt) {
+      publishedAt = new Date(scheduledAt);
+    }
 
     const post = await prisma.blogPost.create({
       data: {
@@ -45,7 +56,7 @@ export async function POST(req: NextRequest) {
         author: author ?? adminSession.user.name ?? 'Admin',
         tags: tags ?? [],
         published: published ?? false,
-        publishedAt: published ? new Date() : null,
+        publishedAt,
       },
     });
 
