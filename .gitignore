@@ -84,3 +84,8 @@ ehthumbs.db
 *.swo
 *.suo
 *.user
+
+.vercel
+
+/public/uploads/proofs/*
+!/public/uploads/proofs/.gitkeep

@@ -16,6 +16,7 @@ import {
   CheckCheck,
   Bitcoin,
   AlertTriangle,
+  Upload,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
@@ -144,6 +145,7 @@ export default function PurchasePage() {
   const [cryptoOrderId, setCryptoOrderId] = useState<string | null>(null);
   const [cryptoAmount, setCryptoAmount] = useState<number>(0);
   const [selectedWallet, setSelectedWallet] = useState<string>(CRYPTO_WALLETS[0].id);
+  const [proofFile, setProofFile] = useState<File | null>(null);
 
   const handleSelectService = (type: ServiceType) => {
     cart.setService(type); setSelectedPlan(null); cart.setStep(2);
@@ -218,10 +220,25 @@ export default function PurchasePage() {
   };
 
   const handlePaymentSent = async () => {
-    // Notify admin that payment was sent
-    addToast('Payment confirmation received! Our team will verify and activate your order within 24 hours.', 'success');
-    cart.reset();
-    window.location.href = '/dashboard/payments';
+    if (!proofFile) { addToast('Please upload your payment proof first.', 'error'); return; }
+    setCheckoutLoading(true);
+    try {
+      // Upload proof screenshot
+      const formData = new FormData();
+      formData.append('file', proofFile);
+      formData.append('orderId', cryptoOrderId ?? '');
+      formData.append('network', activeWallet.network);
+
+      await fetch('/api/dashboard/payment-proof', { method: 'POST', body: formData });
+
+      addToast('Payment proof submitted! Our team will verify and activate your order within 24 hours.', 'success');
+      cart.reset();
+      window.location.href = '/dashboard/payments';
+    } catch {
+      addToast('Failed to upload proof. Please try again.', 'error');
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   const plans =
@@ -456,28 +473,30 @@ export default function PurchasePage() {
                 </div>
               </div>
 
-              {/* Wallet selector */}
-              <div className="flex gap-2 mb-5 flex-wrap">
-                {CRYPTO_WALLETS.map((w) => (
-                  <button key={w.id} type="button" onClick={() => setSelectedWallet(w.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all duration-200 ${
-                      selectedWallet === w.id
-                        ? 'text-white border-transparent'
-                        : 'border-[rgba(230,57,70,0.30)] text-text-secondary hover:border-[rgba(230,57,70,0.60)] hover:text-white'
-                    }`}
-                    style={selectedWallet === w.id ? { background: 'linear-gradient(135deg,#e63946 0%,#c1121f 100%)' } : {}}>
-                    {w.icon} {w.name} <span className="text-xs opacity-70 ml-1">({w.network.split(' ')[0]})</span>
-                  </button>
-                ))}
+              {/* Wallet selector — dropdown */}
+              <div className="mb-5">
+                <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide block mb-2">
+                  Select Payment Network
+                </label>
+                <select
+                  value={selectedWallet}
+                  onChange={(e) => setSelectedWallet(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-white/[0.10] bg-white/[0.04] text-white text-sm focus:outline-none focus:border-accent-primary transition-colors"
+                >
+                  {CRYPTO_WALLETS.map((w) => (
+                    <option key={w.id} value={w.id} className="bg-[#0d0303]">
+                      {w.icon} {w.name} — {w.network}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Wallet details */}
-              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4">
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4 mb-4">
                 <div>
                   <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">Network</p>
                   <p className="text-sm text-white font-medium">{activeWallet.network}</p>
                 </div>
-
                 <div>
                   <p className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Wallet Address</p>
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-black/30 border border-white/[0.06]">
@@ -485,7 +504,6 @@ export default function PurchasePage() {
                     <CopyButton text={activeWallet.address} />
                   </div>
                 </div>
-
                 <div>
                   <p className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Amount to Send (USD equivalent)</p>
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-black/30 border border-white/[0.06]">
@@ -495,20 +513,64 @@ export default function PurchasePage() {
                 </div>
               </div>
 
-              {/* Warning */}
-              <div className="mt-4 p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2">
+              {/* Network warning */}
+              <div className="p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2 mb-6">
                 <AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-yellow-300">{activeWallet.note}. Sending wrong network or coin may result in permanent loss of funds.</p>
               </div>
 
-              <Button variant="primary" fullWidth glow className="mt-6"
+              {/* Proof of payment upload */}
+              <div className="mb-6">
+                <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide block mb-2">
+                  Upload Proof of Payment <span className="text-accent-primary">*</span>
+                </label>
+                <div
+                  className={`relative rounded-xl border-2 border-dashed transition-all duration-200 ${
+                    proofFile
+                      ? 'border-green-500/50 bg-green-500/5'
+                      : 'border-white/[0.12] bg-white/[0.02] hover:border-accent-primary/50 hover:bg-accent-primary/5'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setProofFile(file);
+                    }}
+                  />
+                  <div className="flex flex-col items-center justify-center py-8 px-4 text-center pointer-events-none">
+                    {proofFile ? (
+                      <>
+                        <CheckCheck className="h-8 w-8 text-green-400 mb-2" />
+                        <p className="text-sm font-medium text-green-400">{proofFile.name}</p>
+                        <p className="text-xs text-text-tertiary mt-1">{(proofFile.size / 1024).toFixed(0)} KB · Click to change</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-text-tertiary mb-2" />
+                        <p className="text-sm text-white font-medium">Click or drag to upload screenshot</p>
+                        <p className="text-xs text-text-tertiary mt-1">PNG, JPG, PDF — Max 5MB</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {!proofFile && (
+                  <p className="text-xs text-text-tertiary mt-1.5 px-1">Upload a screenshot of your transaction confirmation.</p>
+                )}
+              </div>
+
+              <Button variant="primary" fullWidth glow
                 icon={<CheckCheck className="h-5 w-5" />}
+                disabled={!proofFile}
+                loading={checkoutLoading}
                 onClick={handlePaymentSent}>
-                I&apos;ve Sent the Payment
+                Submit Payment Proof
               </Button>
 
               <p className="text-xs text-text-tertiary text-center mt-3">
-                After sending, our team will verify the transaction and activate your order within <strong className="text-white">24 hours</strong>. You'll receive a notification.
+                Our team will verify your payment and activate your order within <strong className="text-white">24 hours</strong>.
               </p>
             </GlassCard>
           </motion.div>
