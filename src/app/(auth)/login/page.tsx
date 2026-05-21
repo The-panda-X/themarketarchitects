@@ -61,7 +61,7 @@ export default function LoginPage() {
       <div className="p-8">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex flex-col items-center gap-2">
+          <Link href="/" className="flex flex-col items-center gap-1">
             <Image
               src="/assets/logos/logo.png"
               alt="The Market Architects"
