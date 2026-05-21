@@ -98,9 +98,8 @@ export default function CredentialsPage() {
             size="sm"
             icon={<Plus className="h-4 w-4" />}
             onClick={() => setShowForm(true)}
-          >
-            Submit Credentials
-          </Button>
+            className="!px-2 !py-2"
+          />
         )}
       </div>
 

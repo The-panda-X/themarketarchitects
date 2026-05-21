@@ -11,9 +11,9 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: 'bg-[#0d0303] backdrop-blur-xl border border-[rgba(230,57,70,0.35)] glass-shine shadow-[0_0_18px_rgba(230,57,70,0.06)]',
-  strong:  'bg-[#120404] backdrop-blur-2xl border border-[rgba(230,57,70,0.45)] glass-shine shadow-[0_0_24px_rgba(230,57,70,0.09)]',
-  subtle:  'bg-[#0a0202] backdrop-blur-lg  border border-[rgba(230,57,70,0.25)] glass-shine shadow-[0_0_12px_rgba(230,57,70,0.04)]',
+  default: 'bg-[#180c0c] backdrop-blur-xl border border-[rgba(230,57,70,0.35)] glass-shine shadow-[0_2px_24px_rgba(0,0,0,0.5),0_0_18px_rgba(230,57,70,0.07)]',
+  strong:  'bg-[#1e0e0e] backdrop-blur-2xl border border-[rgba(230,57,70,0.45)] glass-shine shadow-[0_2px_32px_rgba(0,0,0,0.6),0_0_24px_rgba(230,57,70,0.10)]',
+  subtle:  'bg-[#130909] backdrop-blur-lg  border border-[rgba(230,57,70,0.25)] glass-shine shadow-[0_2px_16px_rgba(0,0,0,0.4),0_0_12px_rgba(230,57,70,0.05)]',
 };
 
 const paddingStyles = {

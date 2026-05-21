@@ -25,12 +25,12 @@ export default function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <GlassCard hover className={cn('flex items-start justify-between', className)}>
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider">
+    <GlassCard hover padding="none" className={cn('flex items-start justify-between p-3 sm:p-5', className)}>
+      <div className="space-y-0.5 sm:space-y-1 min-w-0">
+        <p className="text-[10px] sm:text-xs font-medium text-text-tertiary uppercase tracking-wider truncate">
           {label}
         </p>
-        <p className="text-2xl font-bold font-mono text-text-primary">
+        <p className="text-lg sm:text-2xl font-bold font-mono text-text-primary leading-tight">
           {prefix}
           {value}
           {suffix}
@@ -38,7 +38,7 @@ export default function StatCard({
         {change && (
           <p
             className={cn(
-              'text-xs font-medium',
+              'text-[10px] sm:text-xs font-medium',
               changeType === 'positive' && 'text-success',
               changeType === 'negative' && 'text-danger',
               changeType === 'neutral' && 'text-text-tertiary'
@@ -49,8 +49,8 @@ export default function StatCard({
         )}
       </div>
       {icon && (
-        <div className="p-2.5 rounded-xl bg-accent-primary/10 text-accent-primary">
-          {icon}
+        <div className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-accent-primary/10 text-accent-primary shrink-0 ml-2">
+          <span className="block [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5">{icon}</span>
         </div>
       )}
     </GlassCard>

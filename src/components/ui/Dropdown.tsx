@@ -52,7 +52,7 @@ export default function Dropdown({
             transition={{ duration: 0.15 }}
             className={cn(
               'absolute z-50 mt-2 min-w-[180px] py-1.5 rounded-xl',
-              'bg-bg-elevated/95 backdrop-blur-2xl border border-[rgba(230,57,70,0.28)] shadow-2xl',
+              'bg-[#1e1010] border border-[rgba(230,57,70,0.30)] shadow-[0_8px_32px_rgba(0,0,0,0.7)]',
               align === 'right' ? 'right-0' : 'left-0'
             )}
           >

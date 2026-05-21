@@ -12,6 +12,7 @@ import {
   DollarSign,
   Eye,
   TrendingUp,
+  Plus,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
@@ -60,7 +61,7 @@ export default function ChallengesPage() {
           <p className="text-text-secondary mt-1">Track your prop firm challenge progress.</p>
         </div>
         <Link href="/dashboard/purchase">
-          <Button variant="primary" size="sm">New Challenge</Button>
+          <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />} className="!px-2 !py-2" />
         </Link>
       </div>
 

@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --color-bg-primary: #000000;
-  --color-bg-secondary: #0a0a0a;
-  --color-bg-card: #111111;
-  --color-bg-elevated: #1a1a1a;
+  --color-bg-primary: #090707;
+  --color-bg-secondary: #100c0c;
+  --color-bg-card: #170d0d;
+  --color-bg-elevated: #1f1111;
 
   --color-accent-primary: #e63946;
   --color-accent-hover: #ff1a2e;

@@ -62,7 +62,7 @@ export default function DashboardSidebar() {
         transition={{ duration: 0.2, ease: 'easeInOut' }}
         className={cn(
           'hidden lg:flex flex-col h-screen sticky top-0 border-r border-white/[0.06]',
-          'bg-bg-secondary/80 backdrop-blur-xl z-30'
+          'bg-[rgba(16,12,12,0.75)] backdrop-blur-xl z-30'
         )}
       >
         {/* Logo */}

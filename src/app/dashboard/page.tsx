@@ -82,7 +82,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StaggerItem>
           <StatCard
             label="Active Challenges"
@@ -115,10 +115,10 @@ export default function DashboardPage() {
         </StaggerItem>
       </StaggerContainer>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Active Challenges */}
         <div className="lg:col-span-2">
-          <GlassCard padding="lg">
+          <GlassCard padding="none" className="p-4 sm:p-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-heading font-semibold">Active Challenges</h2>
               <Link href="/dashboard/challenges">
@@ -194,7 +194,7 @@ export default function DashboardPage() {
 
         {/* Recent Notifications */}
         <div>
-          <GlassCard padding="lg">
+          <GlassCard padding="none" className="p-4 sm:p-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-heading font-semibold">Notifications</h2>
               <Link href="/dashboard/notifications">

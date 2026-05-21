@@ -57,7 +57,7 @@ export default function DashboardTopbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-20 h-16 border-b border-white/[0.06] bg-bg-primary/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 h-16 border-b border-white/[0.06] bg-[rgba(9,7,7,0.70)] backdrop-blur-xl">
         <div className="flex items-center justify-between h-full px-4 lg:px-6">
           {/* Left: Mobile menu + Breadcrumb */}
           <div className="flex items-center gap-3">
