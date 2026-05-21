@@ -58,7 +58,7 @@ export default function LoginPage() {
 
   return (
     <GlassCard variant="strong" padding="none">
-      <div className="p-8">
+      <div className="px-8 pt-4 pb-8">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex flex-col items-center gap-1">
