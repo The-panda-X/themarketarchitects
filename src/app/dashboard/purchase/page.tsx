@@ -3,26 +3,26 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ShoppingCart,
   ArrowLeft,
   ArrowRight,
   Check,
   Shield,
   Zap,
-  Crown,
   CreditCard,
+  Target,
+  TrendingUp,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import Tabs from '@/components/ui/Tabs';
 import GlowBorder from '@/components/ui/GlowBorder';
 import useToast from '@/hooks/useToast';
 import {
   CHALLENGE_PASSING_PLANS,
   ACCOUNT_MANAGEMENT_PLANS,
+  ACCOUNT_GROWTH_PLANS,
   PROP_FIRMS,
 } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
@@ -30,7 +30,11 @@ import useCartStore from '@/store/cartStore';
 import { ServiceType } from '@/types';
 import type { ServicePlan } from '@/types';
 
-const tierIcons = { starter: Zap, professional: Shield, elite: Crown };
+const tierIcons: Record<string, React.ElementType> = {
+  starter: Zap,
+  professional: Shield,
+  elite: Target,
+};
 
 export default function PurchasePage() {
   const { addToast } = useToast();
@@ -45,7 +49,7 @@ export default function PurchasePage() {
   };
 
   const handleSelectPlan = (plan: ServicePlan) => {
-    cart.setPlan(plan.id, plan.name, plan.tier, plan.price);
+    cart.setPlan(plan.id, plan.name, plan.tier, plan.price ?? 0);
     cart.setStep(3);
   };
 
@@ -113,6 +117,8 @@ export default function PurchasePage() {
   const plans =
     cart.serviceType === ServiceType.ACCOUNT_MANAGEMENT
       ? ACCOUNT_MANAGEMENT_PLANS
+      : cart.serviceType === ServiceType.ACCOUNT_GROWTH
+      ? ACCOUNT_GROWTH_PLANS
       : CHALLENGE_PASSING_PLANS;
 
   const selectedFirm = PROP_FIRMS.find((f) => f.name === cart.firmName);
@@ -126,7 +132,12 @@ export default function PurchasePage() {
           <p className="text-text-secondary mt-1">Step {cart.step} of 4</p>
         </div>
         {cart.step > 1 && (
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />} onClick={() => cart.setStep(cart.step - 1)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<ArrowLeft className="h-4 w-4" />}
+            onClick={() => cart.setStep(cart.step - 1)}
+          >
             Back
           </Button>
         )}
@@ -135,36 +146,87 @@ export default function PurchasePage() {
       {/* Progress bar */}
       <div className="flex gap-2">
         {[1, 2, 3, 4].map((s) => (
-          <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= cart.step ? 'bg-accent-primary' : 'bg-white/[0.06]'}`} />
+          <div
+            key={s}
+            className={`h-1 flex-1 rounded-full transition-colors ${
+              s <= cart.step ? 'bg-accent-primary' : 'bg-white/[0.06]'
+            }`}
+          />
         ))}
       </div>
 
       <AnimatePresence mode="wait">
-        {/* Step 1: Select Service */}
+        {/* ── Step 1: Select Service ── */}
         {cart.step === 1 && (
-          <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <GlassCard hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(ServiceType.CHALLENGE_PASSING)}>
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
+            {/* Challenge Passing */}
+            <GlassCard
+              hover
+              padding="lg"
+              className="cursor-pointer"
+              onClick={() => handleSelectService(ServiceType.CHALLENGE_PASSING)}
+            >
               <div className="text-center py-4">
                 <Target className="h-12 w-12 text-accent-primary mx-auto mb-3" />
                 <h3 className="text-lg font-heading font-semibold">Challenge Passing</h3>
-                <p className="text-sm text-text-secondary mt-2">We pass your prop firm challenge. You get funded.</p>
-                <p className="text-xs text-text-tertiary mt-3">From $299</p>
+                <p className="text-sm text-text-secondary mt-2">
+                  We pass your prop firm challenge. You get funded.
+                </p>
+                <p className="text-xs text-text-tertiary mt-3">From $149</p>
               </div>
             </GlassCard>
-            <GlassCard hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(ServiceType.ACCOUNT_MANAGEMENT)}>
+
+            {/* Account Management */}
+            <GlassCard
+              hover
+              padding="lg"
+              className="cursor-pointer"
+              onClick={() => handleSelectService(ServiceType.ACCOUNT_MANAGEMENT)}
+            >
               <div className="text-center py-4">
-                <Shield className="h-12 w-12 text-accent-gold mx-auto mb-3" />
+                <Shield className="h-12 w-12 text-accent-primary mx-auto mb-3" />
                 <h3 className="text-lg font-heading font-semibold">Account Management</h3>
-                <p className="text-sm text-text-secondary mt-2">We trade your funded account. You earn profits.</p>
-                <p className="text-xs text-text-tertiary mt-3">From $499</p>
+                <p className="text-sm text-text-secondary mt-2">
+                  We trade your funded account. You earn profits.
+                </p>
+                <p className="text-xs text-text-tertiary mt-3">Profit Split Only</p>
+              </div>
+            </GlassCard>
+
+            {/* Account Growth */}
+            <GlassCard
+              hover
+              padding="lg"
+              className="cursor-pointer"
+              onClick={() => handleSelectService(ServiceType.ACCOUNT_GROWTH)}
+            >
+              <div className="text-center py-4">
+                <TrendingUp className="h-12 w-12 text-accent-primary mx-auto mb-3" />
+                <h3 className="text-lg font-heading font-semibold">Account Growth</h3>
+                <p className="text-sm text-text-secondary mt-2">
+                  Systematic scaling to maximize your capital.
+                </p>
+                <p className="text-xs text-text-tertiary mt-3">From $249</p>
               </div>
             </GlassCard>
           </motion.div>
         )}
 
-        {/* Step 2: Select Plan */}
+        {/* ── Step 2: Select Plan ── */}
         {cart.step === 2 && (
-          <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
             {plans.map((plan) => {
               const TierIcon = tierIcons[plan.tier] ?? Zap;
               const Wrapper = plan.popular ? GlowBorder : 'div';
@@ -174,7 +236,7 @@ export default function PurchasePage() {
                   <GlassCard
                     padding="lg"
                     hover
-                    className="cursor-pointer h-full"
+                    className="cursor-pointer h-full flex flex-col"
                     onClick={() => handleSelectPlan(plan)}
                   >
                     {plan.popular && (
@@ -182,15 +244,28 @@ export default function PurchasePage() {
                     )}
                     <TierIcon className="h-8 w-8 text-accent-primary mb-3" />
                     <h3 className="text-lg font-heading font-bold">{plan.name}</h3>
-                    <p className="text-sm text-text-secondary mt-1">{plan.description}</p>
+                    <p className="text-sm text-text-secondary mt-1 flex-1">{plan.description}</p>
+
+                    {/* Price */}
                     <div className="mt-4 mb-4">
-                      {plan.originalPrice && (
-                        <span className="text-sm text-text-tertiary line-through mr-2">
-                          {formatCurrency(plan.originalPrice)}
+                      {plan.price != null ? (
+                        <>
+                          {plan.originalPrice && (
+                            <span className="text-sm text-text-tertiary line-through mr-2">
+                              {formatCurrency(plan.originalPrice)}
+                            </span>
+                          )}
+                          <span className="text-2xl font-heading font-bold">
+                            {formatCurrency(plan.price)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xl font-semibold text-accent-primary">
+                          {plan.priceLabel}
                         </span>
                       )}
-                      <span className="text-2xl font-heading font-bold">{formatCurrency(plan.price)}</span>
                     </div>
+
                     <ul className="space-y-2">
                       {plan.features.map((f) => (
                         <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
@@ -209,9 +284,14 @@ export default function PurchasePage() {
           </motion.div>
         )}
 
-        {/* Step 3: Account Details */}
+        {/* ── Step 3: Account Details ── */}
         {cart.step === 3 && (
-          <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
             <GlassCard padding="lg">
               <h3 className="text-lg font-heading font-semibold mb-4">Account Details</h3>
               <div className="space-y-4 max-w-md">
@@ -246,7 +326,8 @@ export default function PurchasePage() {
                   <Button
                     variant="primary"
                     fullWidth
-                    icon={<ArrowRight className="h-4 w-4" />} iconPosition="right"
+                    icon={<ArrowRight className="h-4 w-4" />}
+                    iconPosition="right"
                     onClick={() => cart.setStep(4)}
                   >
                     Continue to Checkout
@@ -257,16 +338,21 @@ export default function PurchasePage() {
           </motion.div>
         )}
 
-        {/* Step 4: Checkout Summary */}
+        {/* ── Step 4: Checkout Summary ── */}
         {cart.step === 4 && (
-          <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+          <motion.div
+            key="step4"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
             <GlassCard padding="lg">
               <h3 className="text-lg font-heading font-semibold mb-6">Order Summary</h3>
 
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-text-secondary">Service</span>
-                  <span>{cart.serviceType?.replace('_', ' ')}</span>
+                  <span>{cart.serviceType?.replace(/_/g, ' ')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-text-secondary">Plan</span>
@@ -287,7 +373,9 @@ export default function PurchasePage() {
                 <div className="border-t border-white/[0.06] my-2" />
                 <div className="flex justify-between text-sm">
                   <span className="text-text-secondary">Subtotal</span>
-                  <span className="font-mono">{formatCurrency(cart.price)}</span>
+                  <span className="font-mono">
+                    {cart.price > 0 ? formatCurrency(cart.price) : 'Profit Split'}
+                  </span>
                 </div>
                 {cart.discountAmount > 0 && (
                   <div className="flex justify-between text-sm text-success">
@@ -298,22 +386,33 @@ export default function PurchasePage() {
                 <div className="border-t border-white/[0.06] my-2" />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="font-mono">{formatCurrency(cart.getFinalPrice())}</span>
+                  <span className="font-mono">
+                    {cart.getFinalPrice() > 0
+                      ? formatCurrency(cart.getFinalPrice())
+                      : 'Profit Split Only'}
+                  </span>
                 </div>
               </div>
 
-              {/* Coupon */}
-              <div className="flex gap-2 mb-6">
-                <Input
-                  placeholder="Coupon code"
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value)}
-                  className="flex-1"
-                />
-                <Button variant="secondary" size="sm" onClick={handleApplyCoupon} loading={couponLoading}>
-                  Apply
-                </Button>
-              </div>
+              {/* Coupon — only for paid plans */}
+              {cart.price > 0 && (
+                <div className="flex gap-2 mb-6">
+                  <Input
+                    placeholder="Coupon code"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleApplyCoupon}
+                    loading={couponLoading}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              )}
 
               <Button
                 variant="primary"
@@ -323,7 +422,9 @@ export default function PurchasePage() {
                 icon={<CreditCard className="h-5 w-5" />}
                 onClick={handleCheckout}
               >
-                Proceed to Payment — {formatCurrency(cart.getFinalPrice())}
+                {cart.getFinalPrice() > 0
+                  ? `Proceed to Payment — ${formatCurrency(cart.getFinalPrice())}`
+                  : 'Confirm & Proceed'}
               </Button>
 
               <p className="text-xs text-text-tertiary text-center mt-3">
@@ -334,15 +435,5 @@ export default function PurchasePage() {
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function Target(props: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
   );
 }

@@ -287,8 +287,9 @@ export interface ServicePlan {
   name: string;
   tier: 'starter' | 'professional' | 'elite';
   serviceType: ServiceType;
-  price: number;
+  price?: number;
   originalPrice?: number;
+  priceLabel?: string;          // e.g. "Profit Split Only"
   description: string;
   features: string[];
   popular?: boolean;

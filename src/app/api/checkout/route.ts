@@ -3,9 +3,9 @@ import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createCheckoutSession } from '@/lib/stripe';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
-import { SITE_CONFIG, CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS } from '@/lib/constants';
+import { SITE_CONFIG, CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS, ACCOUNT_GROWTH_PLANS } from '@/lib/constants';
 
-const ALL_PLANS = [...CHALLENGE_PASSING_PLANS, ...ACCOUNT_MANAGEMENT_PLANS];
+const ALL_PLANS = [...CHALLENGE_PASSING_PLANS, ...ACCOUNT_MANAGEMENT_PLANS, ...ACCOUNT_GROWTH_PLANS];
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
     if (!plan) {
       return errorResponse('Invalid plan', 400);
     }
-    const canonicalPrice = plan.price;
+    // Profit-split plans have no upfront price (price === undefined)
+    const canonicalPrice = plan.price ?? 0;
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     let finalPrice = canonicalPrice;
     let appliedCouponCode: string | null = null;
 
-    if (couponCode) {
+    if (couponCode && canonicalPrice > 0) {
       const coupon = await prisma.coupon.findUnique({
         where: { code: couponCode.trim().toUpperCase() },
       });
