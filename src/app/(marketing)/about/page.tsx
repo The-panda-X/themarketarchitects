@@ -126,27 +126,15 @@ export default function AboutPage() {
               Today, we've channeled that expertise into a service that helps hundreds of traders every
               month access funding they deserve — without the stress or wasted capital.
             </p>
-            <Link href="/services">
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold tracking-wide text-base text-white transition-all duration-300 cursor-pointer"
-                style={{
-                  background: 'linear-gradient(135deg, #e63946 0%, #c01c28 100%)',
-                  boxShadow: '0 0 20px rgba(230,57,70,0.4)',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                    '0 0 40px rgba(230,57,70,0.6)';
-                  (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                    '0 0 20px rgba(230,57,70,0.4)';
-                  (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-                }}
-              >
-                Explore Services <ArrowRight className="h-4 w-4" />
-              </button>
+            <Link
+              href="/services"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold tracking-wide text-base text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(230,57,70,0.6)]"
+              style={{
+                background: 'linear-gradient(135deg, #e63946 0%, #c01c28 100%)',
+                boxShadow: '0 0 20px rgba(230,57,70,0.4)',
+              }}
+            >
+              Explore Services <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
