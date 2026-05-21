@@ -78,15 +78,15 @@ export default function RegisterPage() {
       <div className="p-8">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/" className="flex flex-col items-center gap-2">
             <Image
               src="/assets/logos/logo.png"
               alt="The Market Architects"
-              width={52}
-              height={52}
-              style={{ filter: 'drop-shadow(0 0 10px rgba(230,57,70,0.55))' }}
+              width={64}
+              height={64}
+              style={{ filter: 'drop-shadow(0 0 14px rgba(230,57,70,0.6))' }}
             />
-            <span className="text-base font-heading font-bold tracking-wide">
+            <span className="text-sm font-heading font-bold tracking-[0.15em] uppercase">
               THE MARKET <span className="text-accent-primary">ARCHITECTS</span>
             </span>
           </Link>
