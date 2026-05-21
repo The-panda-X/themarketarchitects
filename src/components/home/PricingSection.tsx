@@ -190,7 +190,7 @@ export default function PricingSection() {
     : PLANS.filter((p) => p.category === activeTab);
 
   return (
-    <section id="pricing" className="py-24 px-4 sm:px-6 max-w-7xl mx-auto">
+    <section id="pricing" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">
       {/* Header */}
       <ScrollReveal>
         <div className="mb-12 text-center">
