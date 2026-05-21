@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NAV_LINKS } from '@/lib/constants';
 import Button from '@/components/ui/Button';
@@ -71,11 +72,22 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
                 className="flex flex-col gap-3 w-full mt-6 pt-6 border-t border-white/[0.06]"
               >
                 {session ? (
-                  <Link href="/dashboard" onClick={onClose}>
-                    <Button variant="primary" fullWidth glow>
-                      Dashboard
+                  <>
+                    <Link href="/dashboard" onClick={onClose}>
+                      <Button variant="primary" fullWidth glow>
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      fullWidth
+                      icon={<LogOut className="h-4 w-4" />}
+                      onClick={() => { onClose(); signOut({ callbackUrl: '/login' }); }}
+                      className="text-text-tertiary hover:text-danger hover:bg-danger/5"
+                    >
+                      Logout
                     </Button>
-                  </Link>
+                  </>
                 ) : (
                   <>
                     <Link href="/login" onClick={onClose}>
