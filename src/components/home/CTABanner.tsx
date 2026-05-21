@@ -27,14 +27,14 @@ export default function CTABanner() {
               <motion.div
                 animate={{ y: [0, -14, 0] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-                className="mx-auto mb-6 w-20 h-20"
-                style={{ filter: 'drop-shadow(0 0 20px rgba(230,57,70,0.4))' }}
+                className="mx-auto mb-6 w-44 h-44"
+                style={{ filter: 'drop-shadow(0 0 28px rgba(230,57,70,0.5))' }}
               >
                 <Image
                   src="/assets/logos/logo.png"
                   alt="TMA"
-                  width={80}
-                  height={80}
+                  width={176}
+                  height={176}
                   className="object-contain w-full h-full"
                 />
               </motion.div>

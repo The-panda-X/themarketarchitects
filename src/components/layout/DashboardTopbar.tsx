@@ -23,6 +23,7 @@ import {
   Calculator,
   LineChart,
   LogOut,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
@@ -188,7 +189,17 @@ export default function DashboardTopbar() {
               </nav>
 
               {/* Footer */}
-              <div className="border-t border-white/[0.06] p-3">
+              <div className="border-t border-white/[0.06] p-3 space-y-1">
+                {user?.role === 'ADMIN' && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-accent-gold hover:bg-accent-gold/10 transition-colors"
+                  >
+                    <Shield className="h-[18px] w-[18px] shrink-0" />
+                    Admin Panel
+                  </Link>
+                )}
                 <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
                   className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-text-secondary hover:text-danger hover:bg-danger/5 transition-colors"
