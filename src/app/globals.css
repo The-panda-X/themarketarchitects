@@ -33,6 +33,16 @@
     margin: 0;
   }
 
+  /* Native select dropdowns — browsers ignore CSS variables on <option>,
+     so we force explicit dark colours here globally. */
+  select option {
+    background-color: #170d0d;
+    color: #ffffff;
+  }
+  select option:disabled {
+    color: #666666;
+  }
+
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
