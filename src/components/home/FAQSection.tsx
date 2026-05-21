@@ -17,11 +17,10 @@ export default function FAQSection() {
         <ScrollReveal>
           <div className="text-center mb-14">
             <SectionBadge>FAQ</SectionBadge>
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
-              Frequently Asked Questions
+            <h2 className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+              Frequently <span className="text-gradient-red">Asked Questions</span>
             </h2>
-            <div className="w-16 h-1 bg-accent-primary rounded-full mx-auto mb-4" />
-            <p className="text-text-secondary max-w-xl mx-auto">
+            <p className="mt-4 text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
               Everything you need to know about our services.
             </p>
           </div>

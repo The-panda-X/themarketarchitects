@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, User, ArrowRight, BookOpen } from 'lucide-react';
+import SectionBadge from '@/components/ui/SectionBadge';
 import prisma from '@/lib/prisma';
 import { formatDate } from '@/lib/utils';
 
@@ -41,8 +42,11 @@ export default async function BlogPage() {
     <div className="pt-24 pb-20">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-14">
-          <h1 className="text-4xl sm:text-5xl font-heading font-bold mb-4">Trading Insights</h1>
-          <p className="text-text-secondary text-lg max-w-2xl mx-auto">
+          <SectionBadge className="mb-4">Blog</SectionBadge>
+          <h1 className="font-heading font-black text-5xl md:text-7xl text-white tracking-tight mb-4">
+            Trading <span className="text-gradient-red">Insights</span>
+          </h1>
+          <p className="text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
             Expert guides, prop firm news, and strategy tips from our professional trading team.
           </p>
         </div>
@@ -85,7 +89,7 @@ export default async function BlogPage() {
                       ))}
                     </div>
                   )}
-                  <h2 className="font-heading font-bold text-base mb-2 group-hover:text-accent-primary transition-colors line-clamp-2">
+                  <h2 className="font-heading font-semibold text-base mb-2 group-hover:text-accent-primary transition-colors line-clamp-2">
                     {post.title}
                   </h2>
                   <p className="text-text-secondary text-sm line-clamp-2 flex-1">{post.excerpt}</p>

@@ -27,16 +27,11 @@ export default function PayoutProof() {
         <ScrollReveal>
           <div className="text-center mb-14">
             <SectionBadge>Verified Results</SectionBadge>
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold">
-                Verified Results
-              </h2>
-              <Badge variant="green" size="md">
-                <CheckCircle2 className="h-3 w-3" /> PROOF
-              </Badge>
-            </div>
-            <div className="w-16 h-1 bg-accent-primary rounded-full mx-auto mb-4" />
-            <p className="text-text-secondary max-w-xl mx-auto">
+            <h2 className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+              Real Payouts,{' '}
+              <span className="text-gradient-red">Verified Proof</span>
+            </h2>
+            <p className="mt-4 text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
               Real results from real clients. Every payout verified and documented.
             </p>
           </div>

@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
+import SectionBadge from '@/components/ui/SectionBadge';
 import { SITE_CONFIG } from '@/lib/constants';
 
 const contactMethods = [
@@ -64,8 +65,11 @@ export default function ContactPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl font-heading font-bold mb-4">Get in Touch</h1>
-          <p className="text-text-secondary text-lg max-w-2xl mx-auto">
+          <SectionBadge className="mb-4">Contact Us</SectionBadge>
+          <h1 className="font-heading font-black text-5xl md:text-7xl text-white tracking-tight mb-4">
+            Get in <span className="text-gradient-red">Touch</span>
+          </h1>
+          <p className="text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
             Have a question about our services? We are here to help. Reach out and our team will get back to you promptly.
           </p>
         </div>

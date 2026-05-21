@@ -36,11 +36,11 @@ export default function HowItWorks() {
         <ScrollReveal>
           <div className="text-center mb-20">
             <SectionBadge className="mb-6">How It Works</SectionBadge>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-heading font-extrabold leading-tight">
-              <span className="block text-white">Simple Process,</span>
-              <span className="block font-display italic text-accent-primary">Proven Results</span>
+            <h2 className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+              Simple Process,{' '}
+              <span className="text-gradient-red">Proven Results</span>
             </h2>
-            <p className="text-white/50 mt-4 text-sm max-w-md mx-auto">
+            <p className="mt-4 text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
               Get funded in 4 simple steps. We handle the hard part.
             </p>
           </div>
@@ -71,12 +71,12 @@ export default function HowItWorks() {
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-sm font-bold text-accent-primary mb-2 tracking-wide">
+                  <h3 className="font-heading font-semibold text-white text-base mb-2">
                     {step.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-xs text-white/45 leading-relaxed max-w-[180px]">
+                  <p className="text-sm text-text-secondary leading-relaxed max-w-[180px]">
                     {step.description}
                   </p>
                 </motion.div>

@@ -117,7 +117,7 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
       {/* Category + Title */}
       <div className="mb-4">
         <span className="text-xs text-accent-primary font-semibold tracking-widest uppercase">{plan.category}</span>
-        <h3 className="font-heading text-2xl text-white mt-1">{plan.name}</h3>
+        <h3 className="font-heading font-semibold text-2xl text-white mt-1">{plan.name}</h3>
         <p className="text-text-tertiary text-sm mt-2">{plan.description}</p>
       </div>
 
@@ -195,7 +195,7 @@ export default function PricingSection() {
       <ScrollReveal>
         <div className="mb-12 text-center">
           <SectionBadge>Pricing</SectionBadge>
-          <h2 className="font-heading font-normal text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+          <h2 className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
             Choose Your <span className="text-gradient-red">Path to Funding</span>
           </h2>
           <p className="mt-4 text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">

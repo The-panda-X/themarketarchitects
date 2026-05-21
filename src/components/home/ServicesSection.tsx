@@ -39,9 +39,8 @@ export default function ServicesSection() {
       <ScrollReveal>
         <div className="mb-12 text-center">
           <SectionBadge>Our Services</SectionBadge>
-          <h2 className="font-heading font-normal text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
-            Everything You Need to
-            <br />
+          <h2 className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+            Everything You Need to{' '}
             <span className="text-gradient-red">Dominate Prop Firms</span>
           </h2>
           <p className="mt-4 text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
@@ -70,7 +69,7 @@ export default function ServicesSection() {
                 </div>
 
                 {/* Title */}
-                <h3 className="font-heading text-2xl text-white mb-3">{service.title}</h3>
+                <h3 className="font-heading font-semibold text-2xl text-white mb-3">{service.title}</h3>
 
                 {/* Description */}
                 <p className="text-text-tertiary text-sm leading-relaxed mb-5">{service.description}</p>

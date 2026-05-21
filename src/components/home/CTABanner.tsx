@@ -40,7 +40,7 @@ export default function CTABanner() {
               </motion.div>
 
               {/* Heading */}
-              <h2 className="font-heading font-normal text-4xl md:text-6xl text-white mb-4 leading-tight">
+              <h2 className="font-heading font-bold text-4xl md:text-6xl text-white mb-4 leading-tight">
                 Ready to Get{' '}
                 <span className="text-gradient-red">Funded?</span>
               </h2>
