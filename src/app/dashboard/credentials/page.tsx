@@ -11,7 +11,7 @@ import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import { credentialSchema, type CredentialInput } from '@/lib/validations';
 import { formatDate } from '@/lib/utils';
 import { TRADING_PLATFORMS } from '@/lib/constants';

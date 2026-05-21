@@ -12,7 +12,7 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import { createTicketSchema } from '@/lib/validations';
 import type { z } from 'zod';
 

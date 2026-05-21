@@ -11,7 +11,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Textarea from '@/components/ui/Textarea';
 import Skeleton from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import { ticketReplySchema, type TicketReplyInput } from '@/lib/validations';
 import { formatRelativeTime } from '@/lib/utils';
 import type { SupportTicket } from '@/types';

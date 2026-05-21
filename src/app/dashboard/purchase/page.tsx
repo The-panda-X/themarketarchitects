@@ -19,7 +19,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Tabs from '@/components/ui/Tabs';
 import GlowBorder from '@/components/ui/GlowBorder';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import {
   CHALLENGE_PASSING_PLANS,
   ACCOUNT_MANAGEMENT_PLANS,

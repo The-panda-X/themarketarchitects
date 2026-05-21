@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Skeleton from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import { formatRelativeTime } from '@/lib/utils';
 
 interface TicketDetail {

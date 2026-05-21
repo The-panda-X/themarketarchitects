@@ -5,7 +5,7 @@ import { Bell, Check, CheckCheck, Trash2, Info, AlertCircle, DollarSign, Target 
 import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
 import Skeleton from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import { formatRelativeTime } from '@/lib/utils';
 import useNotificationStore from '@/store/notificationStore';
 import type { Notification } from '@/types';

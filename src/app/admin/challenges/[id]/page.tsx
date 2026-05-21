@@ -12,7 +12,7 @@ import Select from '@/components/ui/Select';
 import Textarea from '@/components/ui/Textarea';
 import ProgressBar from '@/components/ui/ProgressBar';
 import Skeleton from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import { Table, TableHeader, TableRow, TableHead } from '@/components/ui/Table';
 import { formatDate } from '@/lib/utils';
 

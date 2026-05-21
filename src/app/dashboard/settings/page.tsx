@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button';
 import Toggle from '@/components/ui/Toggle';
 import Avatar from '@/components/ui/Avatar';
 import Tabs from '@/components/ui/Tabs';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import {
   updateProfileSchema,
   changePasswordSchema,

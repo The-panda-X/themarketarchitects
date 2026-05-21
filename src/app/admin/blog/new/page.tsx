@@ -9,7 +9,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
 import Toggle from '@/components/ui/Toggle';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 
 export default function NewBlogPostPage() {
   const router = useRouter();

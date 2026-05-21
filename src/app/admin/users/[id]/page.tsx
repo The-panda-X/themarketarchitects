@@ -11,7 +11,7 @@ import Avatar from '@/components/ui/Avatar';
 import Skeleton from '@/components/ui/Skeleton';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
 
 interface UserDetail {
