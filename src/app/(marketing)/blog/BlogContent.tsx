@@ -2,15 +2,41 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Clock, ArrowRight, BookOpen } from 'lucide-react';
 import SectionBadge from '@/components/ui/SectionBadge';
 import { formatDate } from '@/lib/utils';
 
+// ── Types ────────────────────────────────────────────────────────────────────
+interface DbPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  coverImage: string | null;
+  author: string;
+  tags: string[];
+  publishedAt: Date | string | null;
+}
+
+interface PostCard {
+  title: string;
+  category: string;
+  excerpt: string;
+  readTime: string;
+  image: string | null;
+  slug: string | null;   // null = demo / no live page
+  author?: string;
+  publishedAt?: Date | string | null;
+}
+
+interface BlogContentProps {
+  dbPosts: DbPost[];
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 const CATEGORIES = ['All Posts', 'Prop Firm Guide', 'Trading Tips'];
 
-// ── Static demo posts shown only when the DB has no published posts ──────────
-const DEMO_FEATURED = {
+const DEMO_FEATURED: PostCard = {
   title: 'How to Pass FTMO in 10 Days',
   category: 'Prop Firm Guide',
   excerpt:
@@ -18,10 +44,10 @@ const DEMO_FEATURED = {
   readTime: '8 min read',
   author: 'Alex Rivera',
   image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80',
-  slug: null, // demo — no live page
+  slug: null,
 };
 
-const DEMO_POSTS = [
+const DEMO_POSTS: PostCard[] = [
   {
     title: 'The Psychology Behind Consistent Trading',
     category: 'Trading Tips',
@@ -51,35 +77,15 @@ const DEMO_POSTS = [
   },
 ];
 
-// ── Types ───────────────────────────────────────────────────────────────────
-interface DbPost {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  coverImage: string | null;
-  author: string;
-  tags: string[];
-  publishedAt: Date | string | null;
-}
-
-interface BlogContentProps {
-  dbPosts: DbPost[];
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-function estimateReadTime(excerpt: string | null) {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function estimateReadTime(excerpt: string | null): string {
   if (!excerpt) return '3 min read';
   const words = excerpt.split(' ').length;
   return `${Math.max(1, Math.ceil(words / 200))} min read`;
 }
 
-export default function BlogContent({ dbPosts }: BlogContentProps) {
-  const [activeCategory, setActiveCategory] = useState('All Posts');
-  const useDemo = dbPosts.length === 0;
-
-  // ── Build unified post list from DB posts ──────────────────────────────
-  const allDbPosts = dbPosts.map((p) => ({
+function dbToCard(p: DbPost): PostCard {
+  return {
     title: p.title,
     category: p.tags[0] ?? 'Article',
     excerpt: p.excerpt ?? '',
@@ -88,14 +94,21 @@ export default function BlogContent({ dbPosts }: BlogContentProps) {
     slug: p.slug,
     author: p.author,
     publishedAt: p.publishedAt,
-  }));
+  };
+}
 
-  const featured = useDemo ? DEMO_FEATURED : allDbPosts[0] ?? null;
-  const gridPosts = useDemo ? DEMO_POSTS : allDbPosts.slice(1);
+// ── Main component ────────────────────────────────────────────────────────────
+export default function BlogContent({ dbPosts }: BlogContentProps) {
+  const [activeCategory, setActiveCategory] = useState('All Posts');
 
-  // ── Filter ───────────────────────────────────────────────────────────────
+  const useDemo = dbPosts.length === 0;
+  const allCards: PostCard[] = useDemo ? [] : dbPosts.map(dbToCard);
+
+  const featured: PostCard | null = useDemo ? DEMO_FEATURED : (allCards[0] ?? null);
+  const gridPosts: PostCard[]     = useDemo ? DEMO_POSTS    : allCards.slice(1);
+
   const showFeatured =
-    featured &&
+    featured !== null &&
     (activeCategory === 'All Posts' || featured.category === activeCategory);
 
   const filteredGrid =
@@ -140,8 +153,8 @@ export default function BlogContent({ dbPosts }: BlogContentProps) {
           ))}
         </div>
 
-        {/* ── No posts at all ── */}
-        {!featured && filteredGrid.length === 0 && (
+        {/* ── Empty state ── */}
+        {!showFeatured && filteredGrid.length === 0 && (
           <div className="text-center py-20">
             <BookOpen className="h-16 w-16 text-text-tertiary mx-auto mb-4" />
             <h3 className="text-xl font-heading font-semibold">No Posts Yet</h3>
@@ -150,7 +163,7 @@ export default function BlogContent({ dbPosts }: BlogContentProps) {
         )}
 
         {/* ── Featured Post ── */}
-        {showFeatured && (
+        {showFeatured && featured && (
           <FeaturedCard post={featured} isDemo={useDemo} />
         )}
 
@@ -163,24 +176,24 @@ export default function BlogContent({ dbPosts }: BlogContentProps) {
           </div>
         )}
 
-        {filteredGrid.length === 0 && showFeatured === false && featured && (
-          <p className="text-center text-text-tertiary py-10">No posts in this category yet.</p>
-        )}
-
       </div>
     </div>
   );
 }
 
-// ── Featured card ─────────────────────────────────────────────────────────
-function FeaturedCard({ post, isDemo }: { post: typeof DEMO_FEATURED | ReturnType<typeof buildCard>; isDemo: boolean }) {
-  const inner = (
+// ── Featured card ─────────────────────────────────────────────────────────────
+function FeaturedCard({ post, isDemo }: { post: PostCard; isDemo: boolean }) {
+  const content = (
     <div className="group rounded-xl border border-[rgba(230,57,70,0.30)] bg-[#180c0c] backdrop-blur-xl overflow-hidden flex flex-col md:grid md:grid-cols-2 mb-8 hover:border-[rgba(230,57,70,0.50)] hover:shadow-[0_0_30px_rgba(230,57,70,0.08)] transition-all duration-300 cursor-pointer">
       {/* Image */}
       <div className="h-56 md:h-auto relative overflow-hidden">
         {post.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img
+            src={post.image}
+            alt={post.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-accent-primary/10 to-accent-primary/5 flex items-center justify-center">
             <BookOpen className="h-16 w-16 text-accent-primary/30" />
@@ -188,44 +201,52 @@ function FeaturedCard({ post, isDemo }: { post: typeof DEMO_FEATURED | ReturnTyp
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/50" />
       </div>
+
       {/* Content */}
       <div className="p-8 flex flex-col justify-center">
-        <span className="text-accent-primary text-xs tracking-widest uppercase mb-3">{post.category}</span>
+        <span className="text-accent-primary text-xs tracking-widest uppercase mb-3">
+          {post.category}
+        </span>
         <h2 className="font-heading font-bold text-3xl text-white mb-3">{post.title}</h2>
         <p className="text-zinc-500 text-sm leading-relaxed mb-5">{post.excerpt}</p>
         <div className="flex items-center gap-4 text-xs text-zinc-600 mb-5">
-          <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {'readTime' in post ? post.readTime : '8 min read'}</span>
-          {'author' in post && post.author && <span>By {post.author}</span>}
-          {'publishedAt' in post && post.publishedAt && <span>{formatDate(post.publishedAt as string)}</span>}
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" /> {post.readTime}
+          </span>
+          {post.author && <span>By {post.author}</span>}
+          {post.publishedAt && (
+            <span>{formatDate(post.publishedAt as string)}</span>
+          )}
         </div>
-        {!isDemo && (
+        {isDemo ? (
+          <span className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-white/10 text-text-tertiary w-fit cursor-default">
+            Coming Soon
+          </span>
+        ) : (
           <span className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-[rgba(230,57,70,0.50)] text-accent-primary bg-transparent font-semibold w-fit">
             Read Article <ArrowRight className="h-3.5 w-3.5" />
-          </span>
-        )}
-        {isDemo && (
-          <span className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-white/10 text-text-tertiary bg-transparent font-semibold w-fit cursor-default">
-            Coming Soon
           </span>
         )}
       </div>
     </div>
   );
 
-  if (isDemo || !post.slug) return inner;
-  return <Link href={`/blog/${post.slug}`}>{inner}</Link>;
+  if (isDemo || !post.slug) return content;
+  return <Link href={`/blog/${post.slug}`}>{content}</Link>;
 }
 
-// ── Grid card ─────────────────────────────────────────────────────────────
-function buildCard(p: ReturnType<typeof Array.prototype.map>[0]) { return p; }
-
-function GridCard({ post, isDemo }: { post: any; isDemo: boolean }) {
-  const inner = (
+// ── Grid card ─────────────────────────────────────────────────────────────────
+function GridCard({ post, isDemo }: { post: PostCard; isDemo: boolean }) {
+  const content = (
     <div className="group rounded-xl border border-[rgba(255,255,255,0.08)] bg-white/[0.03] backdrop-blur-xl overflow-hidden hover:border-[rgba(230,57,70,0.35)] hover:shadow-[0_0_30px_rgba(230,57,70,0.08)] transition-all duration-300 cursor-pointer flex flex-col h-full">
       <div className="h-44 overflow-hidden relative shrink-0">
         {post.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img
+            src={post.image}
+            alt={post.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-accent-primary/10 to-accent-primary/5 flex items-center justify-center">
             <BookOpen className="h-10 w-10 text-accent-primary/30" />
@@ -233,24 +254,31 @@ function GridCard({ post, isDemo }: { post: any; isDemo: boolean }) {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d0303] to-transparent" />
       </div>
+
       <div className="p-5 flex flex-col flex-1">
-        <span className="text-accent-primary text-xs tracking-widest uppercase">{post.category}</span>
+        <span className="text-accent-primary text-xs tracking-widest uppercase">
+          {post.category}
+        </span>
         <h3 className="font-heading font-semibold text-xl text-white mt-1 mb-2">{post.title}</h3>
-        <p className="text-zinc-500 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">{post.excerpt}</p>
+        <p className="text-zinc-500 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">
+          {post.excerpt}
+        </p>
         <div className="flex items-center justify-between text-xs text-zinc-600">
-          <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {post.readTime}</span>
-          {!isDemo ? (
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" /> {post.readTime}
+          </span>
+          {isDemo ? (
+            <span className="text-text-tertiary">Demo</span>
+          ) : (
             <span className="flex items-center gap-1 text-accent-primary hover:text-red-300 transition-colors">
               Read <ArrowRight className="h-3 w-3" />
             </span>
-          ) : (
-            <span className="text-text-tertiary">Demo</span>
           )}
         </div>
       </div>
     </div>
   );
 
-  if (isDemo || !post.slug) return <div key={post.title}>{inner}</div>;
-  return <Link key={post.title} href={`/blog/${post.slug}`}>{inner}</Link>;
+  if (isDemo || !post.slug) return <div>{content}</div>;
+  return <Link href={`/blog/${post.slug}`}>{content}</Link>;
 }
