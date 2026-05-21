@@ -11,6 +11,37 @@ export const SITE_CONFIG = {
   discord: process.env.NEXT_PUBLIC_DISCORD_INVITE ?? '',
 } as const;
 
+// Crypto wallet addresses — update these with your real addresses
+export const CRYPTO_WALLETS = [
+  {
+    id: 'usdt_trc20',
+    name: 'USDT',
+    network: 'TRC-20 (Tron)',
+    symbol: 'USDT',
+    address: process.env.NEXT_PUBLIC_WALLET_USDT_TRC20 ?? 'YOUR_USDT_TRC20_ADDRESS',
+    icon: '₮',
+    note: 'Send only USDT on TRC-20 network',
+  },
+  {
+    id: 'usdt_erc20',
+    name: 'USDT',
+    network: 'ERC-20 (Ethereum)',
+    symbol: 'USDT',
+    address: process.env.NEXT_PUBLIC_WALLET_USDT_ERC20 ?? 'YOUR_USDT_ERC20_ADDRESS',
+    icon: '₮',
+    note: 'Send only USDT on ERC-20 network',
+  },
+  {
+    id: 'btc',
+    name: 'Bitcoin',
+    network: 'BTC Network',
+    symbol: 'BTC',
+    address: process.env.NEXT_PUBLIC_WALLET_BTC ?? 'YOUR_BTC_ADDRESS',
+    icon: '₿',
+    note: 'Send only Bitcoin (BTC)',
+  },
+] as const;
+
 export const NAV_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Services', href: '/services' },

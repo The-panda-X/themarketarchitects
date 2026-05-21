@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
-import { SITE_CONFIG, CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS, ACCOUNT_GROWTH_PLANS } from '@/lib/constants';
+import { CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS, ACCOUNT_GROWTH_PLANS } from '@/lib/constants';
 
 const ALL_PLANS = [...CHALLENGE_PASSING_PLANS, ...ACCOUNT_MANAGEMENT_PLANS, ...ACCOUNT_GROWTH_PLANS];
 
@@ -19,9 +19,8 @@ export async function POST(req: NextRequest) {
     const plan = ALL_PLANS.find((p) => p.id === planId);
     if (!plan) return errorResponse('Invalid plan', 400);
 
-    // Profit-split plans have no upfront price
-    const canonicalPrice = plan.price ?? 0;
     const isProfitSplit = !plan.price && !!plan.priceLabel;
+    const canonicalPrice = plan.price ?? 0;
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -48,7 +47,7 @@ export async function POST(req: NextRequest) {
       appliedCouponCode = coupon.code;
     }
 
-    // ── Profit-split plans: create order directly as PAID (no upfront payment) ──
+    // ── Profit-split plans: no payment needed ──
     if (isProfitSplit) {
       const order = await prisma.order.create({
         data: {
@@ -76,10 +75,10 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      return successResponse({ orderId: order.id, redirect: '/dashboard/payments' }, 201);
+      return successResponse({ orderId: order.id, type: 'profit_split' }, 201);
     }
 
-    // ── Paid plans: create order then attempt Stripe ──
+    // ── Paid plans: create order, return crypto payment instructions ──
     const order = await prisma.order.create({
       data: {
         userId: session.user.id,
@@ -92,54 +91,26 @@ export async function POST(req: NextRequest) {
         totalAmount: finalPrice,
         discountAmount,
         couponCode: appliedCouponCode,
+        notes: 'Awaiting crypto payment confirmation',
       },
     });
 
-    // Try Stripe — if not configured, fall back to manual payment flow
-    if (!process.env.STRIPE_SECRET_KEY) {
-      await prisma.notification.create({
-        data: {
-          userId: session.user.id,
-          title: 'Order Placed',
-          message: `Your order for ${planName} has been received. Our team will contact you shortly to arrange payment.`,
-          type: 'info',
-          link: '/dashboard/payments',
-        },
-      });
-      return successResponse({ orderId: order.id, redirect: '/dashboard/payments', manualPayment: true }, 201);
-    }
+    await prisma.notification.create({
+      data: {
+        userId: session.user.id,
+        title: 'Order Created',
+        message: `Your order for ${planName} has been created. Please complete your crypto payment to proceed.`,
+        type: 'info',
+        link: '/dashboard/payments',
+      },
+    });
 
-    try {
-      const { createCheckoutSession } = await import('@/lib/stripe');
-      const baseUrl = SITE_CONFIG.url;
-      const stripeSession = await createCheckoutSession({
-        priceAmount: finalPrice,
-        productName: `${planName}${accountSize ? ` — ${accountSize}` : ''}`,
-        customerEmail: user.email,
-        metadata: {
-          orderId: order.id,
-          userId: session.user.id,
-          serviceType,
-          planName,
-          couponCode: appliedCouponCode ?? '',
-        },
-        successUrl: `${baseUrl}/dashboard/payments?success=1&orderId=${order.id}`,
-        cancelUrl: `${baseUrl}/dashboard/purchase?cancelled=1`,
-      });
-      return successResponse(stripeSession, 201);
-    } catch (stripeErr) {
-      console.error('Stripe error — falling back to manual payment:', stripeErr);
-      await prisma.notification.create({
-        data: {
-          userId: session.user.id,
-          title: 'Order Placed',
-          message: `Your order for ${planName} has been received. Our team will contact you shortly to arrange payment.`,
-          type: 'info',
-          link: '/dashboard/payments',
-        },
-      });
-      return successResponse({ orderId: order.id, redirect: '/dashboard/payments', manualPayment: true }, 201);
-    }
+    return successResponse({
+      orderId: order.id,
+      type: 'crypto',
+      amount: finalPrice,
+      planName,
+    }, 201);
   } catch (err) {
     return handleApiError(err);
   }
