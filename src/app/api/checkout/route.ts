@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { createCheckoutSession } from '@/lib/stripe';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { SITE_CONFIG, CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS, ACCOUNT_GROWTH_PLANS } from '@/lib/constants';
 
@@ -18,11 +17,11 @@ export async function POST(req: NextRequest) {
     }
 
     const plan = ALL_PLANS.find((p) => p.id === planId);
-    if (!plan) {
-      return errorResponse('Invalid plan', 400);
-    }
-    // Profit-split plans have no upfront price (price === undefined)
+    if (!plan) return errorResponse('Invalid plan', 400);
+
+    // Profit-split plans have no upfront price
     const canonicalPrice = plan.price ?? 0;
+    const isProfitSplit = !plan.price && !!plan.priceLabel;
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -38,29 +37,49 @@ export async function POST(req: NextRequest) {
       const coupon = await prisma.coupon.findUnique({
         where: { code: couponCode.trim().toUpperCase() },
       });
+      if (!coupon || !coupon.isActive) return errorResponse('Invalid or inactive coupon', 400);
+      if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) return errorResponse('Coupon usage limit reached', 400);
+      if (coupon.validUntil && new Date() > new Date(coupon.validUntil)) return errorResponse('Coupon has expired', 400);
+      if (coupon.validFrom && new Date() < new Date(coupon.validFrom)) return errorResponse('Coupon is not yet active', 400);
 
-      if (!coupon || !coupon.isActive) {
-        return errorResponse('Invalid or inactive coupon', 400);
-      }
-      if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
-        return errorResponse('Coupon usage limit reached', 400);
-      }
-      if (coupon.validUntil && new Date() > new Date(coupon.validUntil)) {
-        return errorResponse('Coupon has expired', 400);
-      }
-      if (coupon.validFrom && new Date() < new Date(coupon.validFrom)) {
-        return errorResponse('Coupon is not yet active', 400);
-      }
-
-      if (coupon.discountPercent) {
-        discountAmount = (canonicalPrice * coupon.discountPercent) / 100;
-      } else if (coupon.discountAmount) {
-        discountAmount = Math.min(coupon.discountAmount, canonicalPrice);
-      }
+      if (coupon.discountPercent) discountAmount = (canonicalPrice * coupon.discountPercent) / 100;
+      else if (coupon.discountAmount) discountAmount = Math.min(coupon.discountAmount, canonicalPrice);
       finalPrice = Math.max(0, canonicalPrice - discountAmount);
       appliedCouponCode = coupon.code;
     }
 
+    // ── Profit-split plans: create order directly as PAID (no upfront payment) ──
+    if (isProfitSplit) {
+      const order = await prisma.order.create({
+        data: {
+          userId: session.user.id,
+          serviceType,
+          planName,
+          planDetails: { tier, planId, features: plan.features },
+          accountSize: accountSize ?? null,
+          firmName: firmName ?? null,
+          status: 'PAID',
+          totalAmount: 0,
+          discountAmount: 0,
+          couponCode: null,
+          notes: plan.priceLabel ?? 'Profit Split Agreement',
+        },
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: session.user.id,
+          title: 'Agreement Submitted',
+          message: `Your ${planName} agreement has been received. Our team will contact you within 24 hours.`,
+          type: 'success',
+          link: '/dashboard/payments',
+        },
+      });
+
+      return successResponse({ orderId: order.id, redirect: '/dashboard/payments' }, 201);
+    }
+
+    // ── Paid plans: create order then attempt Stripe ──
     const order = await prisma.order.create({
       data: {
         userId: session.user.id,
@@ -76,23 +95,51 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const baseUrl = SITE_CONFIG.url;
-    const stripeSession = await createCheckoutSession({
-      priceAmount: finalPrice,
-      productName: `${planName}${accountSize ? ` — ${accountSize}` : ''}`,
-      customerEmail: user.email,
-      metadata: {
-        orderId: order.id,
-        userId: session.user.id,
-        serviceType,
-        planName,
-        couponCode: appliedCouponCode ?? '',
-      },
-      successUrl: `${baseUrl}/dashboard/payments?success=1&orderId=${order.id}`,
-      cancelUrl: `${baseUrl}/dashboard/purchase?cancelled=1`,
-    });
+    // Try Stripe — if not configured, fall back to manual payment flow
+    if (!process.env.STRIPE_SECRET_KEY) {
+      await prisma.notification.create({
+        data: {
+          userId: session.user.id,
+          title: 'Order Placed',
+          message: `Your order for ${planName} has been received. Our team will contact you shortly to arrange payment.`,
+          type: 'info',
+          link: '/dashboard/payments',
+        },
+      });
+      return successResponse({ orderId: order.id, redirect: '/dashboard/payments', manualPayment: true }, 201);
+    }
 
-    return successResponse(stripeSession, 201);
+    try {
+      const { createCheckoutSession } = await import('@/lib/stripe');
+      const baseUrl = SITE_CONFIG.url;
+      const stripeSession = await createCheckoutSession({
+        priceAmount: finalPrice,
+        productName: `${planName}${accountSize ? ` — ${accountSize}` : ''}`,
+        customerEmail: user.email,
+        metadata: {
+          orderId: order.id,
+          userId: session.user.id,
+          serviceType,
+          planName,
+          couponCode: appliedCouponCode ?? '',
+        },
+        successUrl: `${baseUrl}/dashboard/payments?success=1&orderId=${order.id}`,
+        cancelUrl: `${baseUrl}/dashboard/purchase?cancelled=1`,
+      });
+      return successResponse(stripeSession, 201);
+    } catch (stripeErr) {
+      console.error('Stripe error — falling back to manual payment:', stripeErr);
+      await prisma.notification.create({
+        data: {
+          userId: session.user.id,
+          title: 'Order Placed',
+          message: `Your order for ${planName} has been received. Our team will contact you shortly to arrange payment.`,
+          type: 'info',
+          link: '/dashboard/payments',
+        },
+      });
+      return successResponse({ orderId: order.id, redirect: '/dashboard/payments', manualPayment: true }, 201);
+    }
   } catch (err) {
     return handleApiError(err);
   }

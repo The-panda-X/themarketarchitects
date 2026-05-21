@@ -219,7 +219,20 @@ export default function PurchasePage() {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.data?.url) window.location.href = data.data.url;
+        cart.reset();
+        if (data.data?.url) {
+          // Stripe checkout
+          window.location.href = data.data.url;
+        } else if (data.data?.redirect) {
+          // Manual payment or profit split — redirect to payments page
+          addToast(
+            data.data.manualPayment
+              ? 'Order placed! Our team will contact you to arrange payment.'
+              : 'Agreement submitted! Our team will contact you within 24 hours.',
+            'success'
+          );
+          window.location.href = data.data.redirect;
+        }
       } else {
         addToast('Checkout failed. Please try again.', 'error');
       }
@@ -482,9 +495,7 @@ export default function PurchasePage() {
               <Button
                 variant="primary" fullWidth glow loading={checkoutLoading}
                 icon={profitSplitPlan ? <HandshakeIcon className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
-                onClick={profitSplitPlan
-                  ? () => { addToast('Agreement submitted! Our team will contact you shortly.', 'success'); cart.reset(); }
-                  : handleCheckout}
+                onClick={handleCheckout}
               >
                 {profitSplitPlan
                   ? 'Confirm Agreement'
