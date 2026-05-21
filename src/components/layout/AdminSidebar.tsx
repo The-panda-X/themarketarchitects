@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
@@ -32,6 +33,7 @@ const adminNavItems = [
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Challenges', href: '/admin/challenges', icon: Target },
+  { label: 'Signal Hub', href: '/admin/signals', icon: Radio },
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
   { label: 'Blog', href: '/admin/blog', icon: FileText },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag },

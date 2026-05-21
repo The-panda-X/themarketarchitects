@@ -158,15 +158,61 @@ model Challenge {
   winRate         Float           @default(0)
   proofImages     String[]
   adminNotes      String?
+  // Signal routing fields
+  riskPct         Float           @default(1.0)
+  dailyDDLimit    Float           @default(3.0)
+  totalDDLimit    Float           @default(7.0)
+  dailyCapPct     Float           @default(3.0)
+  allowedPairs    String[]
+  signalFilePath  String?
+  isPaused        Boolean         @default(false)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  order      Order       @relation(fields: [orderId], references: [id])
-  user       User        @relation(fields: [userId], references: [id])
+  order      Order            @relation(fields: [orderId], references: [id])
+  user       User             @relation(fields: [userId], references: [id])
   dailyStats DailyStat[]
+  deliveries SignalDelivery[]
 
   @@index([userId])
   @@index([status])
+}
+
+model SignalLog {
+  id           String   @id @default(cuid())
+  pair         String
+  direction    String
+  entry        Float?
+  sl           Float
+  tp1          Float?
+  tp2          Float?
+  tp3          Float?
+  riskPct      Float?
+  source       String   @default("discord")
+  rawMessage   String?
+  totalSent    Int      @default(0)
+  totalSkipped Int      @default(0)
+  totalFailed  Int      @default(0)
+  sentAt       DateTime @default(now())
+
+  deliveries SignalDelivery[]
+
+  @@index([sentAt])
+}
+
+model SignalDelivery {
+  id          String   @id @default(cuid())
+  signalId    String
+  challengeId String
+  status      String
+  skipReason  String?
+  deliveredAt DateTime @default(now())
+
+  signal    SignalLog @relation(fields: [signalId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([signalId])
+  @@index([challengeId])
 }
 
 model DailyStat {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User } from 'lucide-react';
+import { ArrowLeft, User, Radio, Pause, Play } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -32,6 +32,14 @@ interface ChallengeDetail {
   startDate: string | null;
   endDate: string | null;
   createdAt: string;
+  // Signal hub fields
+  riskPct: number;
+  dailyDDLimit: number;
+  totalDDLimit: number;
+  dailyCapPct: number;
+  allowedPairs: string[];
+  signalFilePath: string | null;
+  isPaused: boolean;
   user: { id: string; email: string; name: string | null };
   order: { planName: string; serviceType: string };
   dailyStats: Array<{ id: string; date: string; profit: number; loss: number; tradesCount: number; winCount: number }>;
@@ -45,6 +53,8 @@ export default function AdminChallengeDetailPage() {
   const [challenge, setChallenge] = useState<ChallengeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingSignal, setSavingSignal] = useState(false);
+  const [togglingPause, setTogglingPause] = useState(false);
   const [form, setForm] = useState({
     status: '',
     currentPhase: 1,
@@ -55,6 +65,14 @@ export default function AdminChallengeDetailPage() {
     daysTraded: 0,
     winRate: 0,
     adminNotes: '',
+  });
+  const [signalForm, setSignalForm] = useState({
+    riskPct: 1.0,
+    dailyDDLimit: 3.0,
+    totalDDLimit: 7.0,
+    dailyCapPct: 3.0,
+    allowedPairs: '',
+    signalFilePath: '',
   });
 
   useEffect(() => {
@@ -74,10 +92,61 @@ export default function AdminChallengeDetailPage() {
             winRate: d.data.winRate,
             adminNotes: d.data.adminNotes ?? '',
           });
+          setSignalForm({
+            riskPct: d.data.riskPct ?? 1.0,
+            dailyDDLimit: d.data.dailyDDLimit ?? 3.0,
+            totalDDLimit: d.data.totalDDLimit ?? 7.0,
+            dailyCapPct: d.data.dailyCapPct ?? 3.0,
+            allowedPairs: (d.data.allowedPairs ?? []).join(', '),
+            signalFilePath: d.data.signalFilePath ?? '',
+          });
         }
       })
       .finally(() => setLoading(false));
   }, [params.id]);
+
+  const handleSaveSignal = async () => {
+    setSavingSignal(true);
+    try {
+      const res = await fetch(`/api/admin/challenges/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riskPct: signalForm.riskPct,
+          dailyDDLimit: signalForm.dailyDDLimit,
+          totalDDLimit: signalForm.totalDDLimit,
+          dailyCapPct: signalForm.dailyCapPct,
+          allowedPairs: signalForm.allowedPairs.split(',').map(s => s.trim().toUpperCase()).filter(Boolean),
+          signalFilePath: signalForm.signalFilePath || null,
+        }),
+      });
+      if (res.ok) {
+        addToast('Signal settings saved.', 'success');
+      } else {
+        addToast('Failed to save signal settings.', 'error');
+      }
+    } finally {
+      setSavingSignal(false);
+    }
+  };
+
+  const handleTogglePause = async () => {
+    if (!challenge) return;
+    setTogglingPause(true);
+    try {
+      const res = await fetch(`/api/admin/challenges/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPaused: !challenge.isPaused }),
+      });
+      if (res.ok) {
+        setChallenge(prev => prev ? { ...prev, isPaused: !prev.isPaused } : prev);
+        addToast(challenge.isPaused ? 'Account resumed — signals will be delivered.' : 'Account paused — signals will be skipped.', 'success');
+      }
+    } finally {
+      setTogglingPause(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -227,6 +296,79 @@ export default function AdminChallengeDetailPage() {
         <div className="mt-4">
           <Button variant="primary" loading={saving} onClick={handleSave}>
             Save Changes
+          </Button>
+        </div>
+      </GlassCard>
+
+      {/* Signal Hub Settings */}
+      <GlassCard padding="lg">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-heading font-semibold flex items-center gap-2">
+            <Radio className="h-4 w-4 text-accent-primary" /> Signal Hub Settings
+          </h3>
+          <Button
+            variant={challenge.isPaused ? 'primary' : 'secondary'}
+            size="sm"
+            loading={togglingPause}
+            onClick={handleTogglePause}
+            icon={challenge.isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+          >
+            {challenge.isPaused ? 'Resume Signals' : 'Pause Signals'}
+          </Button>
+        </div>
+
+        {challenge.isPaused && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-warning/10 border border-warning/30 text-sm text-warning">
+            ⚠️ Signals are currently paused for this account. No signals will be delivered until resumed.
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Risk per Trade (%)"
+            type="number"
+            value={signalForm.riskPct}
+            onChange={e => setSignalForm(f => ({...f, riskPct: parseFloat(e.target.value) || 1}))}
+          />
+          <Input
+            label="Daily DD Limit (%)"
+            type="number"
+            value={signalForm.dailyDDLimit}
+            onChange={e => setSignalForm(f => ({...f, dailyDDLimit: parseFloat(e.target.value) || 3}))}
+          />
+          <Input
+            label="Total DD Limit (%)"
+            type="number"
+            value={signalForm.totalDDLimit}
+            onChange={e => setSignalForm(f => ({...f, totalDDLimit: parseFloat(e.target.value) || 7}))}
+          />
+          <Input
+            label="Daily Profit Cap (%)"
+            type="number"
+            value={signalForm.dailyCapPct}
+            onChange={e => setSignalForm(f => ({...f, dailyCapPct: parseFloat(e.target.value) || 3}))}
+          />
+        </div>
+        <div className="mt-4 space-y-4">
+          <Input
+            label="Allowed Pairs (comma-separated, leave empty for all)"
+            placeholder="e.g. XAUUSD, EURUSD, GBPUSD"
+            value={signalForm.allowedPairs}
+            onChange={e => setSignalForm(f => ({...f, allowedPairs: e.target.value}))}
+          />
+          <Input
+            label="Signal File Path (signal.txt on VPS)"
+            placeholder="e.g. C:/MT5_Client001/MQL5/Files/signal.txt"
+            value={signalForm.signalFilePath}
+            onChange={e => setSignalForm(f => ({...f, signalFilePath: e.target.value}))}
+          />
+          <p className="text-xs text-text-tertiary">
+            The Python bridge will write signals to this file path. Leave empty to exclude this account from automated signal delivery.
+          </p>
+        </div>
+        <div className="mt-4">
+          <Button variant="primary" size="sm" loading={savingSignal} onClick={handleSaveSignal}>
+            Save Signal Settings
           </Button>
         </div>
       </GlassCard>
