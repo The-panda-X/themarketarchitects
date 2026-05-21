@@ -1,6 +1,7 @@
-export const dynamic = 'force-dynamic';
-﻿import prisma from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse } from '@/lib/api-helpers';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {

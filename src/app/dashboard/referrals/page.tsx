@@ -7,7 +7,7 @@ import StatCard from '@/components/ui/StatCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Skeleton from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/Toast';
+import useToast from '@/hooks/useToast';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
 import type { Referral } from '@/types';
