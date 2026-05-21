@@ -65,8 +65,8 @@ export default function LoginPage() {
             <Image
               src="/assets/logos/logo.png"
               alt="The Market Architects"
-              width={96}
-              height={96}
+              width={120}
+              height={120}
               style={{ filter: 'drop-shadow(0 0 14px rgba(230,57,70,0.6))' }}
             />
             <span className="text-sm font-heading font-bold tracking-[0.15em] uppercase">
