@@ -2,17 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Target, Shield, Zap, Check, ArrowRight } from 'lucide-react';
-import GlassCard from '@/components/ui/GlassCard';
-import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
+import { CircleCheck, Clock, ArrowRight } from 'lucide-react';
 import GlowBorder from '@/components/ui/GlowBorder';
 import Tabs from '@/components/ui/Tabs';
 import { CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS, ACCOUNT_GROWTH_PLANS } from '@/lib/constants';
-import { formatCurrency } from '@/lib/utils';
 import type { ServicePlan } from '@/types';
-
-const tierIcons = { starter: Target, professional: Shield, elite: Zap };
 
 const tabItems = [
   { id: 'challenge', label: 'Challenge Passing' },
@@ -21,70 +15,93 @@ const tabItems = [
 ];
 
 function PlanCard({ plan }: { plan: ServicePlan }) {
-  const TierIcon = tierIcons[plan.tier] ?? Target;
-  const content = (
-    <GlassCard padding="lg" hover className="h-full flex flex-col">
-      {plan.popular && <Badge variant="gold" className="mb-3 self-start">Most Popular</Badge>}
-      <TierIcon className="h-8 w-8 text-accent-primary mb-3" />
-      <h3 className="text-lg font-heading font-bold">{plan.name}</h3>
-      <p className="text-sm text-text-secondary mt-1 flex-1">{plan.description}</p>
+  const isPopular = !!plan.popular;
+  const isProfitSplit = !plan.price && !!plan.priceLabel;
 
-      {/* Price */}
-      <div className="mt-4 mb-4">
-        {plan.price != null ? (
-          <>
-            {plan.originalPrice && (
-              <span className="text-sm text-text-tertiary line-through mr-2">
-                {formatCurrency(plan.originalPrice)}
-              </span>
-            )}
-            <span className="text-2xl font-heading font-bold">{formatCurrency(plan.price)}</span>
-          </>
-        ) : (
-          <span className="text-xl font-semibold text-accent-primary">{plan.priceLabel}</span>
-        )}
-      </div>
-
-      {/* Account size + success */}
-      <div className="flex items-center gap-3 mb-4 py-2 border-y border-white/[0.06] text-xs">
-        <span className="text-text-tertiary">Account:</span>
-        <span className="text-white">{plan.accountSizes.join(', ')}</span>
-        {plan.successRate && (
-          <span className="ml-auto text-green-400">{plan.successRate}% success</span>
-        )}
-      </div>
-
-      <ul className="space-y-2 mb-6">
-        {plan.features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
-            <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
-            {f}
-          </li>
-        ))}
-      </ul>
-
-      <Link href="/dashboard/purchase" className="mt-auto">
-        <Button
-          variant={plan.popular ? 'primary' : 'secondary'}
-          fullWidth
-          glow={plan.popular}
-          icon={<ArrowRight className="h-4 w-4" />}
-          iconPosition="right"
-        >
-          Get Started
-        </Button>
-      </Link>
-      {plan.guarantee && (
-        <p className="text-xs text-accent-gold text-center mt-3">{plan.guarantee}</p>
+  const card = (
+    <div className="relative pt-5 h-full">
+      {isPopular && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+          <span
+            className="text-white text-xs font-semibold px-4 py-1.5 rounded-full"
+            style={{ background: 'linear-gradient(135deg,#e63946 0%,#c1121f 100%)', boxShadow: '0 0 14px rgba(230,57,70,0.5)' }}
+          >
+            ★ MOST POPULAR
+          </span>
+        </div>
       )}
-    </GlassCard>
+
+      <div className={`rounded-xl border p-7 flex flex-col h-full transition-all duration-300 glass-shine
+        ${isPopular
+          ? 'border-[rgba(230,57,70,0.50)] bg-[#120404] shadow-[0_0_30px_rgba(230,57,70,0.10)] hover:border-[rgba(230,57,70,0.70)]'
+          : 'border-[rgba(230,57,70,0.25)] bg-[#0d0303] hover:border-[rgba(230,57,70,0.45)] hover:shadow-[0_0_30px_rgba(230,57,70,0.08)]'
+        } hover:scale-[1.01]`}
+      >
+        <h3 className="font-heading font-semibold text-xl text-white mb-1">{plan.name}</h3>
+        <p className="text-text-tertiary text-sm mt-1 mb-4 leading-relaxed">{plan.description}</p>
+
+        {/* Account size + success rate */}
+        <div className="flex items-center gap-3 mb-5 py-3 border-y border-white/[0.06] text-xs">
+          <span className="text-text-tertiary">Account:</span>
+          <span className="text-white font-medium">{plan.accountSizes.join(' / ')}</span>
+          {plan.successRate && (
+            <span className="ml-auto text-green-400">{plan.successRate}% success</span>
+          )}
+        </div>
+
+        {/* Features */}
+        <ul className="space-y-2.5 mb-6 flex-1">
+          {plan.features.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
+              <CircleCheck className="h-[14px] w-[14px] text-accent-primary mt-0.5 shrink-0" />
+              {f}
+            </li>
+          ))}
+        </ul>
+
+        {/* Price + delivery */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            {isProfitSplit ? (
+              <span className="text-xl font-semibold text-accent-primary">{plan.priceLabel}</span>
+            ) : (
+              <>
+                <span className="font-heading text-3xl font-bold text-white">${plan.price}</span>
+                {plan.originalPrice && (
+                  <span className="text-text-tertiary line-through text-sm ml-2">${plan.originalPrice}</span>
+                )}
+              </>
+            )}
+          </div>
+          {plan.deliveryDays && (
+            <span className="flex items-center gap-1 text-xs text-text-tertiary">
+              <Clock className="h-3 w-3" /> {plan.deliveryDays} days
+            </span>
+          )}
+        </div>
+
+        {plan.guarantee && (
+          <p className="text-xs text-yellow-400 mb-4">{plan.guarantee}</p>
+        )}
+
+        <Link href="/dashboard/purchase">
+          <button
+            type="button"
+            className={`inline-flex items-center justify-center gap-2 w-full px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-300 cursor-pointer ${
+              isPopular
+                ? 'text-white hover:scale-105'
+                : 'bg-transparent border border-[rgba(230,57,70,0.50)] text-accent-primary hover:bg-[rgba(230,57,70,0.10)] hover:border-[rgba(230,57,70,0.80)]'
+            }`}
+            style={isPopular ? { background: 'linear-gradient(135deg,#e63946 0%,#c1121f 100%)', boxShadow: '0 0 20px rgba(230,57,70,0.4)' } : {}}
+          >
+            {isProfitSplit ? 'Get Started — No Upfront Fee' : 'Get Started'} <ArrowRight className="h-4 w-4" />
+          </button>
+        </Link>
+      </div>
+    </div>
   );
 
-  return plan.popular ? (
-    <GlowBorder color="gold">{content}</GlowBorder>
-  ) : (
-    <div>{content}</div>
-  );
+  return isPopular ? <GlowBorder color="gold">{card}</GlowBorder> : card;
 }
 
 export default function ServicesPage() {
@@ -106,7 +123,7 @@ export default function ServicesPage() {
 
       <Tabs tabs={tabItems} activeTab={activeTab} onChange={setActiveTab} variant="pills" />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
         {plans.map((plan) => (
           <PlanCard key={plan.id} plan={plan} />
         ))}

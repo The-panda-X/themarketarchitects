@@ -11,10 +11,12 @@ import {
   CreditCard,
   Target,
   TrendingUp,
+  CircleCheck,
+  Clock,
+  HandshakeIcon,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import GlowBorder from '@/components/ui/GlowBorder';
@@ -30,31 +32,147 @@ import useCartStore from '@/store/cartStore';
 import { ServiceType } from '@/types';
 import type { ServicePlan } from '@/types';
 
-const tierIcons: Record<string, React.ElementType> = {
-  starter: Zap,
-  professional: Shield,
-  elite: Target,
-};
+/* ─── helpers ──────────────────────────────────────── */
+function isProfitSplit(plan: ServicePlan | null) {
+  return !!plan && !plan.price && !!plan.priceLabel;
+}
 
+/** Returns account sizes available for the plan at a given firm */
+function availableSizes(plan: ServicePlan, firmName: string): string[] {
+  if (plan.accountSizes.includes('Any size')) {
+    // Growth plan: show all sizes that firm offers
+    return PROP_FIRMS.find((f) => f.name === firmName)?.accountSizes ?? [];
+  }
+  // Challenge/Management plans: intersect plan sizes with firm sizes
+  const firmSizes = PROP_FIRMS.find((f) => f.name === firmName)?.accountSizes ?? [];
+  return plan.accountSizes.filter((s) => firmSizes.includes(s));
+}
+
+/* ─── Plan Card ─────────────────────────────────────── */
+function PlanCard({ plan, onSelect }: { plan: ServicePlan; onSelect: (p: ServicePlan) => void }) {
+  const isPopular = !!plan.popular;
+  const profitSplit = isProfitSplit(plan);
+
+  const card = (
+    <div className="relative pt-5 h-full">
+      {isPopular && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+          <span
+            className="text-white text-xs font-semibold px-4 py-1.5 rounded-full"
+            style={{ background: 'linear-gradient(135deg,#e63946 0%,#c1121f 100%)', boxShadow: '0 0 14px rgba(230,57,70,0.5)' }}
+          >
+            ★ MOST POPULAR
+          </span>
+        </div>
+      )}
+
+      <div
+        className={`rounded-xl border p-6 flex flex-col h-full transition-all duration-300 glass-shine
+          ${isPopular
+            ? 'border-[rgba(230,57,70,0.50)] bg-[#120404] shadow-[0_0_30px_rgba(230,57,70,0.10)]'
+            : 'border-[rgba(230,57,70,0.25)] bg-[#0d0303] hover:border-[rgba(230,57,70,0.45)]'
+          } hover:scale-[1.01]`}
+      >
+        <h3 className="font-heading font-semibold text-xl text-white mb-1">{plan.name}</h3>
+        <p className="text-text-tertiary text-sm mb-4 leading-relaxed">{plan.description}</p>
+
+        {/* Account size + success rate */}
+        <div className="flex items-center gap-3 mb-4 py-3 border-y border-white/[0.06] text-xs">
+          <span className="text-text-tertiary">Account:</span>
+          <span className="text-white font-medium">{plan.accountSizes.join(' / ')}</span>
+          {plan.successRate && (
+            <span className="ml-auto text-green-400">{plan.successRate}% success</span>
+          )}
+        </div>
+
+        {/* Features */}
+        <ul className="space-y-2 mb-5 flex-1">
+          {plan.features.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
+              <CircleCheck className="h-[14px] w-[14px] text-accent-primary mt-0.5 shrink-0" />
+              {f}
+            </li>
+          ))}
+        </ul>
+
+        {/* Price */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            {profitSplit ? (
+              <span className="text-xl font-semibold text-accent-primary">{plan.priceLabel}</span>
+            ) : (
+              <>
+                <span className="font-heading text-3xl font-bold text-white">${plan.price}</span>
+                {plan.originalPrice && (
+                  <span className="text-text-tertiary line-through text-sm ml-2">${plan.originalPrice}</span>
+                )}
+              </>
+            )}
+          </div>
+          {plan.deliveryDays && (
+            <span className="flex items-center gap-1 text-xs text-text-tertiary">
+              <Clock className="h-3 w-3" /> {plan.deliveryDays} days
+            </span>
+          )}
+        </div>
+
+        {plan.guarantee && (
+          <p className="text-xs text-yellow-400 mb-3">{plan.guarantee}</p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => onSelect(plan)}
+          className={`inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 cursor-pointer ${
+            isPopular
+              ? 'text-white hover:scale-105'
+              : 'bg-transparent border border-[rgba(230,57,70,0.50)] text-accent-primary hover:bg-[rgba(230,57,70,0.10)] hover:border-[rgba(230,57,70,0.80)]'
+          }`}
+          style={isPopular ? { background: 'linear-gradient(135deg,#e63946 0%,#c1121f 100%)', boxShadow: '0 0 20px rgba(230,57,70,0.4)' } : {}}
+        >
+          Select Plan <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  return isPopular ? <GlowBorder color="gold">{card}</GlowBorder> : card;
+}
+
+/* ─── Page ──────────────────────────────────────────── */
 export default function PurchasePage() {
   const { addToast } = useToast();
   const cart = useCartStore();
+  const [selectedPlan, setSelectedPlan] = useState<ServicePlan | null>(null);
   const [couponInput, setCouponInput] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const handleSelectService = (type: ServiceType) => {
     cart.setService(type);
+    setSelectedPlan(null);
     cart.setStep(2);
   };
 
   const handleSelectPlan = (plan: ServicePlan) => {
+    setSelectedPlan(plan);
     cart.setPlan(plan.id, plan.name, plan.tier, plan.price ?? 0);
     cart.setStep(3);
   };
 
-  const handleSelectAccount = (accountSize: string, firmName: string) => {
-    cart.setAccount(accountSize, firmName);
+  const handleFirmChange = (firmName: string) => {
+    cart.setAccount('', firmName);
+  };
+
+  const handleSizeChange = (size: string) => {
+    cart.setAccount(size, cart.firmName!);
+  };
+
+  const handleContinueToCheckout = () => {
+    if (!cart.firmName) { addToast('Please select a prop firm.', 'error'); return; }
+    if (!cart.accountSize && selectedPlan && !selectedPlan.accountSizes.includes('Any size')) {
+      addToast('Please select an account size.', 'error'); return;
+    }
     cart.setStep(4);
   };
 
@@ -101,9 +219,7 @@ export default function PurchasePage() {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.data?.url) {
-          window.location.href = data.data.url;
-        }
+        if (data.data?.url) window.location.href = data.data.url;
       } else {
         addToast('Checkout failed. Please try again.', 'error');
       }
@@ -121,7 +237,17 @@ export default function PurchasePage() {
       ? ACCOUNT_GROWTH_PLANS
       : CHALLENGE_PASSING_PLANS;
 
-  const selectedFirm = PROP_FIRMS.find((f) => f.name === cart.firmName);
+  const profitSplitPlan = isProfitSplit(selectedPlan);
+
+  // Sizes to show in dropdown
+  const sizesForDropdown = selectedPlan && cart.firmName
+    ? availableSizes(selectedPlan, cart.firmName)
+    : [];
+
+  // If plan has exactly one size, auto-fill it
+  const autoSize = selectedPlan && selectedPlan.accountSizes.length === 1 && !selectedPlan.accountSizes.includes('Any size')
+    ? selectedPlan.accountSizes[0]
+    : null;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -132,12 +258,8 @@ export default function PurchasePage() {
           <p className="text-text-secondary mt-1">Step {cart.step} of 4</p>
         </div>
         {cart.step > 1 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<ArrowLeft className="h-4 w-4" />}
-            onClick={() => cart.setStep(cart.step - 1)}
-          >
+          <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}
+            onClick={() => { cart.setStep(cart.step - 1); if (cart.step === 2) setSelectedPlan(null); }}>
             Back
           </Button>
         )}
@@ -146,73 +268,44 @@ export default function PurchasePage() {
       {/* Progress bar */}
       <div className="flex gap-2">
         {[1, 2, 3, 4].map((s) => (
-          <div
-            key={s}
-            className={`h-1 flex-1 rounded-full transition-colors ${
-              s <= cart.step ? 'bg-accent-primary' : 'bg-white/[0.06]'
-            }`}
-          />
+          <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= cart.step ? 'bg-accent-primary' : 'bg-white/[0.06]'}`} />
         ))}
       </div>
 
       <AnimatePresence mode="wait">
+
         {/* ── Step 1: Select Service ── */}
         {cart.step === 1 && (
-          <motion.div
-            key="step1"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          >
-            {/* Challenge Passing */}
-            <GlassCard
-              hover
-              padding="lg"
-              className="cursor-pointer"
-              onClick={() => handleSelectService(ServiceType.CHALLENGE_PASSING)}
-            >
+          <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <GlassCard hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(ServiceType.CHALLENGE_PASSING)}>
               <div className="text-center py-4">
                 <Target className="h-12 w-12 text-accent-primary mx-auto mb-3" />
                 <h3 className="text-lg font-heading font-semibold">Challenge Passing</h3>
-                <p className="text-sm text-text-secondary mt-2">
-                  We pass your prop firm challenge. You get funded.
-                </p>
-                <p className="text-xs text-text-tertiary mt-3">From $149</p>
+                <p className="text-sm text-text-secondary mt-2">We pass your prop firm challenge. You get funded.</p>
+                <p className="text-accent-primary font-semibold mt-3">From $149</p>
+                <p className="text-xs text-text-tertiary mt-1">$10K · $50K · $100K–$200K</p>
               </div>
             </GlassCard>
 
-            {/* Account Management */}
-            <GlassCard
-              hover
-              padding="lg"
-              className="cursor-pointer"
-              onClick={() => handleSelectService(ServiceType.ACCOUNT_MANAGEMENT)}
-            >
+            <GlassCard hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(ServiceType.ACCOUNT_MANAGEMENT)}>
               <div className="text-center py-4">
                 <Shield className="h-12 w-12 text-accent-primary mx-auto mb-3" />
                 <h3 className="text-lg font-heading font-semibold">Account Management</h3>
-                <p className="text-sm text-text-secondary mt-2">
-                  We trade your funded account. You earn profits.
-                </p>
-                <p className="text-xs text-text-tertiary mt-3">Profit Split Only</p>
+                <p className="text-sm text-text-secondary mt-2">We trade your funded account. You earn profits.</p>
+                <p className="text-accent-primary font-semibold mt-3">Profit Split Only</p>
+                <p className="text-xs text-text-tertiary mt-1">15%–20% split · No upfront fee</p>
               </div>
             </GlassCard>
 
-            {/* Account Growth */}
-            <GlassCard
-              hover
-              padding="lg"
-              className="cursor-pointer"
-              onClick={() => handleSelectService(ServiceType.ACCOUNT_GROWTH)}
-            >
+            <GlassCard hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(ServiceType.ACCOUNT_GROWTH)}>
               <div className="text-center py-4">
                 <TrendingUp className="h-12 w-12 text-accent-primary mx-auto mb-3" />
                 <h3 className="text-lg font-heading font-semibold">Account Growth</h3>
-                <p className="text-sm text-text-secondary mt-2">
-                  Systematic scaling to maximize your capital.
-                </p>
-                <p className="text-xs text-text-tertiary mt-3">From $249</p>
+                <p className="text-sm text-text-secondary mt-2">Systematic scaling to maximize your capital.</p>
+                <p className="text-accent-primary font-semibold mt-3">From $249</p>
+                <p className="text-xs text-text-tertiary mt-1">Any account size</p>
               </div>
             </GlassCard>
           </motion.div>
@@ -220,117 +313,89 @@ export default function PurchasePage() {
 
         {/* ── Step 2: Select Plan ── */}
         {cart.step === 2 && (
-          <motion.div
-            key="step2"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          >
-            {plans.map((plan) => {
-              const TierIcon = tierIcons[plan.tier] ?? Zap;
-              const Wrapper = plan.popular ? GlowBorder : 'div';
-
-              return (
-                <Wrapper key={plan.id} {...(plan.popular ? { color: 'gold' } : {})}>
-                  <GlassCard
-                    padding="lg"
-                    hover
-                    className="cursor-pointer h-full flex flex-col"
-                    onClick={() => handleSelectPlan(plan)}
-                  >
-                    {plan.popular && (
-                      <Badge variant="gold" className="mb-3">Most Popular</Badge>
-                    )}
-                    <TierIcon className="h-8 w-8 text-accent-primary mb-3" />
-                    <h3 className="text-lg font-heading font-bold">{plan.name}</h3>
-                    <p className="text-sm text-text-secondary mt-1 flex-1">{plan.description}</p>
-
-                    {/* Price */}
-                    <div className="mt-4 mb-4">
-                      {plan.price != null ? (
-                        <>
-                          {plan.originalPrice && (
-                            <span className="text-sm text-text-tertiary line-through mr-2">
-                              {formatCurrency(plan.originalPrice)}
-                            </span>
-                          )}
-                          <span className="text-2xl font-heading font-bold">
-                            {formatCurrency(plan.price)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-xl font-semibold text-accent-primary">
-                          {plan.priceLabel}
-                        </span>
-                      )}
-                    </div>
-
-                    <ul className="space-y-2">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
-                          <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    {plan.guarantee && (
-                      <p className="text-xs text-accent-gold font-semibold mt-4">{plan.guarantee}</p>
-                    )}
-                  </GlassCard>
-                </Wrapper>
-              );
-            })}
+          <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+            {plans.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} onSelect={handleSelectPlan} />
+            ))}
           </motion.div>
         )}
 
-        {/* ── Step 3: Account Details ── */}
-        {cart.step === 3 && (
-          <motion.div
-            key="step3"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
+        {/* ── Step 3: Firm + Account Size ── */}
+        {cart.step === 3 && selectedPlan && (
+          <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <GlassCard padding="lg">
-              <h3 className="text-lg font-heading font-semibold mb-4">Account Details</h3>
+              <h3 className="text-lg font-heading font-semibold mb-1">Account Details</h3>
+
+              {/* Plan summary */}
+              <div className="flex items-center gap-3 mb-5 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white">{selectedPlan.name}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">
+                    Account size: <span className="text-white font-medium">{selectedPlan.accountSizes.join(' / ')}</span>
+                    {selectedPlan.deliveryDays ? ` · ${selectedPlan.deliveryDays}-day delivery` : ''}
+                  </p>
+                </div>
+                <div className="text-right">
+                  {profitSplitPlan ? (
+                    <span className="text-accent-primary font-semibold text-sm">{selectedPlan.priceLabel}</span>
+                  ) : (
+                    <span className="text-white font-bold">${selectedPlan.price}</span>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-4 max-w-md">
-                <Select
-                  label="Prop Firm"
-                  value={cart.firmName ?? ''}
-                  onChange={(e) => {
-                    const firm = PROP_FIRMS.find((f) => f.name === e.target.value);
-                    if (firm) cart.setAccount(cart.accountSize ?? '', firm.name);
-                  }}
-                >
+                {/* Prop Firm */}
+                <Select label="Prop Firm" value={cart.firmName ?? ''} onChange={(e) => handleFirmChange(e.target.value)}>
                   <option value="">Select a firm...</option>
                   {PROP_FIRMS.map((f) => (
                     <option key={f.id} value={f.name}>{f.name}</option>
                   ))}
                 </Select>
 
+                {/* Account Size — locked to plan sizes */}
                 {cart.firmName && (
-                  <Select
-                    label="Account Size"
-                    value={cart.accountSize ?? ''}
-                    onChange={(e) => handleSelectAccount(e.target.value, cart.firmName!)}
-                  >
-                    <option value="">Select size...</option>
-                    {(selectedFirm?.accountSizes ?? []).map((size) => (
-                      <option key={size} value={size}>{size}</option>
-                    ))}
-                  </Select>
+                  autoSize ? (
+                    // Single size: show as readonly info, not a dropdown
+                    <div className="space-y-1">
+                      <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide">Account Size</label>
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] text-sm">
+                        <Check className="h-4 w-4 text-accent-primary shrink-0" />
+                        <span className="text-white font-medium">{autoSize}</span>
+                        <span className="text-text-tertiary text-xs ml-auto">Fixed by plan</span>
+                      </div>
+                    </div>
+                  ) : sizesForDropdown.length > 0 ? (
+                    <Select
+                      label="Account Size"
+                      value={cart.accountSize ?? ''}
+                      onChange={(e) => handleSizeChange(e.target.value)}
+                    >
+                      <option value="">Select size...</option>
+                      {sizesForDropdown.map((size) => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <p className="text-sm text-yellow-400 px-1">
+                      ⚠️ This firm doesn&apos;t offer {selectedPlan.accountSizes.join('/')} accounts. Please select a different firm.
+                    </p>
+                  )
                 )}
 
-                {cart.accountSize && cart.firmName && (
+                {/* Continue button */}
+                {cart.firmName && (sizesForDropdown.length > 0 || autoSize) && (
                   <Button
-                    variant="primary"
-                    fullWidth
-                    icon={<ArrowRight className="h-4 w-4" />}
-                    iconPosition="right"
-                    onClick={() => cart.setStep(4)}
+                    variant="primary" fullWidth
+                    icon={<ArrowRight className="h-4 w-4" />} iconPosition="right"
+                    onClick={() => {
+                      if (autoSize) cart.setAccount(autoSize, cart.firmName!);
+                      handleContinueToCheckout();
+                    }}
+                    disabled={!autoSize && !cart.accountSize}
                   >
-                    Continue to Checkout
+                    Continue to {profitSplitPlan ? 'Agreement' : 'Checkout'}
                   </Button>
                 )}
               </div>
@@ -338,16 +403,32 @@ export default function PurchasePage() {
           </motion.div>
         )}
 
-        {/* ── Step 4: Checkout Summary ── */}
+        {/* ── Step 4: Summary / Checkout ── */}
         {cart.step === 4 && (
-          <motion.div
-            key="step4"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
+          <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <GlassCard padding="lg">
-              <h3 className="text-lg font-heading font-semibold mb-6">Order Summary</h3>
+              <h3 className="text-lg font-heading font-semibold mb-6">
+                {profitSplitPlan ? 'Agreement Summary' : 'Order Summary'}
+              </h3>
+
+              {/* Profit-split info banner */}
+              {profitSplitPlan && selectedPlan && (
+                <div className="mb-5 p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/5">
+                  <div className="flex items-start gap-3">
+                    <HandshakeIcon className="h-5 w-5 text-accent-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-white">Profit Split Agreement</p>
+                      <p className="text-xs text-text-secondary mt-1">
+                        No upfront payment. Our team will trade your funded account and take{' '}
+                        <span className="text-accent-primary font-semibold">
+                          {selectedPlan.id === 'am-starter' ? '20%' : '15%'}
+                        </span>{' '}
+                        of profits generated. You keep the rest.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
@@ -356,7 +437,7 @@ export default function PurchasePage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-text-secondary">Plan</span>
-                  <span>{cart.planName} ({cart.tier})</span>
+                  <span>{cart.planName}</span>
                 </div>
                 {cart.firmName && (
                   <div className="flex justify-between text-sm">
@@ -371,68 +452,54 @@ export default function PurchasePage() {
                   </div>
                 )}
                 <div className="border-t border-white/[0.06] my-2" />
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">Subtotal</span>
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total</span>
                   <span className="font-mono">
-                    {cart.price > 0 ? formatCurrency(cart.price) : 'Profit Split'}
+                    {profitSplitPlan
+                      ? <span className="text-accent-primary text-base font-semibold">{selectedPlan?.priceLabel}</span>
+                      : cart.price > 0 ? formatCurrency(cart.getFinalPrice()) : '—'}
                   </span>
                 </div>
-                {cart.discountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-success">
+                {!profitSplitPlan && cart.discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-400">
                     <span>Discount ({cart.couponCode})</span>
                     <span>-{formatCurrency(cart.discountAmount)}</span>
                   </div>
                 )}
-                <div className="border-t border-white/[0.06] my-2" />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span className="font-mono">
-                    {cart.getFinalPrice() > 0
-                      ? formatCurrency(cart.getFinalPrice())
-                      : 'Profit Split Only'}
-                  </span>
-                </div>
               </div>
 
               {/* Coupon — only for paid plans */}
-              {cart.price > 0 && (
+              {!profitSplitPlan && cart.price > 0 && (
                 <div className="flex gap-2 mb-6">
-                  <Input
-                    placeholder="Coupon code"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleApplyCoupon}
-                    loading={couponLoading}
-                  >
+                  <Input placeholder="Coupon code" value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)} className="flex-1" />
+                  <Button variant="secondary" size="sm" onClick={handleApplyCoupon} loading={couponLoading}>
                     Apply
                   </Button>
                 </div>
               )}
 
               <Button
-                variant="primary"
-                fullWidth
-                glow
-                loading={checkoutLoading}
-                icon={<CreditCard className="h-5 w-5" />}
-                onClick={handleCheckout}
+                variant="primary" fullWidth glow loading={checkoutLoading}
+                icon={profitSplitPlan ? <HandshakeIcon className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
+                onClick={profitSplitPlan
+                  ? () => { addToast('Agreement submitted! Our team will contact you shortly.', 'success'); cart.reset(); }
+                  : handleCheckout}
               >
-                {cart.getFinalPrice() > 0
-                  ? `Proceed to Payment — ${formatCurrency(cart.getFinalPrice())}`
-                  : 'Confirm & Proceed'}
+                {profitSplitPlan
+                  ? 'Confirm Agreement'
+                  : `Proceed to Payment — ${formatCurrency(cart.getFinalPrice())}`}
               </Button>
 
               <p className="text-xs text-text-tertiary text-center mt-3">
-                Secure payment processed by Stripe. 256-bit SSL encryption.
+                {profitSplitPlan
+                  ? 'Our team will review your account and reach out within 24 hours.'
+                  : 'Secure payment processed by Stripe. 256-bit SSL encryption.'}
               </p>
             </GlassCard>
           </motion.div>
         )}
+
       </AnimatePresence>
     </div>
   );

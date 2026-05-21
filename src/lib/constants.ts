@@ -145,24 +145,15 @@ export const ACCOUNT_GROWTH_PLANS: ServicePlan[] = [
 ];
 
 export const PROP_FIRMS: PropFirm[] = [
-  { id: 'ftmo', name: 'FTMO', phases: 2, accountSizes: ['$25,000', '$50,000', '$100,000', '$200,000'] },
-  { id: 'mff', name: 'MyForexFunds', phases: 2, accountSizes: ['$50,000', '$100,000', '$200,000'] },
-  {
-    id: 'fundednext',
-    name: 'FundedNext',
-    phases: 2,
-    accountSizes: ['$25,000', '$50,000', '$100,000', '$200,000'],
-  },
-  { id: 'trueforex', name: 'True Forex Funds', phases: 2, accountSizes: ['$50,000', '$100,000', '$200,000'] },
-  {
-    id: 'thefundedtrader',
-    name: 'The Funded Trader',
-    phases: 2,
-    accountSizes: ['$50,000', '$100,000', '$200,000', '$400,000'],
-  },
-  { id: 'e8funding', name: 'E8 Funding', phases: 1, accountSizes: ['$25,000', '$50,000', '$100,000', '$250,000'] },
+  { id: 'ftmo', name: 'FTMO', phases: 2, accountSizes: ['$10,000', '$25,000', '$50,000', '$100,000', '$200,000'] },
+  { id: 'mff', name: 'MyForexFunds', phases: 2, accountSizes: ['$10,000', '$50,000', '$100,000', '$200,000'] },
+  { id: 'fundednext', name: 'FundedNext', phases: 2, accountSizes: ['$10,000', '$25,000', '$50,000', '$100,000', '$200,000'] },
+  { id: 'trueforex', name: 'True Forex Funds', phases: 2, accountSizes: ['$10,000', '$50,000', '$100,000', '$200,000'] },
+  { id: 'thefundedtrader', name: 'The Funded Trader', phases: 2, accountSizes: ['$10,000', '$50,000', '$100,000', '$200,000', '$400,000'] },
+  { id: 'e8funding', name: 'E8 Funding', phases: 1, accountSizes: ['$10,000', '$25,000', '$50,000', '$100,000', '$250,000'] },
   { id: 'topstep', name: 'TopStep', phases: 1, accountSizes: ['$50,000', '$100,000', '$150,000'] },
-  { id: 'other', name: 'Other', phases: 2, accountSizes: ['Custom'] },
+  { id: 'apextrader', name: 'Apex Trader Funding', phases: 1, accountSizes: ['$25,000', '$50,000', '$100,000', '$150,000', '$250,000'] },
+  { id: 'other', name: 'Other', phases: 2, accountSizes: ['$10,000', '$25,000', '$50,000', '$100,000', '$200,000', 'Custom'] },
 ];
 
 export const TRADING_PLATFORMS = ['MetaTrader 4', 'MetaTrader 5', 'cTrader', 'TradingView', 'Other'] as const;
