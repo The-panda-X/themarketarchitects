@@ -1,3 +1,8 @@
+// Fix SSL certificate verification failure on Windows (VPN/corporate network) for local dev
+if (process.env.NODE_ENV === 'development') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
