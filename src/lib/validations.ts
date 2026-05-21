@@ -137,9 +137,9 @@ export const couponSchema = z.object({
     .min(3, 'Code must be at least 3 characters')
     .max(20)
     .regex(/^[A-Z0-9_-]+$/, 'Code must be uppercase letters, numbers, hyphens, or underscores'),
-  discountPercent: z.number().min(1).max(100).optional().nullable(),
-  discountAmount: z.number().min(1).optional().nullable(),
-  maxUses: z.number().min(1).optional().nullable(),
+  discountPercent: z.coerce.number().min(1, 'Must be at least 1%').max(100, 'Cannot exceed 100%').optional().nullable(),
+  discountAmount: z.coerce.number().min(1, 'Must be at least $1').optional().nullable(),
+  maxUses: z.coerce.number().min(1, 'Must be at least 1').optional().nullable(),
   validFrom: z.string().optional(),
   validUntil: z.string().optional().nullable(),
   isActive: z.boolean().default(true),

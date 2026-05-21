@@ -53,12 +53,39 @@ export default function AdminCouponsPage() {
   useEffect(() => { fetchCoupons(); }, [fetchCoupons]);
 
   const handleCreate = async () => {
+    // Client-side guards
+    if (!form.code.trim()) {
+      addToast('Coupon code is required.', 'error');
+      return;
+    }
+    if (!form.discountPercent && !form.discountAmount) {
+      addToast('Enter either a discount percentage or a fixed amount.', 'error');
+      return;
+    }
+    if (form.discountPercent && Number(form.discountPercent) > 100) {
+      addToast('Discount percentage cannot exceed 100%.', 'error');
+      return;
+    }
+    if (form.discountPercent && Number(form.discountPercent) < 1) {
+      addToast('Discount percentage must be at least 1%.', 'error');
+      return;
+    }
+
     setSaving(true);
     try {
+      // Convert string inputs to proper types before sending
+      const payload = {
+        code: form.code.trim().toUpperCase(),
+        discountPercent: form.discountPercent ? Number(form.discountPercent) : null,
+        discountAmount: form.discountAmount ? Number(form.discountAmount) : null,
+        maxUses: form.maxUses ? Number(form.maxUses) : null,
+        validUntil: form.validUntil || null,
+      };
+
       const res = await fetch('/api/admin/coupons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         const d = await res.json();
@@ -157,9 +184,15 @@ export default function AdminCouponsPage() {
             label="Discount Percent (%)"
             type="number"
             placeholder="e.g. 20"
+            min={1}
+            max={100}
             value={form.discountPercent}
-            onChange={(e) => setForm({ ...form, discountPercent: e.target.value, discountAmount: '' })}
-            hint="Use either percent or fixed amount."
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val !== '' && Number(val) > 100) return;
+              setForm({ ...form, discountPercent: val, discountAmount: '' });
+            }}
+            hint="Use either percent or a fixed amount — not both."
           />
           <Input
             label="Fixed Discount ($)"
