@@ -42,7 +42,7 @@ export default function Navbar() {
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
           scrolled
-            ? 'bg-black/85 backdrop-blur-xl border-b border-white/[0.06] py-3'
+            ? 'bg-black/85 backdrop-blur-xl py-3'
             : 'bg-transparent py-5'
         )}
       >
