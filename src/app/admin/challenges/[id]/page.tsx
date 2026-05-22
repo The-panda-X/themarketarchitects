@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Radio, Pause, Play, Wifi, WifiOff, Info, Bot } from 'lucide-react';
+import { ArrowLeft, Radio, Pause, Play, Wifi, WifiOff, Info, Bot, KeyRound, Copy, RefreshCw, Check } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -41,6 +41,7 @@ interface ChallengeDetail {
   signalFilePath: string | null;
   isPaused: boolean;
   lastReportedAt: string | null;
+  eaToken: string | null;
   user: { id: string; email: string; name: string | null };
   order: { planName: string; serviceType: string };
   dailyStats: Array<{ id: string; date: string; profit: number; loss: number; tradesCount: number; winCount: number }>;
@@ -56,6 +57,8 @@ export default function AdminChallengeDetailPage() {
   const [saving, setSaving] = useState(false);
   const [savingSignal, setSavingSignal] = useState(false);
   const [togglingPause, setTogglingPause] = useState(false);
+  const [generatingToken, setGeneratingToken] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({
     status: '',
     currentPhase: 1,
@@ -151,6 +154,29 @@ export default function AdminChallengeDetailPage() {
     } finally {
       setTogglingPause(false);
     }
+  };
+
+  const handleGenerateToken = async () => {
+    setGeneratingToken(true);
+    try {
+      const res = await fetch(`/api/admin/challenges/${params.id}/token`, { method: 'POST' });
+      if (res.ok) {
+        const d = await res.json();
+        setChallenge(prev => prev ? { ...prev, eaToken: d.data.token } : prev);
+        addToast('Token generated. Share it with the client.', 'success');
+      } else {
+        addToast('Failed to generate token.', 'error');
+      }
+    } finally {
+      setGeneratingToken(false);
+    }
+  };
+
+  const handleCopyToken = async () => {
+    if (!challenge?.eaToken) return;
+    await navigator.clipboard.writeText(challenge.eaToken);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSave = async () => {
@@ -462,15 +488,75 @@ export default function AdminChallengeDetailPage() {
             onChange={e => setSignalForm(f => ({...f, allowedPairs: e.target.value}))}
           />
           <Input
-            label="Signal File Name"
+            label="Signal File Name (for signal delivery)"
             placeholder="e.g. signal_001.txt"
             value={signalForm.signalFilePath}
             onChange={e => setSignalForm(f => ({...f, signalFilePath: e.target.value}))}
           />
-          <p className="text-xs text-text-tertiary">
-            Enter <strong className="text-text-secondary">filename only</strong> (e.g. <code className="text-accent-primary">signal_001.txt</code>). The bridge automatically places it in the MT5 Common Files folder. The EA's <code className="text-accent-primary">InpFileName</code> must match this exactly. Leave empty to exclude this account from signal delivery.
+          <p className="text-xs text-text-tertiary -mt-2">
+            Filename only — must match the EA's <code className="text-accent-primary">InpFileName</code>. Used by the Discord bridge to deliver signals.
           </p>
         </div>
+
+        {/* ── Connection Token ───────────────────────────────────────── */}
+        <div className="mt-5 rounded-xl border border-white/[0.08] overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
+            <div className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-accent-gold" />
+              <span className="text-sm font-semibold">EA Connection Token</span>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={generatingToken}
+              onClick={handleGenerateToken}
+              icon={challenge.eaToken
+                ? <RefreshCw className="h-3.5 w-3.5" />
+                : <KeyRound className="h-3.5 w-3.5" />}
+            >
+              {challenge.eaToken ? 'Regenerate' : 'Generate Token'}
+            </Button>
+          </div>
+
+          <div className="px-4 py-3">
+            {challenge.eaToken ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 font-mono text-sm text-accent-primary bg-accent-primary/5 px-3 py-2 rounded-lg border border-accent-primary/20 tracking-widest">
+                    {challenge.eaToken}
+                  </code>
+                  <button
+                    onClick={handleCopyToken}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border border-white/[0.08] hover:bg-white/[0.06] text-text-secondary hover:text-text-primary"
+                  >
+                    {copied
+                      ? <><Check className="h-3.5 w-3.5 text-success" /> Copied</>
+                      : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+                  </button>
+                </div>
+                <div className="mt-3 flex items-start gap-2 text-xs text-text-tertiary">
+                  <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-accent-primary" />
+                  <span>
+                    Share this token with the client. They enter it in{' '}
+                    <code className="text-accent-primary">InpAccountToken</code> in{' '}
+                    <strong className="text-text-secondary">SignalExecutor_v6</strong>.
+                    The EA will then automatically report to this account — no filename matching needed.
+                    {' '}<span className="text-warning">Regenerating revokes the old token immediately.</span>
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-text-tertiary py-1">
+                <Info className="h-3.5 w-3.5 shrink-0 text-text-tertiary" />
+                <span>
+                  No token yet. Click <strong className="text-text-secondary">Generate Token</strong> to create a unique code for this account.
+                  The client enters it once in their EA and the connection is established automatically.
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="mt-4">
           <Button variant="primary" size="sm" loading={savingSignal} onClick={handleSaveSignal}>
             Save Signal Settings

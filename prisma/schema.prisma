@@ -167,6 +167,7 @@ model Challenge {
   signalFilePath  String?
   isPaused        Boolean         @default(false)
   lastReportedAt  DateTime?                        // set by EA reporter
+  eaToken         String?         @unique          // unique connection token per account
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 

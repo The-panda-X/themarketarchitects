@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
 
     // ── Parse body ────────────────────────────────────────────────────
     const body = await req.json() as {
-      signalFile:       string;
+      token?:           string;   // preferred: unique EA token from admin panel
+      signalFile?:      string;   // fallback: match by signal file name
       balance?:         number;
       equity?:          number;
       openProfit?:      number;
@@ -39,22 +40,29 @@ export async function POST(req: NextRequest) {
       openTrades?:      number;
     };
 
-    const { signalFile } = body;
-    if (!signalFile) {
-      return errorResponse('signalFile is required', 400);
+    const { token, signalFile } = body;
+    if (!token && !signalFile) {
+      return errorResponse('token or signalFile is required', 400);
     }
 
     // ── Find active challenge ─────────────────────────────────────────
-    const challenge = await prisma.challenge.findFirst({
-      where: {
-        signalFilePath: signalFile,
-        status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] },
-      },
-    });
+    // Token takes priority (exact unique match); signalFile is the legacy fallback
+    const challenge = token
+      ? await prisma.challenge.findFirst({
+          where: { eaToken: token, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
+        })
+      : await prisma.challenge.findFirst({
+          where: { signalFilePath: signalFile, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
+        });
 
     if (!challenge) {
-      // Return 200 so the EA doesn't spam error logs — just nothing to update
-      return successResponse({ found: false, message: 'No active challenge for this signal file' });
+      // 200 so EA doesn't spam error logs — just log and move on
+      return successResponse({
+        found:   false,
+        message: token
+          ? 'No active challenge found for this token. Check InpAccountToken or challenge status.'
+          : 'No active challenge found for this signal file.',
+      });
     }
 
     // ── Build update payload ──────────────────────────────────────────
