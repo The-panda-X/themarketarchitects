@@ -39,9 +39,9 @@ const METALS = [
 ];
 
 const INDICES = [
-  { symbol: 'TVC:DJI', name: 'US30' },
-  { symbol: 'NASDAQ:NDX', name: 'NAS100' },
-  { symbol: 'SP:SPX', name: 'SPX500' },
+  { symbol: 'BLACKBULL:US30', name: 'US30' },
+  { symbol: 'BLACKBULL:NAS100', name: 'NAS100' },
+  { symbol: 'BLACKBULL:SPX500', name: 'SPX500' },
 ];
 
 const CRYPTO = [
@@ -303,7 +303,7 @@ export default function MarketWidgetsPage() {
       case 'indices':
         return (
           <div className="space-y-6">
-            <AdvancedChart symbol="TVC:DJI" />
+            <AdvancedChart symbol="BLACKBULL:US30" />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {INDICES.map((idx) => (
                 <TradingViewMiniChart
