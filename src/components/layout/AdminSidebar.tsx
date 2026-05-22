@@ -14,7 +14,6 @@ import {
   Banknote,
   FileText,
   Tag,
-  Bell,
   ScrollText,
   Settings,
   LogOut,
@@ -37,7 +36,6 @@ const adminNavItems = [
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
   { label: 'Blog', href: '/admin/blog', icon: FileText },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag },
-  { label: 'Notifications', href: '/admin/notifications', icon: Bell },
   { label: 'Activity Logs', href: '/admin/logs', icon: ScrollText },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
