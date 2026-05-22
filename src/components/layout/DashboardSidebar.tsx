@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  Coins,
 } from 'lucide-react';
 import { setLastPanel } from '@/hooks/useLastPanel';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ const navItems = [
   { label: 'Credentials', href: '/dashboard/credentials', icon: KeyRound },
   { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
   { label: 'Support', href: '/dashboard/support', icon: HeadphonesIcon },
+  { label: 'Profit Split', href: '/dashboard/profit-split', icon: Coins },
   { label: 'Referrals', href: '/dashboard/referrals', icon: Users },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
