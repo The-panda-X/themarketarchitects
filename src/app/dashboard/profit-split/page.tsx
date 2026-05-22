@@ -47,14 +47,12 @@ interface AmOrder {
 
 // ── Wallet addresses ──────────────────────────────────────────────────────────
 const WALLETS = [
-  { label: 'USDT — TRC20',  value: process.env.NEXT_PUBLIC_WALLET_USDT_TRC20  ?? '' },
-  { label: 'USDT — ERC20',  value: process.env.NEXT_PUBLIC_WALLET_USDT_ERC20  ?? '' },
-  { label: 'USDT — BNB',    value: process.env.NEXT_PUBLIC_WALLET_USDT_BSC    ?? '' },
-  { label: 'USDT — MATIC',  value: process.env.NEXT_PUBLIC_WALLET_USDT_POLYGON ?? '' },
-  { label: 'Bitcoin (BTC)', value: process.env.NEXT_PUBLIC_WALLET_BTC          ?? '' },
-].filter((w) => w.value);
+  { label: 'USDT — BEP20 (BSC)',     value: '0x10420285208e762fa7aedbcd8d6e642c810e6fd9' },
+  { label: 'USDT — TRC20 (Tron)',     value: 'TRZX7U9gjYQDeQubsX3T3c89bn3MdUqkCd' },
+  { label: 'USDT — ERC20 (Ethereum)', value: '0x10420285208e762fa7aedbcd8d6e642c810e6fd9' },
+];
 
-const NETWORKS = ['TRC20', 'ERC20', 'BNB (BSC)', 'MATIC (Polygon)', 'BTC'];
+const NETWORKS = ['BEP20 (BSC)', 'TRC20 (Tron)', 'ERC20 (Ethereum)'];
 
 // ── Split % from plan ─────────────────────────────────────────────────────────
 function deriveSplitPercent(planName: string, serviceType: string): number {
@@ -102,7 +100,7 @@ export default function ProfitSplitPage() {
     accountId:    '',
     totalPayout:  '',
     amountSent:   '',
-    network:      'TRC20',
+    network:      'BEP20 (BSC)',
     txHash:       '',
     notes:        '',
   });

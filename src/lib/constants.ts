@@ -11,52 +11,33 @@ export const SITE_CONFIG = {
   discord: process.env.NEXT_PUBLIC_DISCORD_INVITE ?? '',
 } as const;
 
-// Crypto wallet addresses — update these with your real addresses
 export const CRYPTO_WALLETS = [
+  {
+    id: 'usdt_bsc',
+    name: 'USDT',
+    network: 'BEP-20 (BSC)',
+    symbol: 'USDT',
+    address: '0x10420285208e762fa7aedbcd8d6e642c810e6fd9',
+    icon: '₮',
+    note: 'Send only USDT on BEP-20 (Binance Smart Chain) network',
+  },
   {
     id: 'usdt_trc20',
     name: 'USDT',
     network: 'TRC-20 (Tron)',
     symbol: 'USDT',
-    address: process.env.NEXT_PUBLIC_WALLET_USDT_TRC20 ?? 'YOUR_USDT_TRC20_ADDRESS',
+    address: 'TRZX7U9gjYQDeQubsX3T3c89bn3MdUqkCd',
     icon: '₮',
-    note: 'Send only USDT on TRC-20 network',
+    note: 'Send only USDT on TRC-20 (Tron) network',
   },
   {
     id: 'usdt_erc20',
     name: 'USDT',
     network: 'ERC-20 (Ethereum)',
     symbol: 'USDT',
-    address: process.env.NEXT_PUBLIC_WALLET_USDT_ERC20 ?? 'YOUR_USDT_ERC20_ADDRESS',
+    address: '0x10420285208e762fa7aedbcd8d6e642c810e6fd9',
     icon: '₮',
-    note: 'Send only USDT on ERC-20 network',
-  },
-  {
-    id: 'usdt_bsc',
-    name: 'USDT',
-    network: 'BEP-20 (BSC)',
-    symbol: 'USDT',
-    address: process.env.NEXT_PUBLIC_WALLET_USDT_BSC ?? 'YOUR_USDT_BSC_ADDRESS',
-    icon: '₮',
-    note: 'Send only USDT on BEP-20 (Binance Smart Chain) network',
-  },
-  {
-    id: 'usdt_polygon',
-    name: 'USDT',
-    network: 'Polygon (MATIC)',
-    symbol: 'USDT',
-    address: process.env.NEXT_PUBLIC_WALLET_USDT_POLYGON ?? 'YOUR_USDT_POLYGON_ADDRESS',
-    icon: '₮',
-    note: 'Send only USDT on Polygon network',
-  },
-  {
-    id: 'btc',
-    name: 'Bitcoin',
-    network: 'BTC Network',
-    symbol: 'BTC',
-    address: process.env.NEXT_PUBLIC_WALLET_BTC ?? 'YOUR_BTC_ADDRESS',
-    icon: '₿',
-    note: 'Send only Bitcoin (BTC)',
+    note: 'Send only USDT on ERC-20 (Ethereum) network',
   },
 ] as const;
 

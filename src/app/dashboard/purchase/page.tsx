@@ -412,7 +412,7 @@ export default function PurchasePage() {
               {!profitSplitPlan && (
                 <div className="mb-5 p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2">
                   <Bitcoin className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-yellow-300">Payment accepted in <strong>USDT, BTC</strong> cryptocurrency only. Wallet details shown after confirming order.</p>
+                  <p className="text-xs text-yellow-300">Payment accepted in <strong>USDT</strong> cryptocurrency only (BEP-20, TRC-20, ERC-20). Wallet details shown after confirming order.</p>
                 </div>
               )}
 
