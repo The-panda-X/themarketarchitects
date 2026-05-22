@@ -34,7 +34,6 @@ import Avatar from '@/components/ui/Avatar';
 const navItems = [
   { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { label: 'My Challenges', href: '/dashboard/challenges', icon: Target },
-  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { label: 'Purchase', href: '/dashboard/purchase', icon: ShoppingCart },
   { label: 'Services', href: '/dashboard/services', icon: Briefcase },
   { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
@@ -43,6 +42,7 @@ const navItems = [
   { label: 'Support', href: '/dashboard/support', icon: HeadphonesIcon },
   { label: 'Profit Split', href: '/dashboard/profit-split', icon: Coins },
   { label: 'Referrals', href: '/dashboard/referrals', icon: Users },
+  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
