@@ -131,11 +131,11 @@ export default function NotificationBell({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -5, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 z-50 mt-2 w-[360px] max-w-[calc(100vw-2rem)] rounded-xl bg-[#1e1010] border border-[rgba(230,57,70,0.30)] shadow-[0_8px_32px_rgba(0,0,0,0.7)] overflow-hidden"
+            className="absolute right-0 z-50 mt-2 w-[300px] max-w-[calc(100vw-1.5rem)] rounded-xl bg-[#1e1010] border border-[rgba(230,57,70,0.30)] shadow-[0_8px_32px_rgba(0,0,0,0.7)] overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-              <h3 className="text-sm font-semibold text-text-primary">Notifications</h3>
+            <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06]">
+              <h3 className="text-xs font-semibold text-text-primary">Notifications</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
@@ -148,22 +148,22 @@ export default function NotificationBell({
             </div>
 
             {/* Notification list */}
-            <div className="max-h-[340px] overflow-y-auto">
+            <div className="max-h-[280px] overflow-y-auto">
               {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="h-5 w-5 border-2 border-accent-primary/30 border-t-accent-primary rounded-full animate-spin" />
+                <div className="flex items-center justify-center py-6">
+                  <div className="h-4 w-4 border-2 border-accent-primary/30 border-t-accent-primary rounded-full animate-spin" />
                 </div>
               ) : recent.length === 0 ? (
-                <div className="text-center py-8 px-4">
-                  <Bell className="h-8 w-8 text-text-tertiary mx-auto mb-2" />
-                  <p className="text-sm text-text-secondary">No notifications yet</p>
+                <div className="text-center py-6 px-3">
+                  <Bell className="h-6 w-6 text-text-tertiary mx-auto mb-1.5" />
+                  <p className="text-xs text-text-secondary">No notifications yet</p>
                 </div>
               ) : (
                 recent.map((n) => {
                   const content = (
                     <div
                       key={n.id}
-                      className={`flex items-start gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors cursor-pointer ${
+                      className={`flex items-start gap-2.5 px-3 py-2.5 hover:bg-white/[0.03] transition-colors cursor-pointer border-b border-white/[0.03] last:border-0 ${
                         !n.read ? 'bg-white/[0.02]' : ''
                       }`}
                     >
@@ -171,16 +171,16 @@ export default function NotificationBell({
                         {typeIcon[n.type] ?? typeIcon.info}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className={`text-sm leading-tight ${!n.read ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>
+                        <div className="flex items-start justify-between gap-1.5">
+                          <p className={`text-xs leading-tight ${!n.read ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>
                             {n.title}
                           </p>
                           {!n.read && (
-                            <span className="shrink-0 mt-1 h-2 w-2 rounded-full bg-accent-primary" />
+                            <span className="shrink-0 mt-0.5 h-1.5 w-1.5 rounded-full bg-accent-primary" />
                           )}
                         </div>
-                        <p className="text-xs text-text-tertiary mt-0.5 line-clamp-2">{n.message}</p>
-                        <p className="text-[10px] text-text-tertiary mt-1">{timeAgo(n.createdAt)}</p>
+                        <p className="text-[11px] text-text-tertiary mt-0.5 line-clamp-1">{n.message}</p>
+                        <p className="text-[10px] text-text-tertiary mt-0.5">{timeAgo(n.createdAt)}</p>
                       </div>
                     </div>
                   );
@@ -200,7 +200,7 @@ export default function NotificationBell({
             <Link
               href={notificationsHref}
               onClick={() => setOpen(false)}
-              className="flex items-center justify-center gap-1.5 px-4 py-3 border-t border-white/[0.06] text-sm font-medium text-accent-primary hover:bg-white/[0.03] transition-colors"
+              className="flex items-center justify-center gap-1 px-3 py-2 border-t border-white/[0.06] text-xs font-medium text-accent-primary hover:bg-white/[0.03] transition-colors"
             >
               See All Notifications
               <ChevronRight className="h-4 w-4" />
