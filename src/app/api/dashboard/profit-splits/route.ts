@@ -1,8 +1,24 @@
 export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+
+const MAX_SIZE = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+function deriveSplitPercent(planName: string, serviceType: string): number {
+  const p = planName.toLowerCase();
+  if (serviceType === 'ACCOUNT_MANAGEMENT') {
+    if (p.includes('pro')) return 15;
+    return 20;
+  }
+  if (p.includes('elite')) return 20;
+  if (p.includes('pro'))   return 25;
+  return 30;
+}
 
 export async function GET() {
   try {
@@ -18,13 +34,13 @@ export async function GET() {
       },
     });
 
-    // Also fetch accounts eligible for profit split:
-    // 1. FUNDED challenges
-    // 2. IN_PROGRESS / COMPLETED Account Management orders
     const [fundedChallenges, amOrders] = await Promise.all([
       prisma.challenge.findMany({
         where: { userId, status: 'FUNDED' },
-        select: { id: true, firmName: true, accountSize: true },
+        select: {
+          id: true, firmName: true, accountSize: true,
+          order: { select: { planName: true, serviceType: true } },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.order.findMany({
@@ -33,7 +49,7 @@ export async function GET() {
           serviceType: 'ACCOUNT_MANAGEMENT',
           status: { in: ['IN_PROGRESS', 'COMPLETED'] },
         },
-        select: { id: true, planName: true, accountSize: true, firmName: true },
+        select: { id: true, planName: true, accountSize: true, firmName: true, serviceType: true },
         orderBy: { createdAt: 'desc' },
       }),
     ]);
@@ -53,69 +69,83 @@ export async function POST(req: NextRequest) {
     const session = await requireAuth();
     const userId = session.user.id;
 
-    const body = await req.json() as {
-      challengeId?:  string;
-      orderId?:      string;
-      totalPayout:   number;
-      splitPercent:  number;
-      amountSent:    number;
-      currency?:     string;
-      network?:      string;
-      txHash?:       string;
-      proofImage?:   string;
-      notes?:        string;
-    };
+    const formData = await req.formData();
 
-    const { totalPayout, splitPercent, amountSent } = body;
+    const challengeId = formData.get('challengeId') as string | null;
+    const orderId     = formData.get('orderId')     as string | null;
+    const totalPayout = parseFloat(formData.get('totalPayout') as string || '0');
+    const amountSent  = parseFloat(formData.get('amountSent')  as string || '0');
+    const currency    = (formData.get('currency') as string) || 'USDT';
+    const network     = formData.get('network')  as string | null;
+    const txHash      = formData.get('txHash')   as string | null;
+    const notes       = formData.get('notes')    as string | null;
+    const file        = formData.get('proofImage') as File | null;
 
+    if (!challengeId && !orderId)
+      return errorResponse('challengeId or orderId is required', 400);
     if (!totalPayout || totalPayout <= 0)
       return errorResponse('Total payout must be greater than 0', 400);
-    if (!splitPercent || splitPercent <= 0 || splitPercent > 100)
-      return errorResponse('Split percent must be between 1 and 100', 400);
     if (!amountSent || amountSent <= 0)
       return errorResponse('Amount sent must be greater than 0', 400);
-    if (!body.challengeId && !body.orderId)
-      return errorResponse('challengeId or orderId is required', 400);
+    if (!file)
+      return errorResponse('Proof screenshot is required', 400);
+    if (!ALLOWED_TYPES.includes(file.type))
+      return errorResponse('Invalid file type. Allowed: JPG, PNG, WebP, GIF', 400);
+    if (file.size > MAX_SIZE)
+      return errorResponse('File too large (max 5MB)', 400);
 
-    // Verify ownership
-    if (body.challengeId) {
+    // Look up the linked order to derive split %
+    let splitPercent = 25;
+    if (challengeId) {
       const ch = await prisma.challenge.findFirst({
-        where: { id: body.challengeId, userId, status: 'FUNDED' },
+        where: { id: challengeId, userId, status: 'FUNDED' },
+        include: { order: { select: { planName: true, serviceType: true } } },
       });
       if (!ch) return errorResponse('Funded challenge not found', 404);
-    }
-    if (body.orderId) {
+      splitPercent = deriveSplitPercent(ch.order.planName, ch.order.serviceType);
+    } else if (orderId) {
       const ord = await prisma.order.findFirst({
         where: {
-          id: body.orderId,
+          id: orderId,
           userId,
           serviceType: 'ACCOUNT_MANAGEMENT',
           status: { in: ['IN_PROGRESS', 'COMPLETED'] },
         },
+        select: { planName: true, serviceType: true },
       });
       if (!ord) return errorResponse('Account Management order not found', 404);
+      splitPercent = deriveSplitPercent(ord.planName, ord.serviceType);
     }
+
+    // Save proof image
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const ext = file.name.split('.').pop() ?? 'png';
+    const filename = `split_${userId.slice(-6)}_${Date.now()}.${ext}`;
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'proofs');
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(path.join(uploadDir, filename), buffer);
+    const proofUrl = `/uploads/proofs/${filename}`;
 
     const amountDue = Math.round((totalPayout * splitPercent) / 100 * 100) / 100;
 
     const split = await prisma.profitSplit.create({
       data: {
         userId,
-        challengeId:  body.challengeId  ?? null,
-        orderId:      body.orderId      ?? null,
+        challengeId:  challengeId ?? null,
+        orderId:      orderId     ?? null,
         totalPayout,
         splitPercent,
         amountDue,
         amountSent,
-        currency:    body.currency  ?? 'USDT',
-        network:     body.network   ?? null,
-        txHash:      body.txHash    ?? null,
-        proofImage:  body.proofImage ?? null,
-        notes:       body.notes     ?? null,
+        currency,
+        network:     network  ?? null,
+        txHash:      txHash   ?? null,
+        proofImage:  proofUrl,
+        notes:       notes    ?? null,
       },
     });
 
-    // Notify admin via notification to admin users
     const admins = await prisma.user.findMany({
       where: { role: 'ADMIN' },
       select: { id: true },
@@ -125,7 +155,7 @@ export async function POST(req: NextRequest) {
         data: admins.map((a) => ({
           userId:  a.id,
           title:   'New Profit Split Submission',
-          message: `A client submitted a profit split payment of $${amountSent.toFixed(2)} ${body.currency ?? 'USDT'} (due: $${amountDue.toFixed(2)}).`,
+          message: `A client submitted a profit split payment of $${amountSent.toFixed(2)} ${currency} (due: $${amountDue.toFixed(2)}).`,
           type:    'info',
           link:    '/admin/payouts',
         })),

@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   DollarSign, Send, Clock, CheckCircle, AlertTriangle,
-  Copy, Check, ExternalLink, ChevronDown, ChevronUp, Plus, X,
+  Copy, Check, ExternalLink, ChevronDown, ChevronUp, Plus, X, Image as ImageIcon,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import StatCard from '@/components/ui/StatCard';
@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Textarea from '@/components/ui/Textarea';
+import FileUpload from '@/components/ui/FileUpload';
 import Skeleton from '@/components/ui/Skeleton';
 import useToast from '@/hooks/useToast';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -35,8 +36,14 @@ interface ProfitSplit {
   challenge:    { firmName: string; accountSize: string } | null;
   order:        { planName: string; serviceType: string }  | null;
 }
-interface FundedChallenge { id: string; firmName: string; accountSize: string }
-interface AmOrder         { id: string; planName: string; accountSize: string | null; firmName: string | null }
+interface FundedChallenge {
+  id: string; firmName: string; accountSize: string;
+  order: { planName: string; serviceType: string };
+}
+interface AmOrder {
+  id: string; planName: string; accountSize: string | null;
+  firmName: string | null; serviceType: string;
+}
 
 // ── Wallet addresses ──────────────────────────────────────────────────────────
 const WALLETS = [
@@ -48,6 +55,18 @@ const WALLETS = [
 ].filter((w) => w.value);
 
 const NETWORKS = ['TRC20', 'ERC20', 'BNB (BSC)', 'MATIC (Polygon)', 'BTC'];
+
+// ── Split % from plan ─────────────────────────────────────────────────────────
+function deriveSplitPercent(planName: string, serviceType: string): number {
+  const p = planName.toLowerCase();
+  if (serviceType === 'ACCOUNT_MANAGEMENT') {
+    if (p.includes('pro')) return 15;
+    return 20;
+  }
+  if (p.includes('elite')) return 20;
+  if (p.includes('pro'))   return 25;
+  return 30;
+}
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 const statusBadge: Record<string, 'yellow' | 'green' | 'red' | 'gold'> = {
@@ -82,18 +101,29 @@ export default function ProfitSplitPage() {
     accountType:  'challenge' as 'challenge' | 'order',
     accountId:    '',
     totalPayout:  '',
-    splitPercent: '',
     amountSent:   '',
     network:      'TRC20',
     txHash:       '',
-    proofImage:   '',
     notes:        '',
   });
+  const [proofFile, setProofFile] = useState<File | null>(null);
 
-  // auto-calculate amount due
+  // Compute split % from the selected account
+  const selectedSplitPercent = (() => {
+    if (!form.accountId) return 0;
+    if (form.accountType === 'challenge') {
+      const ch = funded.find((c) => c.id === form.accountId);
+      if (ch) return deriveSplitPercent(ch.order.planName, ch.order.serviceType);
+    } else {
+      const ord = amOrders.find((o) => o.id === form.accountId);
+      if (ord) return deriveSplitPercent(ord.planName, ord.serviceType);
+    }
+    return 0;
+  })();
+
   const amountDue =
-    form.totalPayout && form.splitPercent
-      ? Math.round(parseFloat(form.totalPayout) * parseFloat(form.splitPercent)) / 100
+    form.totalPayout && selectedSplitPercent
+      ? Math.round(parseFloat(form.totalPayout) * selectedSplitPercent) / 100
       : 0;
 
   useEffect(() => {
@@ -110,42 +140,49 @@ export default function ProfitSplitPage() {
   }, [addToast]);
 
   const pending   = splits.filter((s) => s.status === 'PENDING').length;
-  const confirmed = splits.filter((s) => s.status === 'CONFIRMED').length;
+
+  const handleProofSelected = useCallback((files: File[]) => {
+    setProofFile(files[0] ?? null);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.accountId) { addToast('Please select an account', 'error'); return; }
-    if (!form.totalPayout || !form.splitPercent || !form.amountSent) {
-      addToast('Please fill in all required fields', 'error');
-      return;
+    if (!form.totalPayout || parseFloat(form.totalPayout) <= 0) {
+      addToast('Please enter the total payout amount', 'error'); return;
+    }
+    if (!form.amountSent || parseFloat(form.amountSent) <= 0) {
+      addToast('Please enter the amount you sent', 'error'); return;
+    }
+    if (!proofFile) {
+      addToast('Please upload a proof screenshot', 'error'); return;
     }
 
     setSubmitting(true);
     try {
-      const payload = {
-        [form.accountType === 'challenge' ? 'challengeId' : 'orderId']: form.accountId,
-        totalPayout:  parseFloat(form.totalPayout),
-        splitPercent: parseFloat(form.splitPercent),
-        amountSent:   parseFloat(form.amountSent),
-        currency:     'USDT',
-        network:      form.network || undefined,
-        txHash:       form.txHash  || undefined,
-        proofImage:   form.proofImage || undefined,
-        notes:        form.notes   || undefined,
-      };
+      const fd = new FormData();
+      if (form.accountType === 'challenge') fd.append('challengeId', form.accountId);
+      else fd.append('orderId', form.accountId);
+      fd.append('totalPayout', form.totalPayout);
+      fd.append('amountSent',  form.amountSent);
+      fd.append('currency',    'USDT');
+      fd.append('proofImage',  proofFile);
+      if (form.network) fd.append('network', form.network);
+      if (form.txHash)  fd.append('txHash',  form.txHash);
+      if (form.notes)   fd.append('notes',   form.notes);
 
       const res = await fetch('/api/dashboard/profit-splits', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: fd,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Submission failed');
 
       setSplits((prev) => [data.data.split, ...prev]);
       setShowForm(false);
-      setForm({ accountType: 'challenge', accountId: '', totalPayout: '', splitPercent: '',
-                amountSent: '', network: 'TRC20', txHash: '', proofImage: '', notes: '' });
+      setForm({ accountType: 'challenge', accountId: '', totalPayout: '',
+                amountSent: '', network: 'TRC20', txHash: '', notes: '' });
+      setProofFile(null);
       addToast('Profit split submitted successfully!', 'success');
     } catch (err: unknown) {
       addToast(err instanceof Error ? err.message : 'Failed to submit', 'error');
@@ -234,7 +271,6 @@ export default function ProfitSplitPage() {
         </GlassCard>
       )}
 
-      {/* No wallets configured notice */}
       {WALLETS.length === 0 && (
         <GlassCard padding="lg">
           <div className="flex items-start gap-3">
@@ -249,7 +285,6 @@ export default function ProfitSplitPage() {
         </GlassCard>
       )}
 
-      {/* No eligible accounts */}
       {!loading && noAccounts && (
         <GlassCard padding="lg">
           <div className="text-center py-10">
@@ -262,7 +297,7 @@ export default function ProfitSplitPage() {
         </GlassCard>
       )}
 
-      {/* Submission Form Modal */}
+      {/* ── Submission Form Modal ────────────────────────────────────────── */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <GlassCard padding="lg" className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -277,7 +312,7 @@ export default function ProfitSplitPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Account selector */}
+              {/* Account type toggle */}
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">Account *</label>
                 <div className="flex gap-2 mb-2">
@@ -305,7 +340,7 @@ export default function ProfitSplitPage() {
                   {form.accountType === 'challenge'
                     ? funded.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.firmName} — {c.accountSize}
+                          {c.firmName} — {c.accountSize} ({c.order.planName})
                         </option>
                       ))
                     : amOrders.map((o) => (
@@ -317,35 +352,35 @@ export default function ProfitSplitPage() {
                 </Select>
               </div>
 
+              {/* Split % (read-only, derived from plan) */}
+              {selectedSplitPercent > 0 && (
+                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-text-secondary">Your Agreed Split</span>
+                    <span className="text-lg font-bold text-accent-primary">{selectedSplitPercent}%</span>
+                  </div>
+                  <p className="text-xs text-text-tertiary mt-1">
+                    Based on your plan. You send {selectedSplitPercent}% of your payout to TMA.
+                  </p>
+                </div>
+              )}
+
               {/* Payout info */}
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="Total Payout Received ($) *"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="e.g. 5000"
-                  value={form.totalPayout}
-                  onChange={(e) => setForm((f) => ({ ...f, totalPayout: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="Your Agreed Split % *"
-                  type="number"
-                  min="1"
-                  max="100"
-                  step="0.1"
-                  placeholder="e.g. 20"
-                  value={form.splitPercent}
-                  onChange={(e) => setForm((f) => ({ ...f, splitPercent: e.target.value }))}
-                  required
-                />
-              </div>
+              <Input
+                label="Total Payout Received from Prop Firm ($) *"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 5000"
+                value={form.totalPayout}
+                onChange={(e) => setForm((f) => ({ ...f, totalPayout: e.target.value }))}
+                required
+              />
 
               {/* Amount due banner */}
               {amountDue > 0 && (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-                  <span className="text-sm text-text-secondary">Amount due to TMA:</span>
+                  <span className="text-sm text-text-secondary">Amount due to TMA ({selectedSplitPercent}%):</span>
                   <span className="text-base font-bold text-accent-primary">{formatCurrency(amountDue)}</span>
                 </div>
               )}
@@ -376,12 +411,21 @@ export default function ProfitSplitPage() {
                 onChange={(e) => setForm((f) => ({ ...f, txHash: e.target.value }))}
               />
 
-              <Input
-                label="Proof Screenshot URL (optional)"
-                placeholder="https://... link to screenshot"
-                value={form.proofImage}
-                onChange={(e) => setForm((f) => ({ ...f, proofImage: e.target.value }))}
-              />
+              {/* Proof screenshot upload — MANDATORY */}
+              <div>
+                <FileUpload
+                  label="Proof Screenshot *"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  maxSizeMB={5}
+                  onFilesSelected={handleProofSelected}
+                  hint="Upload a screenshot of your transfer confirmation. Max 5MB."
+                />
+                {!proofFile && (
+                  <p className="mt-1 text-xs text-text-tertiary flex items-center gap-1">
+                    <ImageIcon className="h-3 w-3" /> Required — upload your transfer screenshot
+                  </p>
+                )}
+              </div>
 
               <Textarea
                 label="Notes (optional)"
@@ -404,7 +448,7 @@ export default function ProfitSplitPage() {
         </div>
       )}
 
-      {/* History */}
+      {/* ── History ──────────────────────────────────────────────────────── */}
       <GlassCard padding="lg">
         <h3 className="text-lg font-heading font-semibold mb-4">Submission History</h3>
 
@@ -426,7 +470,6 @@ export default function ProfitSplitPage() {
           <div className="space-y-2">
             {splits.map((s) => (
               <div key={s.id} className="rounded-xl border border-white/[0.06] overflow-hidden">
-                {/* Row header */}
                 <button
                   className="w-full flex items-center gap-4 p-4 hover:bg-white/[0.02] transition-colors text-left"
                   onClick={() => setExpanded(expanded === s.id ? null : s.id)}
@@ -450,7 +493,7 @@ export default function ProfitSplitPage() {
                       {formatCurrency(s.amountSent)} {s.currency}
                     </p>
                     <p className="text-xs text-text-tertiary">
-                      Due: {formatCurrency(s.amountDue)}
+                      Due: {formatCurrency(s.amountDue)} ({s.splitPercent}%)
                     </p>
                   </div>
                   {expanded === s.id
@@ -459,7 +502,6 @@ export default function ProfitSplitPage() {
                   }
                 </button>
 
-                {/* Expanded details */}
                 {expanded === s.id && (
                   <div className="px-4 pb-4 border-t border-white/[0.04] pt-3 space-y-3">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
