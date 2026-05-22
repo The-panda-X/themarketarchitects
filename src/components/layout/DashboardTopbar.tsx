@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Bell,
   Menu,
   X,
   LayoutDashboard,
@@ -29,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
 import Avatar from '@/components/ui/Avatar';
+import NotificationBell from '@/components/layout/NotificationBell';
 import Dropdown from '@/components/ui/Dropdown';
 
 const mobileNavItems = [
@@ -90,13 +90,7 @@ export default function DashboardTopbar() {
 
           {/* Right: Notifications + User */}
           <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/notifications"
-              className="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent-primary" />
-            </Link>
+            <NotificationBell notificationsHref="/dashboard/notifications" />
 
             <Dropdown
               trigger={

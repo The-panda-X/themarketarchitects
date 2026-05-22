@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Bell,
   Menu,
   X,
   LayoutDashboard,
@@ -27,6 +26,7 @@ import useAuth from '@/hooks/useAuth';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import Dropdown from '@/components/ui/Dropdown';
+import NotificationBell from '@/components/layout/NotificationBell';
 
 const mobileAdminItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -86,12 +86,7 @@ export default function AdminTopbar() {
 
           {/* Right */}
           <div className="flex items-center gap-2">
-            <Link
-              href="/admin/notifications"
-              className="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors"
-            >
-              <Bell className="h-5 w-5" />
-            </Link>
+            <NotificationBell notificationsHref="/admin/notifications" />
 
             <Dropdown
               trigger={
