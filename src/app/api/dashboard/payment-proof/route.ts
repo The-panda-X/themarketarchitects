@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError } from '@/lib/api-helpers';
+import { uploadProofImage } from '@/lib/storage';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
@@ -28,17 +27,12 @@ export async function POST(req: NextRequest) {
     });
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-    // Save file
+    // Upload to Supabase Storage
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const ext = file.name.split('.').pop() ?? 'png';
     const filename = `proof_${orderId}_${Date.now()}.${ext}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'proofs');
-
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, filename), buffer);
-
-    const proofUrl = `/uploads/proofs/${filename}`;
+    const proofUrl = await uploadProofImage(buffer, filename, file.type);
 
     await prisma.order.update({
       where: { id: orderId },
