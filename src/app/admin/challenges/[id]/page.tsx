@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Radio, Pause, Play } from 'lucide-react';
+import { ArrowLeft, Radio, Pause, Play, Wifi, WifiOff, Info, Bot } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -14,7 +14,7 @@ import ProgressBar from '@/components/ui/ProgressBar';
 import Skeleton from '@/components/ui/Skeleton';
 import useToast from '@/hooks/useToast';
 import { Table, TableHeader, TableRow, TableHead } from '@/components/ui/Table';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatRelativeTime } from '@/lib/utils';
 
 interface ChallengeDetail {
   id: string;
@@ -40,6 +40,7 @@ interface ChallengeDetail {
   allowedPairs: string[];
   signalFilePath: string | null;
   isPaused: boolean;
+  lastReportedAt: string | null;
   user: { id: string; email: string; name: string | null };
   order: { planName: string; serviceType: string };
   dailyStats: Array<{ id: string; date: string; profit: number; loss: number; tradesCount: number; winCount: number }>;
@@ -65,6 +66,8 @@ export default function AdminChallengeDetailPage() {
     daysTraded: 0,
     winRate: 0,
     adminNotes: '',
+    startDate: '',
+    endDate: '',
   });
   const [signalForm, setSignalForm] = useState({
     riskPct: 1.0,
@@ -91,6 +94,8 @@ export default function AdminChallengeDetailPage() {
             daysTraded: d.data.daysTraded,
             winRate: d.data.winRate,
             adminNotes: d.data.adminNotes ?? '',
+            startDate: d.data.startDate ? d.data.startDate.slice(0, 10) : '',
+            endDate: d.data.endDate ? d.data.endDate.slice(0, 10) : '',
           });
           setSignalForm({
             riskPct: d.data.riskPct ?? 1.0,
@@ -158,6 +163,8 @@ export default function AdminChallengeDetailPage() {
           ...form,
           targetProfit: form.targetProfit || null,
           maxDrawdown: form.maxDrawdown || null,
+          startDate: form.startDate || null,
+          endDate: form.endDate || null,
         }),
       });
       if (res.ok) {
@@ -186,6 +193,11 @@ export default function AdminChallengeDetailPage() {
   const profitPct = challenge.targetProfit ? (challenge.currentProfit / challenge.targetProfit) * 100 : 0;
   const ddPct = challenge.maxDrawdown ? (challenge.currentDrawdown / challenge.maxDrawdown) * 100 : 0;
 
+  // EA live status: consider online if reported within last 5 minutes
+  const eaOnline = challenge.lastReportedAt
+    ? (Date.now() - new Date(challenge.lastReportedAt).getTime()) < 5 * 60 * 1000
+    : false;
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
@@ -201,7 +213,7 @@ export default function AdminChallengeDetailPage() {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <GlassCard>
           <p className="text-xs text-text-tertiary uppercase tracking-wider">Profit</p>
           <p className="text-xl font-bold font-mono mt-1 text-success">${challenge.currentProfit.toFixed(2)}</p>
@@ -226,18 +238,63 @@ export default function AdminChallengeDetailPage() {
           </Link>
           <p className="text-xs text-text-tertiary mt-1">{challenge.user.name ?? '—'}</p>
         </GlassCard>
+        {/* EA Live Status */}
+        <GlassCard>
+          <p className="text-xs text-text-tertiary uppercase tracking-wider">EA Status</p>
+          <div className="flex items-center gap-2 mt-1">
+            {challenge.signalFilePath ? (
+              eaOnline ? (
+                <Wifi className="h-5 w-5 text-success" />
+              ) : (
+                <WifiOff className="h-5 w-5 text-danger" />
+              )
+            ) : (
+              <WifiOff className="h-5 w-5 text-text-tertiary" />
+            )}
+            <span className={`text-sm font-semibold ${
+              !challenge.signalFilePath ? 'text-text-tertiary' :
+              eaOnline ? 'text-success' : 'text-danger'
+            }`}>
+              {!challenge.signalFilePath ? 'Not set' : eaOnline ? 'Live' : 'Offline'}
+            </span>
+          </div>
+          <p className="text-xs text-text-tertiary mt-1">
+            {challenge.lastReportedAt
+              ? `Last: ${formatRelativeTime(challenge.lastReportedAt)}`
+              : 'Never reported'}
+          </p>
+        </GlassCard>
       </div>
 
-      {/* Update Form */}
-      <GlassCard padding="lg">
-        <h3 className="font-heading font-semibold mb-4">Update Challenge</h3>
-        <div className="grid grid-cols-2 gap-4">
+      {/* Update Challenge — compact form */}
+      <GlassCard padding="md">
+        {/* Header row with inline save */}
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-heading font-semibold text-sm">Update Challenge</h3>
+          <Button variant="primary" size="sm" loading={saving} onClick={handleSave}>
+            Save Changes
+          </Button>
+        </div>
+
+        {/* Override notice */}
+        <div className="mb-3 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-accent-primary/5 border border-accent-primary/15">
+          <Bot className="h-3.5 w-3.5 text-accent-primary mt-0.5 shrink-0" />
+          <p className="text-xs text-text-tertiary leading-relaxed">
+            <span className="text-text-secondary font-medium">EA v6 auto-updates live stats</span>
+            {' '}— Profit, Drawdown, Win Rate and Days Traded refresh automatically every 60 s.
+            Only edit those fields to correct a wrong value or when the EA is offline.
+            {' '}<span className="text-text-secondary font-medium">Changing Status</span> sends an automatic notification to the client.
+          </p>
+        </div>
+
+        {/* Row 1 — status / phase / dates */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Select
             label="Status"
             value={form.status}
             onChange={(e) => setForm({ ...form, status: e.target.value })}
           >
-            {CHALLENGE_STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+            {CHALLENGE_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
           </Select>
           <Select
             label="Phase"
@@ -248,55 +305,103 @@ export default function AdminChallengeDetailPage() {
             <option value="2">Phase 2</option>
           </Select>
           <Input
-            label="Current Profit ($)"
-            type="number"
-            value={form.currentProfit}
-            onChange={(e) => setForm({ ...form, currentProfit: parseFloat(e.target.value) || 0 })}
+            label="Start Date"
+            type="date"
+            value={form.startDate}
+            onChange={(e) => setForm({ ...form, startDate: e.target.value })}
           />
+          <Input
+            label="End Date"
+            type="date"
+            value={form.endDate}
+            onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+          />
+        </div>
+
+        {/* Row 2 — profit / drawdown targets + live overrides */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          <div>
+            <label className="flex items-center gap-1 text-xs text-text-tertiary mb-1.5 font-medium uppercase tracking-wider">
+              Current Profit ($)
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-success/80 font-normal normal-case tracking-normal">
+                <Bot className="h-2.5 w-2.5" /> auto
+              </span>
+            </label>
+            <input
+              type="number"
+              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-primary/50 transition-colors"
+              value={form.currentProfit}
+              onChange={(e) => setForm({ ...form, currentProfit: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
           <Input
             label="Target Profit ($)"
             type="number"
             value={form.targetProfit}
             onChange={(e) => setForm({ ...form, targetProfit: parseFloat(e.target.value) || 0 })}
           />
-          <Input
-            label="Current Drawdown (%)"
-            type="number"
-            value={form.currentDrawdown}
-            onChange={(e) => setForm({ ...form, currentDrawdown: parseFloat(e.target.value) || 0 })}
-          />
+          <div>
+            <label className="flex items-center gap-1 text-xs text-text-tertiary mb-1.5 font-medium uppercase tracking-wider">
+              Drawdown (%)
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-success/80 font-normal normal-case tracking-normal">
+                <Bot className="h-2.5 w-2.5" /> auto
+              </span>
+            </label>
+            <input
+              type="number"
+              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-primary/50 transition-colors"
+              value={form.currentDrawdown}
+              onChange={(e) => setForm({ ...form, currentDrawdown: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
           <Input
             label="Max Drawdown (%)"
             type="number"
             value={form.maxDrawdown}
             onChange={(e) => setForm({ ...form, maxDrawdown: parseFloat(e.target.value) || 0 })}
           />
-          <Input
-            label="Days Traded"
-            type="number"
-            value={form.daysTraded}
-            onChange={(e) => setForm({ ...form, daysTraded: parseInt(e.target.value) || 0 })}
-          />
-          <Input
-            label="Win Rate (%)"
-            type="number"
-            value={form.winRate}
-            onChange={(e) => setForm({ ...form, winRate: parseFloat(e.target.value) || 0 })}
-          />
         </div>
-        <div className="mt-4">
-          <Textarea
-            label="Admin Notes"
-            rows={3}
-            value={form.adminNotes}
-            onChange={(e) => setForm({ ...form, adminNotes: e.target.value })}
-            placeholder="Internal notes visible only to admins..."
-          />
-        </div>
-        <div className="mt-4">
-          <Button variant="primary" loading={saving} onClick={handleSave}>
-            Save Changes
-          </Button>
+
+        {/* Row 3 — days / win rate */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          <div>
+            <label className="flex items-center gap-1 text-xs text-text-tertiary mb-1.5 font-medium uppercase tracking-wider">
+              Days Traded
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-success/80 font-normal normal-case tracking-normal">
+                <Bot className="h-2.5 w-2.5" /> auto
+              </span>
+            </label>
+            <input
+              type="number"
+              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-primary/50 transition-colors"
+              value={form.daysTraded}
+              onChange={(e) => setForm({ ...form, daysTraded: parseInt(e.target.value) || 0 })}
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-1 text-xs text-text-tertiary mb-1.5 font-medium uppercase tracking-wider">
+              Win Rate (%)
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-success/80 font-normal normal-case tracking-normal">
+                <Bot className="h-2.5 w-2.5" /> auto
+              </span>
+            </label>
+            <input
+              type="number"
+              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-primary/50 transition-colors"
+              value={form.winRate}
+              onChange={(e) => setForm({ ...form, winRate: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+          {/* Admin Notes spans the remaining 2 cols */}
+          <div className="lg:col-span-2">
+            <Textarea
+              label="Admin Notes"
+              rows={2}
+              value={form.adminNotes}
+              onChange={(e) => setForm({ ...form, adminNotes: e.target.value })}
+              placeholder="Internal notes visible only to admins..."
+            />
+          </div>
         </div>
       </GlassCard>
 
@@ -357,13 +462,13 @@ export default function AdminChallengeDetailPage() {
             onChange={e => setSignalForm(f => ({...f, allowedPairs: e.target.value}))}
           />
           <Input
-            label="Signal File Path (signal.txt on VPS)"
-            placeholder="e.g. C:/MT5_Client001/MQL5/Files/signal.txt"
+            label="Signal File Name"
+            placeholder="e.g. signal_001.txt"
             value={signalForm.signalFilePath}
             onChange={e => setSignalForm(f => ({...f, signalFilePath: e.target.value}))}
           />
           <p className="text-xs text-text-tertiary">
-            The Python bridge will write signals to this file path. Leave empty to exclude this account from automated signal delivery.
+            Enter <strong className="text-text-secondary">filename only</strong> (e.g. <code className="text-accent-primary">signal_001.txt</code>). The bridge automatically places it in the MT5 Common Files folder. The EA's <code className="text-accent-primary">InpFileName</code> must match this exactly. Leave empty to exclude this account from signal delivery.
           </p>
         </div>
         <div className="mt-4">

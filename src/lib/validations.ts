@@ -149,6 +149,7 @@ export const couponSchema = z.object({
 // Admin schemas
 
 export const updateChallengeSchema = z.object({
+  // Challenge stats
   status: z
     .enum(['PENDING', 'IN_PROGRESS', 'PHASE_1', 'PHASE_2', 'PASSED', 'FAILED', 'FUNDED'])
     .optional(),
@@ -157,9 +158,17 @@ export const updateChallengeSchema = z.object({
   currentDrawdown: z.number().optional(),
   daysTraded: z.number().min(0).optional(),
   winRate: z.number().min(0).max(100).optional(),
-  adminNotes: z.string().optional(),
-  targetProfit: z.number().optional(),
-  maxDrawdown: z.number().optional(),
+  adminNotes: z.string().optional().nullable(),
+  targetProfit: z.number().optional().nullable(),
+  maxDrawdown: z.number().optional().nullable(),
+  // Signal Hub settings
+  riskPct: z.number().min(0.01).max(100).optional(),
+  dailyDDLimit: z.number().min(0).max(100).optional(),
+  totalDDLimit: z.number().min(0).max(100).optional(),
+  dailyCapPct: z.number().min(0).max(100).optional(),
+  allowedPairs: z.array(z.string()).optional(),
+  signalFilePath: z.string().optional().nullable(),
+  isPaused: z.boolean().optional(),
 });
 
 export const dailyStatSchema = z.object({

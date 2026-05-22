@@ -166,6 +166,7 @@ model Challenge {
   allowedPairs    String[]
   signalFilePath  String?
   isPaused        Boolean         @default(false)
+  lastReportedAt  DateTime?                        // set by EA reporter
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
