@@ -24,6 +24,7 @@ import {
   LineChart,
   LogOut,
   Shield,
+  Coins,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
@@ -33,15 +34,16 @@ import Dropdown from '@/components/ui/Dropdown';
 const mobileNavItems = [
   { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Challenges', href: '/dashboard/challenges', icon: Target },
-  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { label: 'Purchase', href: '/dashboard/purchase', icon: ShoppingCart },
   { label: 'Services', href: '/dashboard/services', icon: Briefcase },
   { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
   { label: 'Credentials', href: '/dashboard/credentials', icon: KeyRound },
   { label: 'Support', href: '/dashboard/support', icon: HeadphonesIcon },
+  { label: 'Profit Split', href: '/dashboard/profit-split', icon: Coins },
   { label: 'Referrals', href: '/dashboard/referrals', icon: Users },
   { label: 'Calculator', href: '/dashboard/tools/calculator', icon: Calculator },
   { label: 'Widgets', href: '/dashboard/tools/widgets', icon: LineChart },
+  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
