@@ -47,12 +47,15 @@ export async function POST(req: NextRequest) {
 
     // ── Find active challenge ─────────────────────────────────────────
     // Token takes priority (exact unique match); signalFile is the legacy fallback
+    const include = { user: { select: { name: true, email: true } } };
     const challenge = token
       ? await prisma.challenge.findFirst({
-          where: { eaToken: token, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
+          where:   { eaToken: token, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
+          include,
         })
       : await prisma.challenge.findFirst({
-          where: { signalFilePath: signalFile, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
+          where:   { signalFilePath: signalFile, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
+          include,
         });
 
     if (!challenge) {
@@ -142,6 +145,11 @@ export async function POST(req: NextRequest) {
       challengeId: challenge.id,
       updated:     true,
       newStatus,
+      // Returned to EA so it can display account info on the dashboard
+      clientName:  challenge.user.name  ?? '',
+      clientEmail: challenge.user.email,
+      firmName:    challenge.firmName,
+      accountSize: challenge.accountSize,
       metrics: {
         profit:   body.currentProfit,
         drawdown: body.currentDrawdown,
