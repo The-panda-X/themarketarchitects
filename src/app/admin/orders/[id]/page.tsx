@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, KeyRound, Trophy, ExternalLink } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, User, KeyRound, Trophy, ExternalLink, ImageIcon, CreditCard } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -24,6 +25,8 @@ interface OrderDetail {
   discountAmount: number;
   couponCode: string | null;
   notes: string | null;
+  proofImage: string | null;
+  paymentNetwork: string | null;
   createdAt: string;
   user: { id: string; email: string; name: string | null };
   payments: Array<{ id: string; amount: number; method: string; status: string; createdAt: string }>;
@@ -170,6 +173,55 @@ export default function AdminOrderDetailPage() {
           </GlassCard>
         </div>
       </div>
+
+      {/* Payment Proof & Notes */}
+      {(order.proofImage || order.notes || order.paymentNetwork) && (
+        <GlassCard padding="lg">
+          <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-accent-primary" />Payment Proof
+          </h3>
+          <div className="space-y-4">
+            {order.paymentNetwork && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-text-tertiary">Network:</span>
+                <Badge variant="blue" size="sm">{order.paymentNetwork}</Badge>
+              </div>
+            )}
+            {order.notes && (
+              <div>
+                <p className="text-xs text-text-tertiary mb-1">Notes</p>
+                <p className="text-sm text-text-secondary">{order.notes}</p>
+              </div>
+            )}
+            {order.proofImage && (
+              <div>
+                <p className="text-xs text-text-tertiary mb-2">Proof Screenshot</p>
+                <a href={order.proofImage} target="_blank" rel="noopener noreferrer" className="block">
+                  <div className="relative w-full max-w-md rounded-xl overflow-hidden border border-white/[0.08] hover:border-accent-primary/50 transition-colors">
+                    <Image
+                      src={order.proofImage}
+                      alt="Payment proof"
+                      width={600}
+                      height={400}
+                      className="w-full h-auto object-contain bg-black/30"
+                      unoptimized
+                    />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-xs text-accent-primary hover:underline mt-2">
+                    <ExternalLink className="h-3.5 w-3.5" /> Open full size
+                  </span>
+                </a>
+              </div>
+            )}
+            {!order.proofImage && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                <ImageIcon className="h-4 w-4 text-yellow-400" />
+                <p className="text-xs text-yellow-300">No proof screenshot uploaded yet.</p>
+              </div>
+            )}
+          </div>
+        </GlassCard>
+      )}
 
       {/* Challenge */}
       {order.serviceType === 'CHALLENGE_PASSING' && (

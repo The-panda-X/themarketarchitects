@@ -40,11 +40,12 @@ export async function POST(req: NextRequest) {
 
     const proofUrl = `/uploads/proofs/${filename}`;
 
-    // Update order notes with proof info
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        notes: `Crypto payment proof submitted. Network: ${network ?? 'Unknown'}. File: ${proofUrl}`,
+        proofImage: proofUrl,
+        paymentNetwork: network ?? 'Unknown',
+        notes: `Crypto payment proof submitted. Network: ${network ?? 'Unknown'}.`,
       },
     });
 
