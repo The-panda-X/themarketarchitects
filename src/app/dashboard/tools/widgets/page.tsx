@@ -1,10 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import Script from 'next/script';
+import { useState, useEffect, useRef } from 'react';
 import {
   TrendingUp,
-  TrendingDown,
   BarChart3,
   Globe,
   Calendar,
@@ -23,71 +21,101 @@ const WIDGET_CATEGORIES = [
 type Category = (typeof WIDGET_CATEGORIES)[number]['id'];
 
 const FOREX_PAIRS = [
-  { symbol: 'FX:EURUSD', name: 'EUR/USD', description: 'Euro / US Dollar' },
-  { symbol: 'FX:GBPUSD', name: 'GBP/USD', description: 'Pound / US Dollar' },
-  { symbol: 'FX:USDJPY', name: 'USD/JPY', description: 'Dollar / Yen' },
-  { symbol: 'FX:USDCHF', name: 'USD/CHF', description: 'Dollar / Swiss Franc' },
-  { symbol: 'FX:AUDUSD', name: 'AUD/USD', description: 'Aussie / US Dollar' },
-  { symbol: 'FX:NZDUSD', name: 'NZD/USD', description: 'Kiwi / US Dollar' },
-  { symbol: 'FX:USDCAD', name: 'USD/CAD', description: 'Dollar / Canadian' },
-  { symbol: 'FX:EURGBP', name: 'EUR/GBP', description: 'Euro / Pound' },
-  { symbol: 'FX:EURJPY', name: 'EUR/JPY', description: 'Euro / Yen' },
-  { symbol: 'FX:GBPJPY', name: 'GBP/JPY', description: 'Pound / Yen' },
+  { symbol: 'FX:EURUSD', name: 'EUR/USD' },
+  { symbol: 'FX:GBPUSD', name: 'GBP/USD' },
+  { symbol: 'FX:USDJPY', name: 'USD/JPY' },
+  { symbol: 'FX:USDCHF', name: 'USD/CHF' },
+  { symbol: 'FX:AUDUSD', name: 'AUD/USD' },
+  { symbol: 'FX:NZDUSD', name: 'NZD/USD' },
+  { symbol: 'FX:USDCAD', name: 'USD/CAD' },
+  { symbol: 'FX:EURGBP', name: 'EUR/GBP' },
+  { symbol: 'FX:EURJPY', name: 'EUR/JPY' },
+  { symbol: 'FX:GBPJPY', name: 'GBP/JPY' },
 ];
 
 const METALS = [
-  { symbol: 'TVC:GOLD', name: 'XAU/USD', description: 'Gold / US Dollar' },
-  { symbol: 'TVC:SILVER', name: 'XAG/USD', description: 'Silver / US Dollar' },
+  { symbol: 'TVC:GOLD', name: 'XAU/USD' },
+  { symbol: 'TVC:SILVER', name: 'XAG/USD' },
 ];
 
 const INDICES = [
-  { symbol: 'TVC:DJI', name: 'US30', description: 'Dow Jones' },
-  { symbol: 'NASDAQ:NDX', name: 'NAS100', description: 'Nasdaq 100' },
-  { symbol: 'SP:SPX', name: 'SPX500', description: 'S&P 500' },
+  { symbol: 'TVC:DJI', name: 'US30' },
+  { symbol: 'NASDAQ:NDX', name: 'NAS100' },
+  { symbol: 'SP:SPX', name: 'SPX500' },
 ];
 
 const CRYPTO = [
-  { symbol: 'COINBASE:BTCUSD', name: 'BTC/USD', description: 'Bitcoin' },
-  { symbol: 'COINBASE:ETHUSD', name: 'ETH/USD', description: 'Ethereum' },
+  { symbol: 'COINBASE:BTCUSD', name: 'BTC/USD' },
+  { symbol: 'COINBASE:ETHUSD', name: 'ETH/USD' },
 ];
 
-function TradingViewMiniChart({ symbol, name }: { symbol: string; name: string }) {
-  const containerId = `tv-mini-${symbol.replace(/[^a-zA-Z0-9]/g, '_')}`;
+function TradingViewWidget({
+  config,
+  scriptSrc,
+  height,
+}: {
+  config: Record<string, unknown>;
+  scriptSrc: string;
+  height: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.innerHTML = '';
+
+    const widgetDiv = document.createElement('div');
+    widgetDiv.className = 'tradingview-widget-container__widget';
+    widgetDiv.style.height = '100%';
+    widgetDiv.style.width = '100%';
+    container.appendChild(widgetDiv);
+
+    const script = document.createElement('script');
+    script.src = scriptSrc;
+    script.async = true;
+    script.type = 'text/javascript';
+    script.innerHTML = JSON.stringify(config);
+    container.appendChild(script);
+
+    return () => {
+      container.innerHTML = '';
+    };
+  }, [config, scriptSrc]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="tradingview-widget-container"
+      style={{ height, width: '100%' }}
+    />
+  );
+}
+
+function TradingViewMiniChart({ symbol, name }: { symbol: string; name: string }) {
   return (
     <GlassCard padding="none" hover>
       <div className="p-4 pb-2">
         <h3 className="text-sm font-semibold text-text-primary">{name}</h3>
       </div>
-      <div className="h-[220px] w-full" id={containerId}>
-        <div
-          className="tradingview-widget-container"
-          style={{ height: '100%', width: '100%' }}
-        >
-          <div
-            className="tradingview-widget-container__widget"
-            style={{ height: '100%', width: '100%' }}
-          />
-          <Script
-            src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js"
-            strategy="lazyOnload"
-            id={`tv-script-mini-${symbol.replace(/[^a-zA-Z0-9]/g, '_')}`}
-          >
-            {JSON.stringify({
-              symbol,
-              width: '100%',
-              height: '100%',
-              locale: 'en',
-              dateRange: '1D',
-              colorTheme: 'dark',
-              isTransparent: true,
-              autosize: true,
-              largeChartUrl: '',
-              noTimeScale: false,
-              chartOnly: false,
-            })}
-          </Script>
-        </div>
+      <div className="h-[220px] w-full overflow-hidden">
+        <TradingViewWidget
+          height="100%"
+          scriptSrc="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js"
+          config={{
+            symbol,
+            width: '100%',
+            height: '100%',
+            locale: 'en',
+            dateRange: '1D',
+            colorTheme: 'dark',
+            isTransparent: true,
+            autosize: true,
+            largeChartUrl: '',
+            noTimeScale: false,
+            chartOnly: false,
+          }}
+        />
       </div>
     </GlassCard>
   );
@@ -103,23 +131,18 @@ function TickerTape() {
 
   return (
     <div className="w-full rounded-xl overflow-hidden border border-white/[0.06]">
-      <div className="tradingview-widget-container">
-        <div className="tradingview-widget-container__widget" />
-        <Script
-          src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js"
-          strategy="lazyOnload"
-          id="tv-ticker-tape"
-        >
-          {JSON.stringify({
-            symbols,
-            showSymbolLogo: true,
-            isTransparent: true,
-            displayMode: 'adaptive',
-            colorTheme: 'dark',
-            locale: 'en',
-          })}
-        </Script>
-      </div>
+      <TradingViewWidget
+        height="46px"
+        scriptSrc="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js"
+        config={{
+          symbols,
+          showSymbolLogo: true,
+          isTransparent: true,
+          displayMode: 'adaptive',
+          colorTheme: 'dark',
+          locale: 'en',
+        }}
+      />
     </div>
   );
 }
@@ -133,64 +156,53 @@ function MarketOverviewWidget() {
           Market Overview
         </h3>
       </div>
-      <div className="h-[500px] w-full">
-        <div
-          className="tradingview-widget-container"
-          style={{ height: '100%', width: '100%' }}
-        >
-          <div
-            className="tradingview-widget-container__widget"
-            style={{ height: '100%', width: '100%' }}
-          />
-          <Script
-            src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js"
-            strategy="lazyOnload"
-            id="tv-market-overview"
-          >
-            {JSON.stringify({
-              colorTheme: 'dark',
-              dateRange: '1D',
-              showChart: true,
-              locale: 'en',
-              width: '100%',
-              height: '100%',
-              largeChartUrl: '',
-              isTransparent: true,
-              showSymbolLogo: true,
-              showFloatingTooltip: true,
-              plotLineColorGrowing: 'rgba(230, 57, 70, 1)',
-              plotLineColorFalling: 'rgba(255, 23, 68, 1)',
-              gridLineColor: 'rgba(255, 255, 255, 0.06)',
-              scaleFontColor: 'rgba(255, 255, 255, 0.5)',
-              belowLineFillColorGrowing: 'rgba(230, 57, 70, 0.12)',
-              belowLineFillColorFalling: 'rgba(255, 23, 68, 0.12)',
-              belowLineFillColorGrowingBottom: 'rgba(230, 57, 70, 0)',
-              belowLineFillColorFallingBottom: 'rgba(255, 23, 68, 0)',
-              symbolActiveColor: 'rgba(230, 57, 70, 0.12)',
-              tabs: [
-                {
-                  title: 'Forex',
-                  symbols: FOREX_PAIRS.slice(0, 6).map((p) => ({
-                    s: p.symbol,
-                    d: p.name,
-                  })),
-                },
-                {
-                  title: 'Metals',
-                  symbols: METALS.map((m) => ({ s: m.symbol, d: m.name })),
-                },
-                {
-                  title: 'Indices',
-                  symbols: INDICES.map((i) => ({ s: i.symbol, d: i.name })),
-                },
-                {
-                  title: 'Crypto',
-                  symbols: CRYPTO.map((c) => ({ s: c.symbol, d: c.name })),
-                },
-              ],
-            })}
-          </Script>
-        </div>
+      <div className="h-[500px] w-full overflow-hidden">
+        <TradingViewWidget
+          height="100%"
+          scriptSrc="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js"
+          config={{
+            colorTheme: 'dark',
+            dateRange: '1D',
+            showChart: true,
+            locale: 'en',
+            width: '100%',
+            height: '100%',
+            largeChartUrl: '',
+            isTransparent: true,
+            showSymbolLogo: true,
+            showFloatingTooltip: true,
+            plotLineColorGrowing: 'rgba(230, 57, 70, 1)',
+            plotLineColorFalling: 'rgba(255, 23, 68, 1)',
+            gridLineColor: 'rgba(255, 255, 255, 0.06)',
+            scaleFontColor: 'rgba(255, 255, 255, 0.5)',
+            belowLineFillColorGrowing: 'rgba(230, 57, 70, 0.12)',
+            belowLineFillColorFalling: 'rgba(255, 23, 68, 0.12)',
+            belowLineFillColorGrowingBottom: 'rgba(230, 57, 70, 0)',
+            belowLineFillColorFallingBottom: 'rgba(255, 23, 68, 0)',
+            symbolActiveColor: 'rgba(230, 57, 70, 0.12)',
+            tabs: [
+              {
+                title: 'Forex',
+                symbols: FOREX_PAIRS.slice(0, 6).map((p) => ({
+                  s: p.symbol,
+                  d: p.name,
+                })),
+              },
+              {
+                title: 'Metals',
+                symbols: METALS.map((m) => ({ s: m.symbol, d: m.name })),
+              },
+              {
+                title: 'Indices',
+                symbols: INDICES.map((i) => ({ s: i.symbol, d: i.name })),
+              },
+              {
+                title: 'Crypto',
+                symbols: CRYPTO.map((c) => ({ s: c.symbol, d: c.name })),
+              },
+            ],
+          }}
+        />
       </div>
     </GlassCard>
   );
@@ -205,73 +217,49 @@ function EconomicCalendar() {
           Economic Calendar
         </h3>
       </div>
-      <div className="h-[500px] w-full">
-        <div
-          className="tradingview-widget-container"
-          style={{ height: '100%', width: '100%' }}
-        >
-          <div
-            className="tradingview-widget-container__widget"
-            style={{ height: '100%', width: '100%' }}
-          />
-          <Script
-            src="https://s3.tradingview.com/external-embedding/embed-widget-events.js"
-            strategy="lazyOnload"
-            id="tv-economic-calendar"
-          >
-            {JSON.stringify({
-              colorTheme: 'dark',
-              isTransparent: true,
-              width: '100%',
-              height: '100%',
-              locale: 'en',
-              importanceFilter: '-1,0,1',
-              countryFilter:
-                'ar,au,br,ca,cn,fr,de,in,id,it,jp,kr,mx,ru,sa,za,tr,gb,us,eu',
-            })}
-          </Script>
-        </div>
+      <div className="h-[500px] w-full overflow-hidden">
+        <TradingViewWidget
+          height="100%"
+          scriptSrc="https://s3.tradingview.com/external-embedding/embed-widget-events.js"
+          config={{
+            colorTheme: 'dark',
+            isTransparent: true,
+            width: '100%',
+            height: '100%',
+            locale: 'en',
+            importanceFilter: '-1,0,1',
+            countryFilter:
+              'ar,au,br,ca,cn,fr,de,in,id,it,jp,kr,mx,ru,sa,za,tr,gb,us,eu',
+          }}
+        />
       </div>
     </GlassCard>
   );
 }
 
-function AdvancedChart({ symbol, name }: { symbol: string; name: string }) {
-  const containerId = `tv-chart-${symbol.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
+function AdvancedChart({ symbol }: { symbol: string }) {
   return (
     <GlassCard padding="none">
-      <div className="h-[450px] w-full" id={containerId}>
-        <div
-          className="tradingview-widget-container"
-          style={{ height: '100%', width: '100%' }}
-        >
-          <div
-            className="tradingview-widget-container__widget"
-            style={{ height: '100%', width: '100%' }}
-          />
-          <Script
-            src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
-            strategy="lazyOnload"
-            id={`tv-chart-${symbol.replace(/[^a-zA-Z0-9]/g, '_')}`}
-          >
-            {JSON.stringify({
-              autosize: true,
-              symbol,
-              interval: 'D',
-              timezone: 'Etc/UTC',
-              theme: 'dark',
-              style: '1',
-              locale: 'en',
-              backgroundColor: 'rgba(0, 0, 0, 0)',
-              gridColor: 'rgba(255, 255, 255, 0.04)',
-              hide_side_toolbar: false,
-              allow_symbol_change: true,
-              calendar: false,
-              support_host: 'https://www.tradingview.com',
-            })}
-          </Script>
-        </div>
+      <div className="h-[450px] w-full overflow-hidden">
+        <TradingViewWidget
+          height="100%"
+          scriptSrc="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+          config={{
+            autosize: true,
+            symbol,
+            interval: 'D',
+            timezone: 'Etc/UTC',
+            theme: 'dark',
+            style: '1',
+            locale: 'en',
+            backgroundColor: 'rgba(0, 0, 0, 0)',
+            gridColor: 'rgba(255, 255, 255, 0.04)',
+            hide_side_toolbar: false,
+            allow_symbol_change: true,
+            calendar: false,
+            support_host: 'https://www.tradingview.com',
+          }}
+        />
       </div>
     </GlassCard>
   );
@@ -300,7 +288,7 @@ export default function MarketWidgetsPage() {
       case 'forex':
         return (
           <div className="space-y-6">
-            <AdvancedChart symbol="FX:EURUSD" name="EUR/USD" />
+            <AdvancedChart symbol="FX:EURUSD" />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {FOREX_PAIRS.map((pair) => (
                 <TradingViewMiniChart
@@ -315,7 +303,7 @@ export default function MarketWidgetsPage() {
       case 'indices':
         return (
           <div className="space-y-6">
-            <AdvancedChart symbol="TVC:DJI" name="US30 — Dow Jones" />
+            <AdvancedChart symbol="TVC:DJI" />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {INDICES.map((idx) => (
                 <TradingViewMiniChart
@@ -330,7 +318,7 @@ export default function MarketWidgetsPage() {
       case 'crypto':
         return (
           <div className="space-y-6">
-            <AdvancedChart symbol="COINBASE:BTCUSD" name="BTC/USD — Bitcoin" />
+            <AdvancedChart symbol="COINBASE:BTCUSD" />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {CRYPTO.map((coin) => (
                 <TradingViewMiniChart
