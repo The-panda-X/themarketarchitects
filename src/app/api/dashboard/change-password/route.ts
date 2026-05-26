@@ -5,6 +5,20 @@ import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { changePasswordSchema } from '@/lib/validations';
 
+/** GET — check if user has a password set */
+export async function GET() {
+  try {
+    const session = await requireAuth();
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { passwordHash: true },
+    });
+    return successResponse({ hasPassword: !!user?.passwordHash });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAuth();

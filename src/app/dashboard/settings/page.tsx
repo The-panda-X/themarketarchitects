@@ -15,8 +15,10 @@ import useToast from '@/hooks/useToast';
 import {
   updateProfileSchema,
   changePasswordSchema,
+  createPasswordSchema,
   type UpdateProfileInput,
   type ChangePasswordInput,
+  type CreatePasswordInput,
 } from '@/lib/validations';
 import useAuth from '@/hooks/useAuth';
 
@@ -31,6 +33,8 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+  const [createPwLoading, setCreatePwLoading] = useState(false);
 
   // 2FA state
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
@@ -53,8 +57,16 @@ export default function SettingsPage() {
     resolver: zodResolver(changePasswordSchema),
   });
 
-  // Fetch 2FA status
+  const createPwForm = useForm<CreatePasswordInput>({
+    resolver: zodResolver(createPasswordSchema),
+  });
+
+  // Fetch password status & 2FA status
   useEffect(() => {
+    fetch('/api/dashboard/change-password')
+      .then((r) => r.json())
+      .then((d) => setHasPassword(d.data?.hasPassword ?? true))
+      .catch(() => setHasPassword(true));
     fetch('/api/dashboard/two-factor')
       .then((r) => r.json())
       .then((d) => setTwoFAEnabled(d.data?.enabled ?? false))
@@ -102,6 +114,29 @@ export default function SettingsPage() {
       addToast('Something went wrong.', 'error');
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const onCreatePassword = async (data: CreatePasswordInput) => {
+    setCreatePwLoading(true);
+    try {
+      const res = await fetch('/api/dashboard/create-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        addToast('Password created successfully!', 'success');
+        createPwForm.reset();
+        setHasPassword(true);
+      } else {
+        const err = await res.json();
+        addToast(err.error || 'Failed to create password.', 'error');
+      }
+    } catch {
+      addToast('Something went wrong.', 'error');
+    } finally {
+      setCreatePwLoading(false);
     }
   };
 
@@ -216,33 +251,70 @@ export default function SettingsPage() {
       {activeTab === 'security' && (
         <div className="space-y-4">
           <GlassCard padding="lg">
-            <h3 className="text-lg font-heading font-semibold flex items-center gap-2 mb-4">
-              <Lock className="h-5 w-5 text-text-tertiary" />
-              Change Password
-            </h3>
-            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-              <Input
-                type="password"
-                label="Current Password"
-                error={passwordForm.formState.errors.currentPassword?.message}
-                {...passwordForm.register('currentPassword')}
-              />
-              <Input
-                type="password"
-                label="New Password"
-                error={passwordForm.formState.errors.newPassword?.message}
-                {...passwordForm.register('newPassword')}
-              />
-              <Input
-                type="password"
-                label="Confirm New Password"
-                error={passwordForm.formState.errors.confirmNewPassword?.message}
-                {...passwordForm.register('confirmNewPassword')}
-              />
-              <Button type="submit" variant="primary" loading={passwordLoading}>
-                Update Password
-              </Button>
-            </form>
+            {hasPassword === null ? (
+              <div className="flex items-center gap-2 text-text-tertiary text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading...
+              </div>
+            ) : hasPassword ? (
+              <>
+                <h3 className="text-lg font-heading font-semibold flex items-center gap-2 mb-4">
+                  <Lock className="h-5 w-5 text-text-tertiary" />
+                  Change Password
+                </h3>
+                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                  <Input
+                    type="password"
+                    label="Current Password"
+                    error={passwordForm.formState.errors.currentPassword?.message}
+                    {...passwordForm.register('currentPassword')}
+                  />
+                  <Input
+                    type="password"
+                    label="New Password"
+                    error={passwordForm.formState.errors.newPassword?.message}
+                    {...passwordForm.register('newPassword')}
+                  />
+                  <Input
+                    type="password"
+                    label="Confirm New Password"
+                    error={passwordForm.formState.errors.confirmNewPassword?.message}
+                    {...passwordForm.register('confirmNewPassword')}
+                  />
+                  <Button type="submit" variant="primary" loading={passwordLoading}>
+                    Update Password
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-heading font-semibold flex items-center gap-2 mb-4">
+                  <Lock className="h-5 w-5 text-text-tertiary" />
+                  Create Password
+                </h3>
+                <p className="text-sm text-text-secondary mb-4">
+                  You signed in with Google. Create a password to also sign in with your email.
+                </p>
+                <form onSubmit={createPwForm.handleSubmit(onCreatePassword)} className="space-y-4">
+                  <Input
+                    type="password"
+                    label="New Password"
+                    placeholder="Min 8 characters"
+                    error={createPwForm.formState.errors.newPassword?.message}
+                    {...createPwForm.register('newPassword')}
+                  />
+                  <Input
+                    type="password"
+                    label="Confirm Password"
+                    placeholder="Repeat your password"
+                    error={createPwForm.formState.errors.confirmNewPassword?.message}
+                    {...createPwForm.register('confirmNewPassword')}
+                  />
+                  <Button type="submit" variant="primary" loading={createPwLoading}>
+                    Create Password
+                  </Button>
+                </form>
+              </>
+            )}
           </GlassCard>
 
           <GlassCard padding="lg">

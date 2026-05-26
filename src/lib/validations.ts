@@ -75,6 +75,21 @@ export const changePasswordSchema = z
     path: ['confirmNewPassword'],
   });
 
+export const createPasswordSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Must contain uppercase')
+      .regex(/[a-z]/, 'Must contain lowercase')
+      .regex(/[0-9]/, 'Must contain a number'),
+    confirmNewPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmNewPassword'],
+  });
+
 // Order schemas
 
 export const createOrderSchema = z.object({
@@ -216,6 +231,7 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type TwoFactorInput = z.infer<typeof twoFactorSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type CreatePasswordInput = z.infer<typeof createPasswordSchema>;
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type CredentialInput = z.infer<typeof credentialSchema>;
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
