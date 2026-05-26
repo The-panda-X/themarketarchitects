@@ -26,7 +26,6 @@ import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import GlowBorder from '@/components/ui/GlowBorder';
 import useToast from '@/hooks/useToast';
 import { CRYPTO_WALLETS, TRADING_PLATFORMS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
@@ -136,7 +135,7 @@ function PlanCard({ plan, onSelect }: { plan: PlanData; onSelect: (p: PlanData) 
   const profitSplit = isProfitSplit(plan);
 
   const card = (
-    <div className="relative pt-5 h-full">
+    <div className="relative h-full">
       {isPopular && (
         <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
           <span className="text-white text-xs font-semibold px-4 py-1.5 rounded-full"
@@ -201,7 +200,7 @@ function PlanCard({ plan, onSelect }: { plan: PlanData; onSelect: (p: PlanData) 
       </div>
     </div>
   );
-  return isPopular ? <GlowBorder color="gold">{card}</GlowBorder> : card;
+  return card;
 }
 
 /* ─── Page ────────────────────────────────────────── */
