@@ -18,6 +18,9 @@ import {
   AlertTriangle,
   Upload,
   Loader2,
+  Eye,
+  EyeOff,
+  KeyRound,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
@@ -25,7 +28,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import GlowBorder from '@/components/ui/GlowBorder';
 import useToast from '@/hooks/useToast';
-import { CRYPTO_WALLETS } from '@/lib/constants';
+import { CRYPTO_WALLETS, TRADING_PLATFORMS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
 import useCartStore from '@/store/cartStore';
 import { ServiceType } from '@/types';
@@ -168,6 +171,15 @@ export default function PurchasePage() {
   const [selectedWallet, setSelectedWallet] = useState<string>(CRYPTO_WALLETS[0].id);
   const [proofFile, setProofFile] = useState<File | null>(null);
 
+  // Credential fields (Step 4)
+  const [credPlatform, setCredPlatform] = useState('');
+  const [credServer, setCredServer] = useState('');
+  const [credLoginId, setCredLoginId] = useState('');
+  const [credPassword, setCredPassword] = useState('');
+  const [credNotes, setCredNotes] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [credSubmitting, setCredSubmitting] = useState(false);
+
   useEffect(() => {
     Promise.all([
       fetch('/api/public/plans').then((r) => r.json()),
@@ -190,9 +202,11 @@ export default function PurchasePage() {
   const handleFirmChange = (firmName: string) => cart.setAccount('', firmName);
   const handleSizeChange = (size: string) => cart.setAccount(size, cart.firmName!);
 
-  const handleContinueToCheckout = () => {
+  const [firmConfirmed, setFirmConfirmed] = useState(false);
+
+  const handleConfirmAccount = () => {
     if (!cart.firmName) { addToast('Please select a prop firm.', 'error'); return; }
-    cart.setStep(4);
+    setFirmConfirmed(true);
   };
 
   const handleApplyCoupon = async () => {
@@ -235,20 +249,68 @@ export default function PurchasePage() {
       if (res.ok) {
         const data = await res.json();
         if (data.data?.type === 'profit_split') {
-          addToast('Agreement submitted! Our team will contact you within 24 hours.', 'success');
-          cart.reset();
-          window.location.href = '/dashboard/payments';
+          setCryptoOrderId(data.data.orderId);
+          addToast('Agreement submitted! Now submit your trading credentials.', 'success');
+          cart.setStep(4); // Go to credential step
         } else if (data.data?.type === 'crypto') {
-          // Move to crypto payment step
           setCryptoOrderId(data.data.orderId);
           setCryptoAmount(data.data.amount);
-          cart.setStep(5);
+          cart.setStep(4); // Go to credential step first, then crypto
         }
       } else {
         addToast('Something went wrong. Please try again.', 'error');
       }
     } catch { addToast('Something went wrong.', 'error'); }
     finally { setCheckoutLoading(false); }
+  };
+
+  const handleSubmitCredentials = async () => {
+    if (!credPlatform) { addToast('Please select a trading platform.', 'error'); return; }
+    if (!credLoginId.trim()) { addToast('Please enter your login ID.', 'error'); return; }
+    if (!credPassword.trim()) { addToast('Please enter your password.', 'error'); return; }
+    if (!cryptoOrderId) { addToast('Order not found.', 'error'); return; }
+
+    setCredSubmitting(true);
+    try {
+      const res = await fetch('/api/dashboard/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: cryptoOrderId,
+          platform: credPlatform,
+          server: credServer || undefined,
+          loginId: credLoginId,
+          password: credPassword,
+          notes: credNotes || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        addToast('Credentials submitted securely!', 'success');
+        // If crypto payment needed, go to step 5
+        if (cryptoAmount > 0) {
+          cart.setStep(5);
+        } else {
+          // Profit split — no payment needed, done
+          addToast('Our team will contact you within 24 hours.', 'success');
+          cart.reset();
+          window.location.href = '/dashboard/payments';
+        }
+      } else {
+        const err = await res.json();
+        addToast(err.error || 'Failed to submit credentials.', 'error');
+      }
+    } catch { addToast('Something went wrong.', 'error'); }
+    finally { setCredSubmitting(false); }
+  };
+
+  const handleSkipCredentials = () => {
+    if (cryptoAmount > 0) {
+      cart.setStep(5);
+    } else {
+      cart.reset();
+      window.location.href = '/dashboard/payments';
+    }
   };
 
   const handlePaymentSent = async () => {
@@ -307,21 +369,21 @@ export default function PurchasePage() {
         <div>
           <h1 className="text-2xl font-heading font-bold">Purchase a Plan</h1>
           <p className="text-text-secondary mt-1">
-            {cart.step <= 4 ? `Step ${cart.step} of 4` : 'Complete Payment'}
+            {cart.step <= 3 ? `Step ${cart.step} of 3` : cart.step === 4 ? 'Submit Credentials' : 'Complete Payment'}
           </p>
         </div>
-        {cart.step > 1 && cart.step < 5 && (
+        {cart.step > 1 && cart.step <= 3 && (
           <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}
-            onClick={() => { cart.setStep(cart.step - 1); if (cart.step === 2) setSelectedPlan(null); }}>
+            onClick={() => { if (cart.step === 3) setFirmConfirmed(false); cart.setStep(cart.step - 1); if (cart.step === 2) setSelectedPlan(null); }}>
             Back
           </Button>
         )}
       </div>
 
       {/* Progress bar */}
-      {cart.step <= 4 && (
+      {cart.step <= 3 && (
         <div className="flex gap-2">
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3].map((s) => (
             <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= cart.step ? 'bg-accent-primary' : 'bg-white/[0.06]'}`} />
           ))}
         </div>
@@ -359,9 +421,10 @@ export default function PurchasePage() {
           </motion.div>
         )}
 
-        {/* ── Step 3: Firm + Account Size ── */}
+        {/* ── Step 3: Firm + Account Size + Order Summary (combined) ── */}
         {cart.step === 3 && selectedPlan && (
-          <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+          <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+            className="space-y-4">
             <GlassCard padding="lg">
               <h3 className="text-lg font-heading font-semibold mb-4">Account Details</h3>
               {/* Plan summary */}
@@ -381,7 +444,7 @@ export default function PurchasePage() {
                 </div>
               </div>
               <div className="space-y-4 max-w-md">
-                <Select label="Prop Firm" value={cart.firmName ?? ''} onChange={(e) => handleFirmChange(e.target.value)}>
+                <Select label="Prop Firm" value={cart.firmName ?? ''} onChange={(e) => { handleFirmChange(e.target.value); setFirmConfirmed(false); }}>
                   <option value="">Select a firm...</option>
                   {firms.map((f) => <option key={f.id} value={f.name}>{f.name}</option>)}
                 </Select>
@@ -397,7 +460,7 @@ export default function PurchasePage() {
                       </div>
                     </div>
                   ) : sizesForDropdown.length > 0 ? (
-                    <Select label="Account Size" value={cart.accountSize ?? ''} onChange={(e) => handleSizeChange(e.target.value)}>
+                    <Select label="Account Size" value={cart.accountSize ?? ''} onChange={(e) => { handleSizeChange(e.target.value); setFirmConfirmed(false); }}>
                       <option value="">Select size...</option>
                       {sizesForDropdown.map((size) => <option key={size} value={size}>{size}</option>)}
                     </Select>
@@ -406,89 +469,167 @@ export default function PurchasePage() {
                   )
                 )}
 
-                {cart.firmName && (sizesForDropdown.length > 0 || autoSize) && (
-                  <Button variant="primary" fullWidth icon={<ArrowRight className="h-4 w-4" />} iconPosition="right"
-                    onClick={() => { if (autoSize) cart.setAccount(autoSize, cart.firmName!); handleContinueToCheckout(); }}
+                {cart.firmName && (sizesForDropdown.length > 0 || autoSize) && !firmConfirmed && (
+                  <Button variant="secondary" fullWidth icon={<Check className="h-4 w-4" />}
+                    onClick={() => { if (autoSize) cart.setAccount(autoSize, cart.firmName!); handleConfirmAccount(); }}
                     disabled={!autoSize && !cart.accountSize}>
-                    Continue to {profitSplitPlan ? 'Agreement' : 'Order Summary'}
+                    Confirm Account Details
                   </Button>
                 )}
               </div>
             </GlassCard>
+
+            {/* Order Summary — appears after firm is confirmed */}
+            {firmConfirmed && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <GlassCard padding="lg">
+                  <h3 className="text-lg font-heading font-semibold mb-5">
+                    {profitSplitPlan ? 'Agreement Summary' : 'Order Summary'}
+                  </h3>
+
+                  {profitSplitPlan && selectedPlan && (
+                    <div className="mb-5 p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/5">
+                      <div className="flex items-start gap-3">
+                        <HandshakeIcon className="h-5 w-5 text-accent-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-semibold text-white">Profit Split Agreement — No Upfront Payment</p>
+                          <p className="text-xs text-text-secondary mt-1">
+                            Our team trades your funded account. Zero cost to get started.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!profitSplitPlan && (
+                    <div className="mb-5 p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2">
+                      <Bitcoin className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-yellow-300">Payment accepted in <strong>USDT</strong> cryptocurrency only (BEP-20, TRC-20, ERC-20). Wallet details shown after placing order.</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Service</span><span>{cart.serviceType?.replace(/_/g, ' ')}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Plan</span><span>{cart.planName}</span></div>
+                    {cart.firmName && <div className="flex justify-between text-sm"><span className="text-text-secondary">Firm</span><span>{cart.firmName}</span></div>}
+                    {cart.accountSize && <div className="flex justify-between text-sm"><span className="text-text-secondary">Account Size</span><span>{cart.accountSize}</span></div>}
+                    <div className="border-t border-white/[0.06] my-2" />
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span className="font-mono">
+                        {profitSplitPlan
+                          ? <span className="text-accent-primary text-base font-semibold">{selectedPlan?.priceLabel}</span>
+                          : formatCurrency(cart.getFinalPrice())}
+                      </span>
+                    </div>
+                    {!profitSplitPlan && cart.discountAmount > 0 && (
+                      <div className="flex justify-between text-sm text-green-400">
+                        <span>Discount ({cart.couponCode})</span><span>-{formatCurrency(cart.discountAmount)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Coupon — paid plans only */}
+                  {!profitSplitPlan && (
+                    <div className="flex gap-2 mb-6">
+                      <Input placeholder="Coupon code" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1" />
+                      <Button variant="secondary" size="sm" onClick={handleApplyCoupon} loading={couponLoading}>Apply</Button>
+                    </div>
+                  )}
+
+                  <Button variant="primary" fullWidth glow loading={checkoutLoading}
+                    icon={profitSplitPlan ? <HandshakeIcon className="h-5 w-5" /> : <Bitcoin className="h-5 w-5" />}
+                    onClick={handlePlaceOrder}>
+                    {profitSplitPlan ? 'Confirm Agreement' : `Place Order — ${formatCurrency(cart.getFinalPrice())}`}
+                  </Button>
+
+                  <p className="text-xs text-text-tertiary text-center mt-3">
+                    Next: submit your trading credentials
+                  </p>
+                </GlassCard>
+              </motion.div>
+            )}
           </motion.div>
         )}
 
-        {/* ── Step 4: Order Summary ── */}
+        {/* ── Step 4: Submit Credentials ── */}
         {cart.step === 4 && (
           <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <GlassCard padding="lg">
-              <h3 className="text-lg font-heading font-semibold mb-6">
-                {profitSplitPlan ? 'Agreement Summary' : 'Order Summary'}
-              </h3>
-
-              {profitSplitPlan && selectedPlan && (
-                <div className="mb-5 p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/5">
-                  <div className="flex items-start gap-3">
-                    <HandshakeIcon className="h-5 w-5 text-accent-primary shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-white">Profit Split Agreement — No Upfront Payment</p>
-                      <p className="text-xs text-text-secondary mt-1">
-                        Our team trades your funded account and takes{' '}
-                        <span className="text-accent-primary font-semibold">
-                          {selectedPlan.id === 'am-starter' ? '20%' : '15%'}
-                        </span>{' '}
-                        of profits. You keep the rest. Zero cost to get started.
-                      </p>
-                    </div>
-                  </div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2.5 rounded-xl bg-accent-primary/10">
+                  <KeyRound className="h-6 w-6 text-accent-primary" />
                 </div>
-              )}
-
-              {!profitSplitPlan && (
-                <div className="mb-5 p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2">
-                  <Bitcoin className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-yellow-300">Payment accepted in <strong>USDT</strong> cryptocurrency only (BEP-20, TRC-20, ERC-20). Wallet details shown after confirming order.</p>
+                <div>
+                  <h3 className="text-lg font-heading font-semibold">Submit Trading Credentials</h3>
+                  <p className="text-text-tertiary text-sm">Securely share your trading account details so we can get started.</p>
                 </div>
-              )}
-
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-sm"><span className="text-text-secondary">Service</span><span>{cart.serviceType?.replace(/_/g, ' ')}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-text-secondary">Plan</span><span>{cart.planName}</span></div>
-                {cart.firmName && <div className="flex justify-between text-sm"><span className="text-text-secondary">Firm</span><span>{cart.firmName}</span></div>}
-                {cart.accountSize && <div className="flex justify-between text-sm"><span className="text-text-secondary">Account Size</span><span>{cart.accountSize}</span></div>}
-                <div className="border-t border-white/[0.06] my-2" />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span className="font-mono">
-                    {profitSplitPlan
-                      ? <span className="text-accent-primary text-base font-semibold">{selectedPlan?.priceLabel}</span>
-                      : formatCurrency(cart.getFinalPrice())}
-                  </span>
-                </div>
-                {!profitSplitPlan && cart.discountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-green-400">
-                    <span>Discount ({cart.couponCode})</span><span>-{formatCurrency(cart.discountAmount)}</span>
-                  </div>
-                )}
               </div>
 
-              {/* Coupon — paid plans only */}
-              {!profitSplitPlan && (
-                <div className="flex gap-2 mb-6">
-                  <Input placeholder="Coupon code" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1" />
-                  <Button variant="secondary" size="sm" onClick={handleApplyCoupon} loading={couponLoading}>Apply</Button>
+              {/* Security badge */}
+              <div className="flex items-start gap-2 mb-6 p-3 rounded-xl border border-green-500/20 bg-green-500/5">
+                <Shield className="h-4 w-4 text-green-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-green-300">All credentials are <strong>AES-256-GCM encrypted</strong> at rest and in transit.</p>
+              </div>
+
+              <div className="space-y-4">
+                <Select label="Trading Platform" value={credPlatform} onChange={(e) => setCredPlatform(e.target.value)}>
+                  <option value="">Select platform...</option>
+                  {TRADING_PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
+                </Select>
+
+                <Input
+                  label="Server (optional)"
+                  placeholder="e.g., FTMO-Server3"
+                  value={credServer}
+                  onChange={(e) => setCredServer(e.target.value)}
+                />
+
+                <Input
+                  label="Login ID"
+                  placeholder="Your trading account login"
+                  value={credLoginId}
+                  onChange={(e) => setCredLoginId(e.target.value)}
+                />
+
+                <div className="relative">
+                  <Input
+                    label="Password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Your trading account password"
+                    value={credPassword}
+                    onChange={(e) => setCredPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-9 text-text-tertiary hover:text-text-secondary"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-              )}
 
-              <Button variant="primary" fullWidth glow loading={checkoutLoading}
-                icon={profitSplitPlan ? <HandshakeIcon className="h-5 w-5" /> : <Bitcoin className="h-5 w-5" />}
-                onClick={handlePlaceOrder}>
-                {profitSplitPlan ? 'Confirm Agreement' : `Place Order — ${formatCurrency(cart.getFinalPrice())}`}
-              </Button>
+                <Input
+                  label="Notes (optional)"
+                  placeholder="Any additional information..."
+                  value={credNotes}
+                  onChange={(e) => setCredNotes(e.target.value)}
+                />
 
-              <p className="text-xs text-text-tertiary text-center mt-3">
-                {profitSplitPlan ? 'Our team will contact you within 24 hours.' : 'You will receive crypto wallet details on the next step.'}
-              </p>
+                <Button variant="primary" fullWidth glow loading={credSubmitting}
+                  icon={<Check className="h-5 w-5" />}
+                  onClick={handleSubmitCredentials}>
+                  Submit Credentials {cryptoAmount > 0 ? '& Continue to Payment' : '& Complete'}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={handleSkipCredentials}
+                  className="w-full text-center text-xs text-text-tertiary hover:text-text-secondary transition-colors py-2"
+                >
+                  Skip for now — I&apos;ll submit credentials later
+                </button>
+              </div>
             </GlassCard>
           </motion.div>
         )}
