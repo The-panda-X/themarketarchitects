@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!existing) return errorResponse('Plan not found', 404);
 
     const updateData: Record<string, unknown> = {};
-    const fields = ['name', 'tier', 'serviceType', 'price', 'originalPrice', 'priceLabel', 'description', 'features', 'popular', 'accountSizes', 'guarantee', 'successRate', 'deliveryDays', 'sortOrder', 'isActive'];
+    const fields = ['name', 'tier', 'serviceType', 'price', 'originalPrice', 'priceLabel', 'description', 'features', 'popular', 'accountSizes', 'sizePricing', 'guarantee', 'successRate', 'deliveryDays', 'sortOrder', 'isActive'];
     for (const field of fields) {
       if (body[field] !== undefined) updateData[field] = body[field];
     }

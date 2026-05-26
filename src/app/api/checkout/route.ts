@@ -17,7 +17,15 @@ export async function POST(req: NextRequest) {
     if (!plan || !plan.isActive) return errorResponse('Invalid plan', 400);
 
     const isProfitSplit = !plan.price && !!plan.priceLabel;
-    const canonicalPrice = plan.price ?? 0;
+
+    // Determine price: check sizePricing for the selected accountSize, fallback to plan.price
+    let canonicalPrice = plan.price ?? 0;
+    if (plan.sizePricing && Array.isArray(plan.sizePricing) && accountSize) {
+      const sizeEntry = (plan.sizePricing as { size: string; price: number }[]).find(
+        (sp) => sp.size === accountSize
+      );
+      if (sizeEntry) canonicalPrice = sizeEntry.price;
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },

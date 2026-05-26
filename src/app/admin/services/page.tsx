@@ -13,11 +13,13 @@ import Modal from '@/components/ui/Modal';
 import useToast from '@/hooks/useToast';
 
 /* ─── Types ─── */
+interface SizePriceEntry { size: string; price: number; originalPrice?: number | null; }
 interface Plan {
   id: string; name: string; tier: string; serviceType: string; price: number | null;
   originalPrice: number | null; priceLabel: string | null; description: string;
-  features: string[]; popular: boolean; accountSizes: string[]; guarantee: string | null;
-  successRate: number | null; deliveryDays: number | null; sortOrder: number; isActive: boolean;
+  features: string[]; popular: boolean; accountSizes: string[]; sizePricing: SizePriceEntry[] | null;
+  guarantee: string | null; successRate: number | null; deliveryDays: number | null;
+  sortOrder: number; isActive: boolean;
 }
 interface Firm {
   id: string; name: string; phases: number; accountSizes: string[];
@@ -160,12 +162,12 @@ export default function AdminServicesPage() {
                         {plan.popular && <Badge variant="red" size="sm">Popular</Badge>}
                         {!plan.isActive && <Badge variant="yellow" size="sm">Inactive</Badge>}
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-text-tertiary">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-text-tertiary flex-wrap">
                         <span>{serviceLabel(plan.serviceType)}</span>
                         <span>·</span>
-                        <span>{plan.price ? `$${plan.price}` : plan.priceLabel ?? 'Free'}</span>
-                        <span>·</span>
-                        <span>{plan.accountSizes.join(', ')}</span>
+                        <span>{plan.sizePricing && plan.sizePricing.length > 0
+                          ? plan.sizePricing.map(sp => `${sp.size}: $${sp.price}`).join(' / ')
+                          : plan.price ? `$${plan.price}` : plan.priceLabel ?? 'Free'}</span>
                         <span>·</span>
                         <span>Order: {plan.sortOrder}</span>
                       </div>
@@ -365,31 +367,50 @@ function PlanForm({ initial, onSave }: { initial: Plan | null; onSave: (data: Pa
   const [tier, setTier] = useState(initial?.tier ?? 'starter');
   const [serviceType, setServiceType] = useState(initial?.serviceType ?? 'CHALLENGE_PASSING');
   const [customServiceType, setCustomServiceType] = useState('');
-  const [price, setPrice] = useState(initial?.price ?? '');
-  const [originalPrice, setOriginalPrice] = useState(initial?.originalPrice ?? '');
   const [priceLabel, setPriceLabel] = useState(initial?.priceLabel ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [features, setFeatures] = useState(initial?.features.join('\n') ?? '');
   const [popular, setPopular] = useState(initial?.popular ?? false);
-  const [accountSizes, setAccountSizes] = useState(initial?.accountSizes.join(', ') ?? '');
   const [guarantee, setGuarantee] = useState(initial?.guarantee ?? '');
   const [successRate, setSuccessRate] = useState(initial?.successRate ?? '');
   const [deliveryDays, setDeliveryDays] = useState(initial?.deliveryDays ?? '');
   const [sortOrder, setSortOrder] = useState(initial?.sortOrder ?? 0);
 
+  // Per-size pricing rows
+  const [sizeRows, setSizeRows] = useState<SizePriceEntry[]>(
+    initial?.sizePricing && initial.sizePricing.length > 0
+      ? initial.sizePricing
+      : initial?.accountSizes?.length
+        ? initial.accountSizes.map((s) => ({ size: s, price: initial.price ?? 0, originalPrice: initial.originalPrice ?? null }))
+        : [{ size: '', price: 0, originalPrice: null }]
+  );
+
   const isCustomType = initial?.serviceType && !SERVICE_TYPES.includes(initial.serviceType);
+
+  const addSizeRow = () => setSizeRows([...sizeRows, { size: '', price: 0, originalPrice: null }]);
+  const removeSizeRow = (idx: number) => setSizeRows(sizeRows.filter((_, i) => i !== idx));
+  const updateSizeRow = (idx: number, field: keyof SizePriceEntry, value: string | number | null) => {
+    const rows = [...sizeRows];
+    rows[idx] = { ...rows[idx], [field]: value };
+    setSizeRows(rows);
+  };
 
   const handleSubmit = () => {
     const finalType = serviceType === '__custom__' ? customServiceType.toUpperCase().replace(/\s+/g, '_') : serviceType;
+    const validRows = sizeRows.filter((r) => r.size.trim());
+    const lowestPrice = validRows.length > 0 ? Math.min(...validRows.map((r) => r.price)) : null;
+    const highestOriginal = validRows.length > 0 ? Math.max(...validRows.map((r) => r.originalPrice ?? r.price)) : null;
+
     onSave({
       name, tier, serviceType: finalType,
-      price: price ? Number(price) : null,
-      originalPrice: originalPrice ? Number(originalPrice) : null,
+      price: lowestPrice,
+      originalPrice: highestOriginal !== lowestPrice ? highestOriginal : null,
       priceLabel: priceLabel || null,
       description,
       features: features.split('\n').map((f) => f.trim()).filter(Boolean),
       popular,
-      accountSizes: accountSizes.split(',').map((s) => s.trim()).filter(Boolean),
+      accountSizes: validRows.map((r) => r.size),
+      sizePricing: validRows.length > 0 ? validRows : null,
       guarantee: guarantee || null,
       successRate: successRate ? Number(successRate) : null,
       deliveryDays: deliveryDays ? Number(deliveryDays) : null,
@@ -414,13 +435,40 @@ function PlanForm({ initial, onSave }: { initial: Plan | null; onSave: (data: Pa
         </Select>
       </div>
       <Textarea label="Description *" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
-      <div className="grid grid-cols-3 gap-3">
-        <Input label="Price ($)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Leave empty for free" />
-        <Input label="Original Price ($)" type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} />
-        <Input label="Price Label" value={priceLabel} onChange={(e) => setPriceLabel(e.target.value)} placeholder="e.g. Profit Split Only" />
+
+      {/* Price label for profit-split / free plans */}
+      <Input label="Price Label (for profit-split / free plans)" value={priceLabel} onChange={(e) => setPriceLabel(e.target.value)} placeholder="e.g. Profit Split Only" />
+
+      {/* Per-size pricing */}
+      <div>
+        <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide block mb-2">
+          Account Sizes & Pricing *
+        </label>
+        <div className="space-y-2">
+          {sizeRows.map((row, idx) => (
+            <div key={idx} className="grid grid-cols-[1fr_100px_100px_36px] gap-2 items-end">
+              <Input placeholder="e.g. $10,000" value={row.size}
+                onChange={(e) => updateSizeRow(idx, 'size', e.target.value)} />
+              <Input placeholder="Price" type="number" value={row.price || ''}
+                onChange={(e) => updateSizeRow(idx, 'price', e.target.value ? Number(e.target.value) : 0)} />
+              <Input placeholder="Was $" type="number" value={row.originalPrice ?? ''}
+                onChange={(e) => updateSizeRow(idx, 'originalPrice', e.target.value ? Number(e.target.value) : null)} />
+              {sizeRows.length > 1 && (
+                <button type="button" onClick={() => removeSizeRow(idx)}
+                  className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors h-10">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={addSizeRow}
+          className="mt-2 flex items-center gap-1 text-xs text-accent-primary hover:text-red-300 transition-colors">
+          <Plus className="h-3.5 w-3.5" /> Add size
+        </button>
       </div>
+
       <Textarea label="Features (one per line)" value={features} onChange={(e) => setFeatures(e.target.value)} rows={4} placeholder="Phase 1 + Phase 2&#10;All major firms&#10;Refund guarantee" />
-      <Input label="Account Sizes (comma separated)" value={accountSizes} onChange={(e) => setAccountSizes(e.target.value)} placeholder="$10,000, $50,000, $100,000" />
       <div className="grid grid-cols-3 gap-3">
         <Input label="Success Rate (%)" type="number" value={successRate} onChange={(e) => setSuccessRate(e.target.value)} />
         <Input label="Delivery Days" type="number" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} />
@@ -429,7 +477,7 @@ function PlanForm({ initial, onSave }: { initial: Plan | null; onSave: (data: Pa
       <Input label="Guarantee" value={guarantee} onChange={(e) => setGuarantee(e.target.value)} placeholder="e.g. 100% pass or money back" />
       <label className="flex items-center gap-2 text-sm cursor-pointer">
         <input type="checkbox" checked={popular} onChange={(e) => setPopular(e.target.checked)} className="rounded" />
-        Mark as "Most Popular"
+        Mark as &quot;Most Popular&quot;
       </label>
       <Button variant="primary" fullWidth onClick={handleSubmit}>{initial ? 'Update Plan' : 'Create Plan'}</Button>
     </div>

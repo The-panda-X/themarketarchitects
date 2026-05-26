@@ -405,6 +405,7 @@ model ServicePlan {
   features      String[]
   popular       Boolean  @default(false)
   accountSizes  String[]
+  sizePricing   Json?    // [{size:"$10,000", price:149, originalPrice:199}, ...]
   guarantee     String?
   successRate   Float?
   deliveryDays  Int?

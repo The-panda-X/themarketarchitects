@@ -33,6 +33,8 @@ import { formatCurrency } from '@/lib/utils';
 import useCartStore from '@/store/cartStore';
 import { ServiceType } from '@/types';
 
+interface SizePriceEntry { size: string; price: number; originalPrice?: number | null; }
+
 interface PlanData {
   id: string;
   name: string;
@@ -45,6 +47,7 @@ interface PlanData {
   features: string[];
   popular: boolean;
   accountSizes: string[];
+  sizePricing: SizePriceEntry[] | null;
   guarantee: string | null;
   successRate: number | null;
   deliveryDays: number | null;
@@ -68,6 +71,34 @@ function availableSizes(plan: PlanData, firmName: string, firms: FirmData[]): st
   }
   const firmSizes = firms.find((f) => f.name === firmName)?.accountSizes ?? [];
   return plan.accountSizes.filter((s) => firmSizes.includes(s));
+}
+
+/** Get price for a specific account size from sizePricing, fallback to plan.price */
+function getPriceForSize(plan: PlanData, size: string): number {
+  if (plan.sizePricing && plan.sizePricing.length > 0) {
+    const entry = plan.sizePricing.find((sp) => sp.size === size);
+    if (entry) return entry.price;
+  }
+  return plan.price ?? 0;
+}
+
+/** Get original (crossed-out) price for a size */
+function getOriginalPriceForSize(plan: PlanData, size: string): number | null {
+  if (plan.sizePricing && plan.sizePricing.length > 0) {
+    const entry = plan.sizePricing.find((sp) => sp.size === size);
+    if (entry?.originalPrice && entry.originalPrice > entry.price) return entry.originalPrice;
+  }
+  return plan.originalPrice;
+}
+
+/** Get display price range for plan card, e.g. "From $149" or "$149 – $699" */
+function getPriceRange(plan: PlanData): { min: number; max: number } | null {
+  if (plan.sizePricing && plan.sizePricing.length > 0) {
+    const prices = plan.sizePricing.map((sp) => sp.price);
+    return { min: Math.min(...prices), max: Math.max(...prices) };
+  }
+  if (plan.price) return { min: plan.price, max: plan.price };
+  return null;
 }
 
 /* ─── Copy button ─────────────────────────────────── */
@@ -129,10 +160,19 @@ function PlanCard({ plan, onSelect }: { plan: PlanData; onSelect: (p: PlanData) 
           <div>
             {profitSplit
               ? <span className="text-xl font-semibold text-accent-primary">{plan.priceLabel}</span>
-              : <>
-                  <span className="font-heading text-3xl font-bold text-white">${plan.price}</span>
-                  {plan.originalPrice && <span className="text-text-tertiary line-through text-sm ml-2">${plan.originalPrice}</span>}
-                </>
+              : (() => {
+                  const range = getPriceRange(plan);
+                  if (!range) return <span className="font-heading text-3xl font-bold text-white">Free</span>;
+                  return range.min === range.max
+                    ? <>
+                        <span className="font-heading text-3xl font-bold text-white">${range.min}</span>
+                        {plan.originalPrice && <span className="text-text-tertiary line-through text-sm ml-2">${plan.originalPrice}</span>}
+                      </>
+                    : <>
+                        <span className="text-text-tertiary text-sm">From </span>
+                        <span className="font-heading text-3xl font-bold text-white">${range.min}</span>
+                      </>;
+                })()
             }
           </div>
           {plan.deliveryDays && (
@@ -196,17 +236,33 @@ export default function PurchasePage() {
   };
 
   const handleSelectPlan = (plan: PlanData) => {
-    setSelectedPlan(plan); cart.setPlan(plan.id, plan.name, plan.tier, plan.price ?? 0); cart.setStep(3);
+    setSelectedPlan(plan);
+    // Set initial price as the lowest from sizePricing, or plan.price
+    const range = getPriceRange(plan);
+    cart.setPlan(plan.id, plan.name, plan.tier, range?.min ?? plan.price ?? 0);
+    cart.setStep(3);
   };
 
   const handleFirmChange = (firmName: string) => cart.setAccount('', firmName);
-  const handleSizeChange = (size: string) => cart.setAccount(size, cart.firmName!);
+  const handleSizeChange = (size: string) => {
+    cart.setAccount(size, cart.firmName!);
+    // Update price based on selected size
+    if (selectedPlan) {
+      const sizePrice = getPriceForSize(selectedPlan, size);
+      cart.setPlan(cart.planId!, cart.planName!, cart.tier!, sizePrice);
+    }
+  };
 
   const [firmConfirmed, setFirmConfirmed] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
 
   const handleConfirmAccount = () => {
     if (!cart.firmName) { addToast('Please select a prop firm.', 'error'); return; }
+    // For auto-size plans, set the price for that size
+    if (autoSize && selectedPlan) {
+      const sizePrice = getPriceForSize(selectedPlan, autoSize);
+      cart.setPlan(cart.planId!, cart.planName!, cart.tier!, sizePrice);
+    }
     setFirmConfirmed(true);
   };
 
@@ -339,11 +395,25 @@ export default function PurchasePage() {
   // Derive unique service categories for Step 1
   const serviceCategories = [...new Set(allPlans.map((p) => p.serviceType))];
 
+  // Get the lowest price across all plans of a service type (including per-size pricing)
+  const getLowestPrice = (st: string): number | null => {
+    const typed = allPlans.filter(p => p.serviceType === st);
+    const prices: number[] = [];
+    typed.forEach(p => {
+      if (p.sizePricing && p.sizePricing.length > 0) {
+        p.sizePricing.forEach(sp => prices.push(sp.price));
+      } else if (p.price) {
+        prices.push(p.price);
+      }
+    });
+    return prices.length > 0 ? Math.min(...prices) : null;
+  };
+
   // Icon + label mapping for service types
   const SERVICE_META: Record<string, { icon: typeof Target; label: string; desc: string; priceHint: string; sizeHint: string }> = {
-    CHALLENGE_PASSING: { icon: Target, label: 'Challenge Passing', desc: 'We pass your prop firm challenge. You get funded.', priceHint: `From $${Math.min(...allPlans.filter(p => p.serviceType === 'CHALLENGE_PASSING' && p.price).map(p => p.price!)) || 149}`, sizeHint: allPlans.filter(p => p.serviceType === 'CHALLENGE_PASSING').flatMap(p => p.accountSizes).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3).join(' · ') },
+    CHALLENGE_PASSING: { icon: Target, label: 'Challenge Passing', desc: 'We pass your prop firm challenge. You get funded.', priceHint: `From $${getLowestPrice('CHALLENGE_PASSING') ?? 149}`, sizeHint: allPlans.filter(p => p.serviceType === 'CHALLENGE_PASSING').flatMap(p => p.accountSizes).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3).join(' · ') },
     ACCOUNT_MANAGEMENT: { icon: Shield, label: 'Account Management', desc: 'We trade your funded account. You earn profits.', priceHint: 'Profit Split Only', sizeHint: 'No upfront fee' },
-    ACCOUNT_GROWTH: { icon: TrendingUp, label: 'Account Growth', desc: 'Systematic scaling to maximize your capital.', priceHint: `From $${Math.min(...allPlans.filter(p => p.serviceType === 'ACCOUNT_GROWTH' && p.price).map(p => p.price!)) || 249}`, sizeHint: 'Any account size' },
+    ACCOUNT_GROWTH: { icon: TrendingUp, label: 'Account Growth', desc: 'Systematic scaling to maximize your capital.', priceHint: `From $${getLowestPrice('ACCOUNT_GROWTH') ?? 249}`, sizeHint: 'Any account size' },
   };
 
   if (dataLoading) {
@@ -428,14 +498,17 @@ export default function PurchasePage() {
                   <div className="flex-1">
                     <p className="text-sm font-medium text-white">{selectedPlan.name}</p>
                     <p className="text-xs text-text-tertiary mt-0.5">
-                      Account: <span className="text-white font-medium">{selectedPlan.accountSizes.join(' / ')}</span>
+                      {selectedPlan.accountSizes.length > 1
+                        ? <><span className="text-white font-medium">{selectedPlan.accountSizes.length} sizes available</span></>
+                        : <>Account: <span className="text-white font-medium">{selectedPlan.accountSizes.join(' / ')}</span></>
+                      }
                       {selectedPlan.deliveryDays ? ` · ${selectedPlan.deliveryDays}-day delivery` : ''}
                     </p>
                   </div>
                   <div className="text-right">
                     {profitSplitPlan
                       ? <span className="text-accent-primary font-semibold text-sm">{selectedPlan.priceLabel}</span>
-                      : <span className="text-white font-bold">${selectedPlan.price}</span>
+                      : <span className="text-white font-bold">{formatCurrency(cart.price)}</span>
                     }
                   </div>
                 </div>
@@ -454,13 +527,19 @@ export default function PurchasePage() {
                         <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] text-sm">
                           <Check className="h-4 w-4 text-accent-primary shrink-0" />
                           <span className="text-white font-medium">{autoSize}</span>
-                          <span className="text-text-tertiary text-xs ml-auto">Fixed by plan</span>
+                          <span className="text-accent-primary text-xs font-semibold ml-auto">
+                            {!profitSplitPlan && formatCurrency(getPriceForSize(selectedPlan, autoSize))}
+                          </span>
                         </div>
                       </div>
                     ) : sizesForDropdown.length > 0 ? (
                       <Select label="Account Size" value={cart.accountSize ?? ''} onChange={(e) => { handleSizeChange(e.target.value); setFirmConfirmed(false); }}>
                         <option value="">Select size...</option>
-                        {sizesForDropdown.map((size) => <option key={size} value={size}>{size}</option>)}
+                        {sizesForDropdown.map((size) => (
+                          <option key={size} value={size}>
+                            {size}{!profitSplitPlan ? ` — $${getPriceForSize(selectedPlan, size)}` : ''}
+                          </option>
+                        ))}
                       </Select>
                     ) : (
                       <p className="text-sm text-yellow-400 px-1">⚠️ This firm doesn&apos;t offer {selectedPlan.accountSizes.join('/')} accounts. Please select a different firm.</p>

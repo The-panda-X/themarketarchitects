@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     await requireAdmin();
     const body = await req.json();
 
-    const { name, tier, serviceType, price, originalPrice, priceLabel, description, features, popular, accountSizes, guarantee, successRate, deliveryDays, sortOrder } = body;
+    const { name, tier, serviceType, price, originalPrice, priceLabel, description, features, popular, accountSizes, sizePricing, guarantee, successRate, deliveryDays, sortOrder } = body;
 
     if (!name || !serviceType || !description) {
       return errorResponse('Name, service type, and description are required', 400);
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
         features: features ?? [],
         popular: popular ?? false,
         accountSizes: accountSizes ?? [],
+        sizePricing: sizePricing ?? undefined,
         guarantee: guarantee ?? null,
         successRate: successRate ?? null,
         deliveryDays: deliveryDays ?? null,
