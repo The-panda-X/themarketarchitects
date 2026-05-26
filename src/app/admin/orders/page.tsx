@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
@@ -12,6 +12,7 @@ import {
   TableCell, TableEmpty, TablePagination,
 } from '@/components/ui/Table';
 import { formatDate } from '@/lib/utils';
+import useToast from '@/hooks/useToast';
 
 interface OrderRow {
   id: string;
@@ -33,6 +34,7 @@ const statusVariant: Record<string, 'yellow' | 'blue' | 'green' | 'red' | 'defau
 };
 
 export default function AdminOrdersPage() {
+  const { addToast } = useToast();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -40,6 +42,23 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDelete = async (id: string, planName: string) => {
+    if (!confirm(`Delete order "${planName}"? This will also delete all related challenges, credentials, payments, and payouts. This cannot be undone.`)) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        addToast('Order deleted successfully.', 'success');
+        fetchOrders();
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to delete order.', 'error');
+      }
+    } catch { addToast('Failed to delete order.', 'error'); }
+    finally { setDeleting(null); }
+  };
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -105,11 +124,12 @@ export default function AdminOrdersPage() {
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead align="center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orders.length === 0 ? (
-                  <TableEmpty colSpan={6} message="No orders found" />
+                  <TableEmpty colSpan={7} message="No orders found" />
                 ) : (
                   orders.map((order) => (
                     <TableRow key={order.id} onClick={() => window.location.href = `/admin/orders/${order.id}`}>
@@ -130,6 +150,16 @@ export default function AdminOrdersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{formatDate(order.createdAt)}</TableCell>
+                      <TableCell align="center">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(order.id, order.planName); }}
+                          disabled={deleting === order.id}
+                          className="p-1.5 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                          title="Delete order"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

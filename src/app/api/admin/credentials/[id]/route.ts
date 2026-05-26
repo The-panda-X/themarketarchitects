@@ -36,3 +36,32 @@ export async function GET(
     return handleApiError(err);
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const adminSession = await requireAdmin();
+
+    const credential = await prisma.credential.findUnique({
+      where: { id: params.id },
+      select: { id: true, platform: true, orderId: true },
+    });
+    if (!credential) return errorResponse('Credential not found', 404);
+
+    await prisma.credential.delete({ where: { id: params.id } });
+
+    await prisma.adminLog.create({
+      data: {
+        adminId: adminSession.user.id,
+        action: 'DELETE_CREDENTIAL',
+        details: JSON.parse(JSON.stringify({ credentialId: params.id, platform: credential.platform })),
+      },
+    });
+
+    return successResponse({ deleted: true });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}

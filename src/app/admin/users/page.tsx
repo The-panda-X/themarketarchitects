@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, UserCheck, UserX } from 'lucide-react';
+import { Search, UserCheck, UserX, Trash2 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
@@ -13,6 +13,7 @@ import {
   TableCell, TableEmpty, TablePagination,
 } from '@/components/ui/Table';
 import { formatRelativeTime } from '@/lib/utils';
+import useToast from '@/hooks/useToast';
 
 interface UserRow {
   id: string;
@@ -26,12 +27,30 @@ interface UserRow {
 }
 
 export default function AdminUsersPage() {
+  const { addToast } = useToast();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDelete = async (id: string, email: string) => {
+    if (!confirm(`Delete user "${email}" and ALL their data (orders, challenges, credentials, payments, tickets)? This cannot be undone.`)) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        addToast('User deleted successfully.', 'success');
+        fetchUsers();
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to delete user.', 'error');
+      }
+    } catch { addToast('Failed to delete user.', 'error'); }
+    finally { setDeleting(null); }
+  };
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -88,11 +107,12 @@ export default function AdminUsersPage() {
                   <TableHead align="center">Orders</TableHead>
                   <TableHead align="center">Challenges</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead align="center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.length === 0 ? (
-                  <TableEmpty colSpan={6} message="No users found" />
+                  <TableEmpty colSpan={7} message="No users found" />
                 ) : (
                   users.map((user) => (
                     <TableRow key={user.id} onClick={() => window.location.href = `/admin/users/${user.id}`}>
@@ -120,6 +140,18 @@ export default function AdminUsersPage() {
                       <TableCell align="center">{user._count.orders}</TableCell>
                       <TableCell align="center">{user._count.challenges}</TableCell>
                       <TableCell>{formatRelativeTime(user.createdAt)}</TableCell>
+                      <TableCell align="center">
+                        {user.role !== 'ADMIN' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(user.id, user.email); }}
+                            disabled={deleting === user.id}
+                            className="p-1.5 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                            title="Delete user"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

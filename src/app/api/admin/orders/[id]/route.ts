@@ -80,3 +80,40 @@ export async function PATCH(
     return handleApiError(err);
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const adminSession = await requireAdmin();
+
+    const order = await prisma.order.findUnique({
+      where: { id: params.id },
+      select: { id: true, planName: true },
+    });
+    if (!order) return errorResponse('Order not found', 404);
+
+    await prisma.$transaction([
+      prisma.credential.deleteMany({ where: { orderId: params.id } }),
+      prisma.payment.deleteMany({ where: { orderId: params.id } }),
+      prisma.profitSplit.deleteMany({ where: { orderId: params.id } }),
+      prisma.dailyStat.deleteMany({ where: { challenge: { orderId: params.id } } }),
+      prisma.signalDelivery.deleteMany({ where: { challenge: { orderId: params.id } } }),
+      prisma.challenge.deleteMany({ where: { orderId: params.id } }),
+      prisma.order.delete({ where: { id: params.id } }),
+    ]);
+
+    await prisma.adminLog.create({
+      data: {
+        adminId: adminSession.user.id,
+        action: 'DELETE_ORDER',
+        details: JSON.parse(JSON.stringify({ orderId: params.id, planName: order.planName })),
+      },
+    });
+
+    return successResponse({ deleted: true });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}

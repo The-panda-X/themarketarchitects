@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   DollarSign, Clock, CheckCircle, AlertTriangle, X,
-  ExternalLink, ChevronDown, ChevronUp, Search,
+  ExternalLink, ChevronDown, ChevronUp, Search, Trash2,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import StatCard from '@/components/ui/StatCard';
@@ -60,6 +60,19 @@ export default function AdminPayoutsPage() {
   const [reviewing,  setReviewing]  = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState('');
   const [saving,     setSaving]     = useState(false);
+  const [deleting,   setDeleting]   = useState<string | null>(null);
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this profit split record? This cannot be undone.')) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/profit-splits/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed');
+      setSplits((prev) => prev.filter((s) => s.id !== id));
+      addToast('Profit split deleted.', 'success');
+    } catch { addToast('Failed to delete.', 'error'); }
+    finally { setDeleting(null); }
+  }
 
   useEffect(() => {
     fetch('/api/admin/profit-splits')
@@ -285,6 +298,19 @@ export default function AdminPayoutsPage() {
                         <p className="text-sm text-text-secondary">{s.adminNote}</p>
                       </div>
                     )}
+
+                    {/* Delete button */}
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        icon={<Trash2 className="h-3.5 w-3.5" />}
+                        loading={deleting === s.id}
+                        onClick={() => handleDelete(s.id)}
+                      >
+                        Delete Record
+                      </Button>
+                    </div>
 
                     {/* Review actions — only for PENDING or DISPUTED */}
                     {(s.status === 'PENDING' || s.status === 'DISPUTED') && (

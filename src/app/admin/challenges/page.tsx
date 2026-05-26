@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Search, Trophy } from 'lucide-react';
+import { Plus, Search, Trophy, Trash2 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -72,6 +72,23 @@ export default function AdminChallengesPage() {
   const [targetProfit, setTargetProfit] = useState('');
   const [maxDrawdown, setMaxDrawdown] = useState('');
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDelete = async (id: string, firmName: string) => {
+    if (!confirm(`Delete challenge for "${firmName}"? This will also delete all daily stats and signal deliveries. This cannot be undone.`)) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/challenges/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        addToast('Challenge deleted successfully.', 'success');
+        fetchChallenges();
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to delete challenge.', 'error');
+      }
+    } catch { addToast('Failed to delete challenge.', 'error'); }
+    finally { setDeleting(null); }
+  };
 
   const fetchChallenges = useCallback(async () => {
     setLoading(true);
@@ -193,11 +210,12 @@ export default function AdminChallengesPage() {
                   <TableHead>Drawdown</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead align="center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {challenges.length === 0 ? (
-                  <TableEmpty colSpan={7} message="No challenges found" />
+                  <TableEmpty colSpan={8} message="No challenges found" />
                 ) : (
                   challenges.map((ch) => (
                     <TableRow key={ch.id} onClick={() => window.location.href = `/admin/challenges/${ch.id}`}>
@@ -248,6 +266,16 @@ export default function AdminChallengesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{formatRelativeTime(ch.createdAt)}</TableCell>
+                      <TableCell align="center">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(ch.id, ch.firmName); }}
+                          disabled={deleting === ch.id}
+                          className="p-1.5 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                          title="Delete challenge"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

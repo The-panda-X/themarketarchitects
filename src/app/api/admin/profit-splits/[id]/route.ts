@@ -61,3 +61,32 @@ export async function PATCH(
     return handleApiError(err);
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const adminSession = await requireAdmin();
+
+    const split = await prisma.profitSplit.findUnique({
+      where: { id: params.id },
+      select: { id: true, userId: true, amountSent: true },
+    });
+    if (!split) return errorResponse('Profit split not found', 404);
+
+    await prisma.profitSplit.delete({ where: { id: params.id } });
+
+    await prisma.adminLog.create({
+      data: {
+        adminId: adminSession.user.id,
+        action: 'DELETE_PROFIT_SPLIT',
+        details: JSON.parse(JSON.stringify({ splitId: params.id, amountSent: split.amountSent })),
+      },
+    });
+
+    return successResponse({ deleted: true });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}

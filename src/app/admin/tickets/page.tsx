@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { Trash2 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Select from '@/components/ui/Select';
@@ -10,6 +11,7 @@ import {
   TableCell, TableEmpty, TablePagination,
 } from '@/components/ui/Table';
 import { formatRelativeTime } from '@/lib/utils';
+import useToast from '@/hooks/useToast';
 
 interface TicketRow {
   id: string;
@@ -37,12 +39,30 @@ const priorityVariant: Record<string, 'red' | 'yellow' | 'default'> = {
 };
 
 export default function AdminTicketsPage() {
+  const { addToast } = useToast();
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDelete = async (id: string, subject: string) => {
+    if (!confirm(`Delete ticket "${subject}"? This cannot be undone.`)) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/tickets/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        addToast('Ticket deleted successfully.', 'success');
+        fetchTickets();
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to delete ticket.', 'error');
+      }
+    } catch { addToast('Failed to delete ticket.', 'error'); }
+    finally { setDeleting(null); }
+  };
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -97,11 +117,12 @@ export default function AdminTicketsPage() {
                   <TableHead>Status</TableHead>
                   <TableHead align="center">Replies</TableHead>
                   <TableHead>Updated</TableHead>
+                  <TableHead align="center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tickets.length === 0 ? (
-                  <TableEmpty colSpan={6} message="No tickets found" />
+                  <TableEmpty colSpan={7} message="No tickets found" />
                 ) : (
                   tickets.map((ticket) => (
                     <TableRow key={ticket.id} onClick={() => window.location.href = `/admin/tickets/${ticket.id}`}>
@@ -124,6 +145,16 @@ export default function AdminTicketsPage() {
                       </TableCell>
                       <TableCell align="center">{(ticket.responses as unknown[]).length}</TableCell>
                       <TableCell>{formatRelativeTime(ticket.updatedAt)}</TableCell>
+                      <TableCell align="center">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(ticket.id, ticket.subject); }}
+                          disabled={deleting === ticket.id}
+                          className="p-1.5 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                          title="Delete ticket"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

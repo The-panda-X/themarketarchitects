@@ -86,3 +86,37 @@ export async function PATCH(
     return handleApiError(err);
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const adminSession = await requireAdmin();
+
+    const challenge = await prisma.challenge.findUnique({
+      where: { id: params.id },
+      select: { id: true, firmName: true, accountSize: true },
+    });
+    if (!challenge) return errorResponse('Challenge not found', 404);
+
+    await prisma.$transaction([
+      prisma.dailyStat.deleteMany({ where: { challengeId: params.id } }),
+      prisma.signalDelivery.deleteMany({ where: { challengeId: params.id } }),
+      prisma.profitSplit.deleteMany({ where: { challengeId: params.id } }),
+      prisma.challenge.delete({ where: { id: params.id } }),
+    ]);
+
+    await prisma.adminLog.create({
+      data: {
+        adminId: adminSession.user.id,
+        action: 'DELETE_CHALLENGE',
+        details: JSON.parse(JSON.stringify({ challengeId: params.id, firmName: challenge.firmName })),
+      },
+    });
+
+    return successResponse({ deleted: true });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}

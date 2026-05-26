@@ -20,3 +20,32 @@ export async function GET(
     return handleApiError(err);
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const adminSession = await requireAdmin();
+
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: params.id },
+      select: { id: true, subject: true },
+    });
+    if (!ticket) return errorResponse('Ticket not found', 404);
+
+    await prisma.supportTicket.delete({ where: { id: params.id } });
+
+    await prisma.adminLog.create({
+      data: {
+        adminId: adminSession.user.id,
+        action: 'DELETE_TICKET',
+        details: JSON.parse(JSON.stringify({ ticketId: params.id, subject: ticket.subject })),
+      },
+    });
+
+    return successResponse({ deleted: true });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
