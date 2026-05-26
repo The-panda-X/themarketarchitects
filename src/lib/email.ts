@@ -4,7 +4,7 @@ let _resend: Resend | null = null;
 function getResend() {
   if (!_resend) {
     if (!process.env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY is not set');
+      throw new Error('Email service not configured. Please set RESEND_API_KEY in environment variables.');
     }
     _resend = new Resend(process.env.RESEND_API_KEY);
   }

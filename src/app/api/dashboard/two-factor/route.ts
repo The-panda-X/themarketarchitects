@@ -39,7 +39,17 @@ export async function POST() {
       data: { twoFactorSecret: `${otp}|${expiry.toISOString()}` },
     });
 
-    await send2FACode(user.email, otp);
+    try {
+      await send2FACode(user.email, otp);
+    } catch (emailErr) {
+      console.error('Failed to send 2FA email:', emailErr);
+      // Clear the secret since the code was never sent
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { twoFactorSecret: null },
+      });
+      return errorResponse('Failed to send verification email. Please check your email configuration.', 500);
+    }
 
     return successResponse({ message: 'Verification code sent to your email' });
   } catch (err) {
