@@ -160,7 +160,7 @@ export default function UserChatPage() {
       </div>
 
       {/* Chat container */}
-      <GlassCard padding="none" className="flex-1 flex flex-col overflow-hidden">
+      <GlassCard padding="none" flexCol className="flex-1 flex flex-col overflow-hidden">
         {/* Chat header */}
         <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-3">
           <div className="p-2 rounded-xl bg-accent-primary/10">

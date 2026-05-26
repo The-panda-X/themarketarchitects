@@ -8,6 +8,8 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
   hover?: boolean;
   glow?: 'red' | 'gold' | 'none';
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  /** When true, the inner wrapper participates in flex layout (flex-1 flex flex-col min-h-0) */
+  flexCol?: boolean;
 }
 
 const variantStyles = {
@@ -31,6 +33,7 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       hover = false,
       glow = 'none',
       padding = 'md',
+      flexCol = false,
       children,
       ...props
     },
@@ -58,7 +61,7 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
             background: 'radial-gradient(ellipse at 50% 0%, rgba(230,57,70,0.07) 0%, transparent 70%)',
           }}
         />
-        <div className="relative z-10">{children}</div>
+        <div className={cn('relative z-10', flexCol && 'flex-1 flex flex-col min-h-0')}>{children}</div>
       </div>
     );
   }

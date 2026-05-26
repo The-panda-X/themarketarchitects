@@ -325,6 +325,7 @@ export default function AdminChatPage() {
         {/* Conversation list */}
         <GlassCard
           padding="none"
+          flexCol
           className={`w-full md:w-80 shrink-0 flex flex-col overflow-hidden ${
             activeId ? 'hidden md:flex' : 'flex'
           }`}
@@ -396,6 +397,7 @@ export default function AdminChatPage() {
         {/* Chat panel */}
         <GlassCard
           padding="none"
+          flexCol
           className={`flex-1 flex flex-col overflow-hidden ${
             !activeId ? 'hidden md:flex' : 'flex'
           }`}
