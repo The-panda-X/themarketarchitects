@@ -322,7 +322,7 @@ export default function AdminSignalsPage() {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <Input label="Entry Price (0 = market)" type="number" placeholder="e.g. 2350" value={form.entry} onChange={e => setForm(f => ({...f, entry: e.target.value}))} />
+            <Input label="Entry (0 = mkt)" type="number" placeholder="e.g. 2350" value={form.entry} onChange={e => setForm(f => ({...f, entry: e.target.value}))} />
             <Input label="Stop Loss *" type="number" placeholder="e.g. 2340" value={form.sl} onChange={e => setForm(f => ({...f, sl: e.target.value}))} />
             <Input label="Risk % Override" type="number" placeholder="e.g. 1.5" value={form.riskOverride} onChange={e => setForm(f => ({...f, riskOverride: e.target.value}))} />
           </div>
