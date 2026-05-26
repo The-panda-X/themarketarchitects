@@ -206,14 +206,16 @@ export default function AdminChatPage() {
         const res = await fetch(`/api/admin/users?search=${encodeURIComponent(userSearch.trim())}&limit=10`);
         if (res.ok) {
           const data = await res.json();
+          // The API returns { data: { data: users[], ... } }
+          const rawUsers = data.data?.data ?? [];
           // Filter to only regular users (not staff)
-          const users: SearchUser[] = (data.data?.users ?? [])
+          const users: SearchUser[] = rawUsers
             .filter((u: { role?: string }) => u.role === 'USER')
-            .map((u: { id: string; name: string | null; email: string; image: string | null }) => ({
+            .map((u: { id: string; name: string | null; email: string; avatar: string | null }) => ({
               id: u.id,
               name: u.name,
               email: u.email,
-              image: u.image,
+              image: u.avatar,
             }));
           setSearchResults(users);
         }
