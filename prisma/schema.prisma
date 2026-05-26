@@ -522,3 +522,20 @@ model ProfitSplit {
   @@index([status])
   @@index([createdAt])
 }
+
+model HomeService {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String   @default("Target") // Lucide icon name
+  features    String[]
+  priceLabel  String   @default("Custom")
+  linkHref    String   @default("#pricing")
+  linkText    String   @default("View Plans")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
