@@ -19,10 +19,11 @@ export async function POST(req: NextRequest) {
     const isProfitSplit = !plan.price && !!plan.priceLabel;
 
     // Determine price: check sizePricing for the selected accountSize, fallback to plan.price
+    const norm = (s: string) => s.replace(/[$,\s]/g, '');
     let canonicalPrice = plan.price ?? 0;
     if (plan.sizePricing && Array.isArray(plan.sizePricing) && accountSize) {
       const sizeEntry = (plan.sizePricing as { size: string; price: number }[]).find(
-        (sp) => sp.size === accountSize
+        (sp) => sp.size === accountSize || norm(sp.size) === norm(accountSize)
       );
       if (sizeEntry) canonicalPrice = sizeEntry.price;
     }

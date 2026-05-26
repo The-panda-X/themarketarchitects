@@ -395,9 +395,22 @@ function PlanForm({ initial, onSave }: { initial: Plan | null; onSave: (data: Pa
     setSizeRows(rows);
   };
 
+  /** Normalize size input: "5000" → "$5,000", "$50000" → "$50,000", keeps "$10K" etc as-is */
+  const formatSize = (raw: string): string => {
+    const s = raw.trim();
+    // If it contains letters (like "$10K", "Any size", "Up to $50K"), keep as-is
+    if (/[a-zA-Z]/.test(s)) return s;
+    // Strip $ and commas, parse as number, reformat
+    const num = parseFloat(s.replace(/[$,]/g, ''));
+    if (isNaN(num)) return s;
+    return `$${num.toLocaleString('en-US')}`;
+  };
+
   const handleSubmit = () => {
     const finalType = serviceType === '__custom__' ? customServiceType.toUpperCase().replace(/\s+/g, '_') : serviceType;
-    const validRows = sizeRows.filter((r) => r.size.trim());
+    const validRows = sizeRows
+      .filter((r) => r.size.trim())
+      .map((r) => ({ ...r, size: formatSize(r.size) }));
     const lowestPrice = validRows.length > 0 ? Math.min(...validRows.map((r) => r.price)) : null;
     const highestOriginal = validRows.length > 0 ? Math.max(...validRows.map((r) => r.originalPrice ?? r.price)) : null;
 

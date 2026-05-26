@@ -65,18 +65,27 @@ function isProfitSplit(plan: PlanData | null) {
   return !!plan && !plan.price && !!plan.priceLabel;
 }
 
+/** Strip "$", commas, spaces from a size string for fuzzy matching. "$10,000" → "10000" */
+function normSize(s: string): string {
+  return s.replace(/[$,\s]/g, '');
+}
+
 function availableSizes(plan: PlanData, firmName: string, firms: FirmData[]): string[] {
   if (plan.accountSizes.includes('Any size')) {
     return firms.find((f) => f.name === firmName)?.accountSizes ?? [];
   }
   const firmSizes = firms.find((f) => f.name === firmName)?.accountSizes ?? [];
-  return plan.accountSizes.filter((s) => firmSizes.includes(s));
+  // Match plan sizes against firm sizes using normalized comparison
+  // Return the plan's size string (since it has the pricing data keyed to it)
+  return plan.accountSizes.filter((ps) =>
+    firmSizes.some((fs) => normSize(ps) === normSize(fs))
+  );
 }
 
 /** Get price for a specific account size from sizePricing, fallback to plan.price */
 function getPriceForSize(plan: PlanData, size: string): number {
   if (plan.sizePricing && plan.sizePricing.length > 0) {
-    const entry = plan.sizePricing.find((sp) => sp.size === size);
+    const entry = plan.sizePricing.find((sp) => sp.size === size || normSize(sp.size) === normSize(size));
     if (entry) return entry.price;
   }
   return plan.price ?? 0;
@@ -85,7 +94,7 @@ function getPriceForSize(plan: PlanData, size: string): number {
 /** Get original (crossed-out) price for a size */
 function getOriginalPriceForSize(plan: PlanData, size: string): number | null {
   if (plan.sizePricing && plan.sizePricing.length > 0) {
-    const entry = plan.sizePricing.find((sp) => sp.size === size);
+    const entry = plan.sizePricing.find((sp) => sp.size === size || normSize(sp.size) === normSize(size));
     if (entry?.originalPrice && entry.originalPrice > entry.price) return entry.originalPrice;
   }
   return plan.originalPrice;
