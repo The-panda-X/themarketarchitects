@@ -73,6 +73,16 @@ model User {
   twoFactorSecret  String?
   referralCode     String    @unique @default(cuid())
   referredBy       String?
+
+  // Location tracking (updated on each login)
+  lastLoginIp      String?
+  lastLoginCountry String?
+  lastLoginCity    String?
+  lastLoginRegion  String?
+  lastLoginLat     Float?
+  lastLoginLon     Float?
+  lastLoginAt      DateTime?
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

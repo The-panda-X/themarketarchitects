@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, UserCheck, UserX, Trash2, MessageCircle } from 'lucide-react';
+import { Search, UserCheck, UserX, Trash2, MessageCircle, MapPin } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
@@ -23,6 +23,7 @@ interface UserRow {
   avatar: string | null;
   role: 'USER' | 'MODERATOR' | 'ADMIN' | 'HEAD_ADMIN';
   emailVerified: string | null;
+  lastLoginCountry: string | null;
   createdAt: string;
   _count: { orders: number; challenges: number };
 }
@@ -106,6 +107,7 @@ export default function AdminUsersPage() {
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Email Verified</TableHead>
+                  <TableHead>Country</TableHead>
                   <TableHead align="center">Orders</TableHead>
                   <TableHead align="center">Challenges</TableHead>
                   <TableHead>Joined</TableHead>
@@ -114,7 +116,7 @@ export default function AdminUsersPage() {
               </TableHeader>
               <TableBody>
                 {users.length === 0 ? (
-                  <TableEmpty colSpan={7} message="No users found" />
+                  <TableEmpty colSpan={8} message="No users found" />
                 ) : (
                   users.map((user) => (
                     <TableRow key={user.id} onClick={() => window.location.href = `/admin/users/${user.id}`}>
@@ -137,6 +139,16 @@ export default function AdminUsersPage() {
                           <UserCheck className="h-4 w-4 text-success" />
                         ) : (
                           <UserX className="h-4 w-4 text-danger" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {user.lastLoginCountry ? (
+                          <span className="flex items-center gap-1.5 text-xs text-text-secondary">
+                            <MapPin className="h-3 w-3 text-text-tertiary shrink-0" />
+                            {user.lastLoginCountry}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-text-tertiary">—</span>
                         )}
                       </TableCell>
                       <TableCell align="center">{user._count.orders}</TableCell>

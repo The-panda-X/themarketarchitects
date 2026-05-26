@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   DollarSign, Users, ShoppingBag, Target, TrendingUp,
-  MessageSquare, Clock, AlertCircle,
+  MessageSquare, Clock, AlertCircle, Globe,
 } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard';
 import GlassCard from '@/components/ui/GlassCard';
@@ -20,6 +20,7 @@ interface AdminStats {
   openTickets: number;
   activeChallenges: number;
   challengesByStatus: Record<string, number>;
+  usersByCountry: Array<{ country: string; count: number }>;
 }
 
 function fmt(n: number) {
@@ -126,6 +127,27 @@ export default function AdminDashboardPage() {
           ))}
         </div>
       </GlassCard>
+
+      {/* Users by Country */}
+      {stats?.usersByCountry && stats.usersByCountry.length > 0 && (
+        <GlassCard padding="lg">
+          <h3 className="text-base font-heading font-semibold mb-4 flex items-center gap-2">
+            <Globe className="h-4 w-4 text-accent-primary" />
+            Users by Country
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {stats.usersByCountry.map(({ country, count }) => (
+              <div
+                key={country}
+                className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              >
+                <span className="text-sm text-text-secondary truncate">{country}</span>
+                <span className="text-sm font-mono font-bold text-accent-primary ml-2 shrink-0">{count}</span>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      )}
 
       {/* Quick links */}
       <GlassCard padding="md">

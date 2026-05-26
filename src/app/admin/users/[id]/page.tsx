@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ShoppingBag, Target, Mail, Calendar, Shield, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Target, Mail, Calendar, Shield, MessageCircle, MapPin, Globe, Clock } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -23,6 +23,13 @@ interface UserDetail {
   role: string;
   emailVerified: string | null;
   referralCode: string;
+  lastLoginCountry: string | null;
+  lastLoginCity: string | null;
+  lastLoginRegion: string | null;
+  lastLoginIp: string | null;
+  lastLoginLat: number | null;
+  lastLoginLon: number | null;
+  lastLoginAt: string | null;
   createdAt: string;
   orders: Array<{ id: string; planName: string; status: string; totalAmount: number; createdAt: string }>;
   challenges: Array<{ id: string; firmName: string; accountSize: string; status: string; createdAt: string }>;
@@ -136,6 +143,52 @@ export default function AdminUserDetailPage() {
           </div>
         </div>
       </GlassCard>
+
+      {/* Location */}
+      {user.lastLoginCountry && (
+        <GlassCard padding="lg">
+          <h3 className="text-base font-heading font-semibold flex items-center gap-2 mb-4">
+            <MapPin className="h-4 w-4 text-accent-primary" />
+            Last Known Location
+          </h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="flex items-center gap-2 text-text-secondary">
+              <Globe className="h-4 w-4 text-text-tertiary" />
+              {user.lastLoginCountry}
+            </div>
+            {isHeadAdmin && user.lastLoginRegion && (
+              <div className="flex items-center gap-2 text-text-secondary">
+                <MapPin className="h-4 w-4 text-text-tertiary" />
+                {user.lastLoginRegion}
+              </div>
+            )}
+            {isHeadAdmin && user.lastLoginCity && (
+              <div className="flex items-center gap-2 text-text-secondary">
+                <MapPin className="h-4 w-4 text-text-tertiary" />
+                {user.lastLoginCity}
+              </div>
+            )}
+            {user.lastLoginAt && (
+              <div className="flex items-center gap-2 text-text-secondary">
+                <Clock className="h-4 w-4 text-text-tertiary" />
+                Last login {formatRelativeTime(user.lastLoginAt)}
+              </div>
+            )}
+            {isHeadAdmin && user.lastLoginIp && (
+              <div className="flex items-center gap-2 text-text-secondary">
+                <Shield className="h-4 w-4 text-text-tertiary" />
+                IP: <span className="font-mono text-xs">{user.lastLoginIp}</span>
+              </div>
+            )}
+            {isHeadAdmin && user.lastLoginLat && user.lastLoginLon && (
+              <div className="flex items-center gap-2 text-text-secondary">
+                <Globe className="h-4 w-4 text-text-tertiary" />
+                Coords: <span className="font-mono text-xs">{user.lastLoginLat.toFixed(4)}, {user.lastLoginLon.toFixed(4)}</span>
+              </div>
+            )}
+          </div>
+        </GlassCard>
+      )}
 
       {/* Orders */}
       <GlassCard padding="lg">

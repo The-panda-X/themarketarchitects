@@ -20,6 +20,7 @@ export async function GET() {
       openTickets,
       activeChallenges,
       challengesByStatus,
+      usersByCountry,
     ] = await Promise.all([
       // Single query gets all payments — filter in JS instead of 4 separate aggregate calls
       prisma.payment.findMany({
@@ -32,6 +33,13 @@ export async function GET() {
       prisma.supportTicket.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS'] } } }),
       prisma.challenge.count({ where: { status: { in: ['IN_PROGRESS', 'PHASE_1', 'PHASE_2'] } } }),
       prisma.challenge.groupBy({ by: ['status'], _count: { id: true } }),
+      prisma.user.groupBy({
+        by: ['lastLoginCountry'],
+        where: { lastLoginCountry: { not: null } },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 20,
+      }),
     ]);
 
     // Compute revenue buckets in JS (1 query vs 4)
@@ -49,6 +57,11 @@ export async function GET() {
       challengesByStatus.map((c) => [c.status, c._count.id])
     );
 
+    const countryMap = usersByCountry.map((c) => ({
+      country: c.lastLoginCountry,
+      count: c._count.id,
+    }));
+
     return successResponse({
       revenueToday,
       revenueWeek,
@@ -60,6 +73,7 @@ export async function GET() {
       openTickets,
       activeChallenges,
       challengesByStatus: challengeMap,
+      usersByCountry: countryMap,
     });
   } catch (err) {
     return handleApiError(err);
