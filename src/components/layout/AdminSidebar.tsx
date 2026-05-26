@@ -22,6 +22,7 @@ import {
   Shield,
   Radio,
   Layers,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
@@ -36,6 +37,7 @@ const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Challenges', href: '/admin/challenges', icon: Target },
   { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'admin' },
+  { label: 'Chat', href: '/admin/chat', icon: MessageCircle },
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
   { label: 'Services', href: '/admin/services', icon: Layers, minRole: 'admin' },
   { label: 'Blog', href: '/admin/blog', icon: FileText },

@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Shield,
   Coins,
+  MessageCircle,
 } from 'lucide-react';
 import { setLastPanel } from '@/hooks/useLastPanel';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ const navItems = [
   { label: 'Services', href: '/dashboard/services', icon: Briefcase },
   { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
   { label: 'Credentials', href: '/dashboard/credentials', icon: KeyRound },
+  { label: 'Messages', href: '/dashboard/chat', icon: MessageCircle },
   { label: 'Support', href: '/dashboard/support', icon: HeadphonesIcon },
   { label: 'Profit Split', href: '/dashboard/profit-split', icon: Coins },
   { label: 'Referrals', href: '/dashboard/referrals', icon: Users },

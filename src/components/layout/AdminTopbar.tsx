@@ -21,6 +21,7 @@ import {
   Settings,
   LogOut,
   Shield,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
@@ -34,6 +35,7 @@ const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashbo
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Challenges', href: '/admin/challenges', icon: Target },
+  { label: 'Chat', href: '/admin/chat', icon: MessageCircle },
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
   { label: 'Services', href: '/admin/services', icon: Layers, minRole: 'admin' },
   { label: 'Blog', href: '/admin/blog', icon: FileText },

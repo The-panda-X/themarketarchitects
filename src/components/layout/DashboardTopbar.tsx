@@ -24,6 +24,7 @@ import {
   LogOut,
   Shield,
   Coins,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
@@ -38,6 +39,7 @@ const mobileNavItems = [
   { label: 'Services', href: '/dashboard/services', icon: Briefcase },
   { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
   { label: 'Credentials', href: '/dashboard/credentials', icon: KeyRound },
+  { label: 'Messages', href: '/dashboard/chat', icon: MessageCircle },
   { label: 'Support', href: '/dashboard/support', icon: HeadphonesIcon },
   { label: 'Profit Split', href: '/dashboard/profit-split', icon: Coins },
   { label: 'Referrals', href: '/dashboard/referrals', icon: Users },
