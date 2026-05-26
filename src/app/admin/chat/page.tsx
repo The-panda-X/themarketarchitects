@@ -9,11 +9,12 @@ import {
   XCircle,
   CheckCircle,
   ArrowLeft,
+  Plus,
+  X,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Avatar from '@/components/ui/Avatar';
-import Badge from '@/components/ui/Badge';
-import Input from '@/components/ui/Input';
+import Modal from '@/components/ui/Modal';
 import useAuth from '@/hooks/useAuth';
 import useToast from '@/hooks/useToast';
 
@@ -36,6 +37,13 @@ interface Message {
   body: string;
   read: boolean;
   createdAt: string;
+}
+
+interface SearchUser {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
 }
 
 function timeAgo(dateStr: string) {
@@ -71,6 +79,16 @@ export default function AdminChatPage() {
   const [loading, setLoading] = useState(true);
   const [msgLoading, setMsgLoading] = useState(false);
   const [sending, setSending] = useState(false);
+
+  // New chat modal state
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<SearchUser | null>(null);
+  const [newMessage, setNewMessage] = useState('');
+  const [startingSending, setStartingSending] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -173,6 +191,88 @@ export default function AdminChatPage() {
     }
   };
 
+  // ── New Chat: search users with debounce ──
+  useEffect(() => {
+    if (!userSearch.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    searchTimerRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/admin/users?search=${encodeURIComponent(userSearch.trim())}&limit=10`);
+        if (res.ok) {
+          const data = await res.json();
+          // Filter to only regular users (not staff)
+          const users: SearchUser[] = (data.data?.users ?? [])
+            .filter((u: { role?: string }) => u.role === 'USER')
+            .map((u: { id: string; name: string | null; email: string; image: string | null }) => ({
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              image: u.image,
+            }));
+          setSearchResults(users);
+        }
+      } catch { /* silent */ }
+      finally { setSearchLoading(false); }
+    }, 300);
+
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [userSearch]);
+
+  const handleStartConversation = async () => {
+    if (!selectedUser || !newMessage.trim()) return;
+
+    setStartingSending(true);
+    try {
+      const res = await fetch('/api/admin/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser.id, message: newMessage.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const convId = data.data?.conversationId;
+
+        // Reset modal state
+        setShowNewChat(false);
+        setUserSearch('');
+        setSearchResults([]);
+        setSelectedUser(null);
+        setNewMessage('');
+
+        // Refresh conversations and open the new one
+        await fetchConversations();
+        if (convId) {
+          setActiveId(convId);
+          fetchMessages(convId);
+        }
+        addToast('Message sent', 'success');
+      } else {
+        const errData = await res.json().catch(() => null);
+        addToast(errData?.error || 'Failed to start conversation', 'error');
+      }
+    } catch {
+      addToast('Failed to start conversation', 'error');
+    } finally {
+      setStartingSending(false);
+    }
+  };
+
+  const closeNewChatModal = () => {
+    setShowNewChat(false);
+    setUserSearch('');
+    setSearchResults([]);
+    setSelectedUser(null);
+    setNewMessage('');
+  };
+
   const filteredConvs = conversations.filter((c) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -193,6 +293,13 @@ export default function AdminChatPage() {
           </h1>
           <p className="text-text-secondary mt-1">Direct messaging with users</p>
         </div>
+        <button
+          onClick={() => setShowNewChat(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-primary text-white text-sm font-medium hover:bg-accent-primary/90 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          New Chat
+        </button>
       </div>
 
       <div className="flex gap-4 h-[calc(100%-3.5rem)]">
@@ -227,6 +334,9 @@ export default function AdminChatPage() {
               <div className="text-center py-10 px-4">
                 <MessageCircle className="h-8 w-8 text-text-tertiary mx-auto mb-2" />
                 <p className="text-sm text-text-secondary">No conversations yet</p>
+                <p className="text-xs text-text-tertiary mt-1">
+                  Click &quot;New Chat&quot; to message a user
+                </p>
               </div>
             ) : (
               filteredConvs.map((conv) => (
@@ -276,7 +386,7 @@ export default function AdminChatPage() {
               <MessageCircle className="h-12 w-12 text-text-tertiary mb-3" />
               <p className="text-text-secondary font-medium">Select a conversation</p>
               <p className="text-xs text-text-tertiary mt-1">
-                Choose a conversation from the left to start chatting
+                Choose a conversation from the left or start a new chat
               </p>
             </div>
           ) : (
@@ -418,6 +528,136 @@ export default function AdminChatPage() {
           )}
         </GlassCard>
       </div>
+
+      {/* ── New Chat Modal ── */}
+      <Modal isOpen={showNewChat} onClose={closeNewChatModal} title="New Conversation" size="md">
+        <div className="space-y-4">
+          {/* Step 1: Search & select user */}
+          {!selectedUser ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                  Search for a user
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
+                  <input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    autoFocus
+                    className="w-full pl-9 pr-3 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white placeholder-text-tertiary focus:outline-none focus:border-accent-primary/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Search results */}
+              <div className="max-h-64 overflow-y-auto rounded-xl border border-white/[0.06]">
+                {searchLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-5 w-5 animate-spin text-accent-primary" />
+                  </div>
+                ) : !userSearch.trim() ? (
+                  <div className="text-center py-8 px-4">
+                    <Search className="h-6 w-6 text-text-tertiary mx-auto mb-2" />
+                    <p className="text-xs text-text-tertiary">
+                      Type a name or email to search
+                    </p>
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <div className="text-center py-8 px-4">
+                    <p className="text-sm text-text-secondary">No users found</p>
+                    <p className="text-xs text-text-tertiary mt-1">
+                      Try a different search term
+                    </p>
+                  </div>
+                ) : (
+                  searchResults.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => setSelectedUser(u)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.04] transition-colors border-b border-white/[0.04] last:border-b-0"
+                    >
+                      <Avatar src={u.image} name={u.name} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary truncate">
+                          {u.name || 'No Name'}
+                        </p>
+                        <p className="text-xs text-text-tertiary truncate">{u.email}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            /* Step 2: Compose message */
+            <>
+              {/* Selected user card */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                <Avatar src={selectedUser.image} name={selectedUser.name} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text-primary truncate">
+                    {selectedUser.name || 'No Name'}
+                  </p>
+                  <p className="text-xs text-text-tertiary truncate">{selectedUser.email}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="p-1.5 rounded-lg hover:bg-white/[0.06] text-text-tertiary hover:text-text-secondary transition-colors"
+                  title="Change user"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Message input */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                  Message
+                </label>
+                <textarea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  rows={3}
+                  autoFocus
+                  className="w-full resize-none bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-tertiary focus:outline-none focus:border-accent-primary/50 transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleStartConversation();
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Send button */}
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={closeNewChatModal}
+                  className="px-4 py-2 rounded-xl text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleStartConversation}
+                  disabled={!newMessage.trim() || startingSending}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-accent-primary text-white text-sm font-medium hover:bg-accent-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  {startingSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Send Message
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
