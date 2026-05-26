@@ -27,6 +27,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        twoFactorCode: { label: '2FA Code', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -48,6 +49,42 @@ export const authOptions: NextAuthOptions = {
 
         if (!user.emailVerified) {
           throw new Error('Please verify your email address');
+        }
+
+        // ── 2FA check ──
+        if (user.twoFactorEnabled) {
+          const code = credentials.twoFactorCode;
+          if (!code) {
+            // Generate and send OTP, then signal the client to show 2FA form
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { twoFactorSecret: `${otp}|${expiry.toISOString()}` },
+            });
+            // Send OTP email (dynamic import to avoid circular deps)
+            const { send2FACode } = await import('@/lib/email');
+            await send2FACode(user.email, otp);
+            throw new Error('2FA_REQUIRED');
+          }
+
+          // Verify the provided code
+          if (!user.twoFactorSecret) {
+            throw new Error('Invalid 2FA code');
+          }
+          const [storedCode, expiryStr] = user.twoFactorSecret.split('|');
+          if (!storedCode || !expiryStr || new Date(expiryStr) < new Date()) {
+            throw new Error('2FA code expired. Please try logging in again.');
+          }
+          if (code !== storedCode) {
+            throw new Error('Invalid 2FA code');
+          }
+
+          // Clear the used code
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { twoFactorSecret: null },
+          });
         }
 
         return {

@@ -92,6 +92,24 @@ export async function sendChallengeUpdateEmail(
   });
 }
 
+export async function send2FACode(email: string, code: string) {
+  await getResend().emails.send({
+    from: `${SITE_NAME} <${FROM_EMAIL}>`,
+    to: email,
+    subject: `${code} is your verification code`,
+    html: emailTemplate({
+      title: 'Login Verification Code',
+      body: `
+        <p>Your two-factor authentication code is:</p>
+        <div style="text-align:center;margin:24px 0;">
+          <span style="display:inline-block;font-size:36px;font-weight:700;letter-spacing:8px;color:#fff;background:#1a1a2e;padding:16px 32px;border-radius:12px;border:1px solid rgba(220,38,38,0.3);">${escapeHtml(code)}</span>
+        </div>
+        <p style="font-size:14px;color:#9ca3af;">This code expires in <strong>10 minutes</strong>. If you didn't try to log in, someone may be trying to access your account — consider changing your password.</p>
+      `,
+    }),
+  });
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
