@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -17,6 +17,7 @@ import {
   Bitcoin,
   AlertTriangle,
   Upload,
+  Loader2,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
@@ -24,28 +25,45 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import GlowBorder from '@/components/ui/GlowBorder';
 import useToast from '@/hooks/useToast';
-import {
-  CHALLENGE_PASSING_PLANS,
-  ACCOUNT_MANAGEMENT_PLANS,
-  ACCOUNT_GROWTH_PLANS,
-  CRYPTO_WALLETS,
-  PROP_FIRMS,
-} from '@/lib/constants';
+import { CRYPTO_WALLETS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
 import useCartStore from '@/store/cartStore';
 import { ServiceType } from '@/types';
-import type { ServicePlan } from '@/types';
+
+interface PlanData {
+  id: string;
+  name: string;
+  tier: string;
+  serviceType: string;
+  price: number | null;
+  originalPrice: number | null;
+  priceLabel: string | null;
+  description: string;
+  features: string[];
+  popular: boolean;
+  accountSizes: string[];
+  guarantee: string | null;
+  successRate: number | null;
+  deliveryDays: number | null;
+}
+
+interface FirmData {
+  id: string;
+  name: string;
+  phases: number;
+  accountSizes: string[];
+}
 
 /* ─── helpers ─────────────────────────────────────── */
-function isProfitSplit(plan: ServicePlan | null) {
+function isProfitSplit(plan: PlanData | null) {
   return !!plan && !plan.price && !!plan.priceLabel;
 }
 
-function availableSizes(plan: ServicePlan, firmName: string): string[] {
+function availableSizes(plan: PlanData, firmName: string, firms: FirmData[]): string[] {
   if (plan.accountSizes.includes('Any size')) {
-    return PROP_FIRMS.find((f) => f.name === firmName)?.accountSizes ?? [];
+    return firms.find((f) => f.name === firmName)?.accountSizes ?? [];
   }
-  const firmSizes = PROP_FIRMS.find((f) => f.name === firmName)?.accountSizes ?? [];
+  const firmSizes = firms.find((f) => f.name === firmName)?.accountSizes ?? [];
   return plan.accountSizes.filter((s) => firmSizes.includes(s));
 }
 
@@ -70,7 +88,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 /* ─── Plan Card ───────────────────────────────────── */
-function PlanCard({ plan, onSelect }: { plan: ServicePlan; onSelect: (p: ServicePlan) => void }) {
+function PlanCard({ plan, onSelect }: { plan: PlanData; onSelect: (p: PlanData) => void }) {
   const isPopular = !!plan.popular;
   const profitSplit = isProfitSplit(plan);
 
@@ -138,7 +156,10 @@ function PlanCard({ plan, onSelect }: { plan: ServicePlan; onSelect: (p: Service
 export default function PurchasePage() {
   const { addToast } = useToast();
   const cart = useCartStore();
-  const [selectedPlan, setSelectedPlan] = useState<ServicePlan | null>(null);
+  const [allPlans, setAllPlans] = useState<PlanData[]>([]);
+  const [firms, setFirms] = useState<FirmData[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
   const [couponInput, setCouponInput] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -147,11 +168,22 @@ export default function PurchasePage() {
   const [selectedWallet, setSelectedWallet] = useState<string>(CRYPTO_WALLETS[0].id);
   const [proofFile, setProofFile] = useState<File | null>(null);
 
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/public/plans').then((r) => r.json()),
+      fetch('/api/public/firms').then((r) => r.json()),
+    ]).then(([plansRes, firmsRes]) => {
+      setAllPlans(plansRes.data ?? []);
+      setFirms(firmsRes.data ?? []);
+      setDataLoading(false);
+    }).catch(() => setDataLoading(false));
+  }, []);
+
   const handleSelectService = (type: ServiceType) => {
     cart.setService(type); setSelectedPlan(null); cart.setStep(2);
   };
 
-  const handleSelectPlan = (plan: ServicePlan) => {
+  const handleSelectPlan = (plan: PlanData) => {
     setSelectedPlan(plan); cart.setPlan(plan.id, plan.name, plan.tier, plan.price ?? 0); cart.setStep(3);
   };
 
@@ -241,17 +273,32 @@ export default function PurchasePage() {
     }
   };
 
-  const plans =
-    cart.serviceType === ServiceType.ACCOUNT_MANAGEMENT ? ACCOUNT_MANAGEMENT_PLANS
-    : cart.serviceType === ServiceType.ACCOUNT_GROWTH ? ACCOUNT_GROWTH_PLANS
-    : CHALLENGE_PASSING_PLANS;
+  const plans = allPlans.filter((p) => p.serviceType === cart.serviceType);
 
   const profitSplitPlan = isProfitSplit(selectedPlan);
   const activeWallet = CRYPTO_WALLETS.find((w) => w.id === selectedWallet) ?? CRYPTO_WALLETS[0];
 
-  const sizesForDropdown = selectedPlan && cart.firmName ? availableSizes(selectedPlan, cart.firmName) : [];
+  const sizesForDropdown = selectedPlan && cart.firmName ? availableSizes(selectedPlan, cart.firmName, firms) : [];
   const autoSize = selectedPlan && selectedPlan.accountSizes.length === 1 && !selectedPlan.accountSizes.includes('Any size')
     ? selectedPlan.accountSizes[0] : null;
+
+  // Derive unique service categories for Step 1
+  const serviceCategories = [...new Set(allPlans.map((p) => p.serviceType))];
+
+  // Icon + label mapping for service types
+  const SERVICE_META: Record<string, { icon: typeof Target; label: string; desc: string; priceHint: string; sizeHint: string }> = {
+    CHALLENGE_PASSING: { icon: Target, label: 'Challenge Passing', desc: 'We pass your prop firm challenge. You get funded.', priceHint: `From $${Math.min(...allPlans.filter(p => p.serviceType === 'CHALLENGE_PASSING' && p.price).map(p => p.price!)) || 149}`, sizeHint: allPlans.filter(p => p.serviceType === 'CHALLENGE_PASSING').flatMap(p => p.accountSizes).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3).join(' · ') },
+    ACCOUNT_MANAGEMENT: { icon: Shield, label: 'Account Management', desc: 'We trade your funded account. You earn profits.', priceHint: 'Profit Split Only', sizeHint: 'No upfront fee' },
+    ACCOUNT_GROWTH: { icon: TrendingUp, label: 'Account Growth', desc: 'Systematic scaling to maximize your capital.', priceHint: `From $${Math.min(...allPlans.filter(p => p.serviceType === 'ACCOUNT_GROWTH' && p.price).map(p => p.price!)) || 249}`, sizeHint: 'Any account size' },
+  };
+
+  if (dataLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-accent-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -286,33 +333,21 @@ export default function PurchasePage() {
         {cart.step === 1 && (
           <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <GlassCard hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(ServiceType.CHALLENGE_PASSING)}>
-              <div className="text-center py-4">
-                <Target className="h-12 w-12 text-accent-primary mx-auto mb-3" />
-                <h3 className="text-lg font-heading font-semibold">Challenge Passing</h3>
-                <p className="text-sm text-text-secondary mt-2">We pass your prop firm challenge. You get funded.</p>
-                <p className="text-accent-primary font-semibold mt-3">From $149</p>
-                <p className="text-xs text-text-tertiary mt-1">$10K · $50K · $100K–$200K</p>
-              </div>
-            </GlassCard>
-            <GlassCard hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(ServiceType.ACCOUNT_MANAGEMENT)}>
-              <div className="text-center py-4">
-                <Shield className="h-12 w-12 text-accent-primary mx-auto mb-3" />
-                <h3 className="text-lg font-heading font-semibold">Account Management</h3>
-                <p className="text-sm text-text-secondary mt-2">We trade your funded account. You earn profits.</p>
-                <p className="text-accent-primary font-semibold mt-3">Profit Split Only</p>
-                <p className="text-xs text-text-tertiary mt-1">15%–20% split · No upfront fee</p>
-              </div>
-            </GlassCard>
-            <GlassCard hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(ServiceType.ACCOUNT_GROWTH)}>
-              <div className="text-center py-4">
-                <TrendingUp className="h-12 w-12 text-accent-primary mx-auto mb-3" />
-                <h3 className="text-lg font-heading font-semibold">Account Growth</h3>
-                <p className="text-sm text-text-secondary mt-2">Systematic scaling to maximize your capital.</p>
-                <p className="text-accent-primary font-semibold mt-3">From $249</p>
-                <p className="text-xs text-text-tertiary mt-1">Any account size</p>
-              </div>
-            </GlassCard>
+            {serviceCategories.map((type) => {
+              const meta = SERVICE_META[type] ?? { icon: Target, label: type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '', priceHint: '', sizeHint: '' };
+              const Icon = meta.icon;
+              return (
+                <GlassCard key={type} hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(type as ServiceType)}>
+                  <div className="text-center py-4">
+                    <Icon className="h-12 w-12 text-accent-primary mx-auto mb-3" />
+                    <h3 className="text-lg font-heading font-semibold">{meta.label}</h3>
+                    <p className="text-sm text-text-secondary mt-2">{meta.desc}</p>
+                    <p className="text-accent-primary font-semibold mt-3">{meta.priceHint}</p>
+                    <p className="text-xs text-text-tertiary mt-1">{meta.sizeHint}</p>
+                  </div>
+                </GlassCard>
+              );
+            })}
           </motion.div>
         )}
 
@@ -348,7 +383,7 @@ export default function PurchasePage() {
               <div className="space-y-4 max-w-md">
                 <Select label="Prop Firm" value={cart.firmName ?? ''} onChange={(e) => handleFirmChange(e.target.value)}>
                   <option value="">Select a firm...</option>
-                  {PROP_FIRMS.map((f) => <option key={f.id} value={f.name}>{f.name}</option>)}
+                  {firms.map((f) => <option key={f.id} value={f.name}>{f.name}</option>)}
                 </Select>
 
                 {cart.firmName && (

@@ -391,6 +391,66 @@ model SiteStats {
   totalFundedAmount Float  @default(0)
 }
 
+model ServicePlan {
+  id            String   @id @default(cuid())
+  name          String
+  tier          String
+  serviceType   String
+  price         Float?
+  originalPrice Float?
+  priceLabel    String?
+  description   String
+  features      String[]
+  popular       Boolean  @default(false)
+  accountSizes  String[]
+  guarantee     String?
+  successRate   Float?
+  deliveryDays  Int?
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([serviceType])
+  @@index([isActive, sortOrder])
+}
+
+model PropFirm {
+  id           String   @id @default(cuid())
+  name         String
+  logo         String?
+  phases       Int      @default(2)
+  accountSizes String[]
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model FAQItem {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model TrustStat {
+  id        String  @id @default(cuid())
+  label     String
+  value     Float
+  suffix    String?
+  prefix    String?
+  icon      String
+  sortOrder Int     @default(0)
+}
+
 model ProfitSplit {
   id           String      @id @default(cuid())
   userId       String

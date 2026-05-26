@@ -1,20 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CircleCheck, Clock, ArrowRight } from 'lucide-react';
+import { CircleCheck, Clock, ArrowRight, Loader2 } from 'lucide-react';
 import GlowBorder from '@/components/ui/GlowBorder';
 import Tabs from '@/components/ui/Tabs';
-import { CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS, ACCOUNT_GROWTH_PLANS } from '@/lib/constants';
-import type { ServicePlan } from '@/types';
 
-const tabItems = [
-  { id: 'challenge', label: 'Challenge Passing' },
-  { id: 'management', label: 'Account Management' },
-  { id: 'growth', label: 'Account Growth' },
-];
+interface PlanData {
+  id: string;
+  name: string;
+  serviceType: string;
+  description: string;
+  accountSizes: string[];
+  successRate: number | null;
+  features: string[];
+  price: number | null;
+  originalPrice: number | null;
+  priceLabel: string | null;
+  deliveryDays: number | null;
+  popular: boolean;
+  guarantee: string | null;
+}
 
-function PlanCard({ plan }: { plan: ServicePlan }) {
+function serviceLabel(type: string) {
+  if (type === 'CHALLENGE_PASSING') return 'Challenge Passing';
+  if (type === 'ACCOUNT_MANAGEMENT') return 'Account Management';
+  if (type === 'ACCOUNT_GROWTH') return 'Account Growth';
+  return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function PlanCard({ plan }: { plan: PlanData }) {
   const isPopular = !!plan.popular;
   const isProfitSplit = !plan.price && !!plan.priceLabel;
 
@@ -40,7 +55,6 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
         <h3 className="font-heading font-semibold text-xl text-white mb-1">{plan.name}</h3>
         <p className="text-text-tertiary text-sm mt-1 mb-4 leading-relaxed">{plan.description}</p>
 
-        {/* Account size + success rate */}
         <div className="flex items-center gap-3 mb-5 py-3 border-y border-white/[0.06] text-xs">
           <span className="text-text-tertiary">Account:</span>
           <span className="text-white font-medium">{plan.accountSizes.join(' / ')}</span>
@@ -49,7 +63,6 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
           )}
         </div>
 
-        {/* Features */}
         <ul className="space-y-2.5 mb-6 flex-1">
           {plan.features.map((f) => (
             <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
@@ -59,7 +72,6 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
           ))}
         </ul>
 
-        {/* Price + delivery */}
         <div className="flex items-center justify-between mb-5">
           <div>
             {isProfitSplit ? (
@@ -105,14 +117,33 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
 }
 
 export default function ServicesPage() {
-  const [activeTab, setActiveTab] = useState('challenge');
+  const [plans, setPlans] = useState<PlanData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
 
-  const plans =
-    activeTab === 'management'
-      ? ACCOUNT_MANAGEMENT_PLANS
-      : activeTab === 'growth'
-      ? ACCOUNT_GROWTH_PLANS
-      : CHALLENGE_PASSING_PLANS;
+  useEffect(() => {
+    fetch('/api/public/plans')
+      .then((r) => r.json())
+      .then((res) => { setPlans(res.data ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  // Derive tabs from fetched plans
+  const uniqueTypes = [...new Set(plans.map((p) => p.serviceType))];
+  const tabItems = [
+    { id: 'all', label: 'All Services' },
+    ...uniqueTypes.map((t) => ({ id: t, label: serviceLabel(t) })),
+  ];
+
+  const filtered = activeTab === 'all' ? plans : plans.filter((p) => p.serviceType === activeTab);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-accent-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -124,7 +155,7 @@ export default function ServicesPage() {
       <Tabs tabs={tabItems} activeTab={activeTab} onChange={setActiveTab} variant="pills" />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-        {plans.map((plan) => (
+        {filtered.map((plan) => (
           <PlanCard key={plan.id} plan={plan} />
         ))}
       </div>

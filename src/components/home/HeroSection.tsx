@@ -1,11 +1,11 @@
 ﻿'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import CandlestickBg from '@/components/effects/CandlestickBg';
-import { PROP_FIRMS } from '@/lib/constants';
 
 const container = {
   hidden: { opacity: 0 },
@@ -17,7 +17,19 @@ const item = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } },
 };
 
-export default function HeroSection() {
+interface FirmData { id: string; name: string; }
+
+export default function HeroSection({ firms: initialFirms }: { firms?: FirmData[] } = {}) {
+  const [firms, setFirms] = useState<FirmData[]>(initialFirms ?? []);
+
+  useEffect(() => {
+    if (firms.length > 0) return;
+    fetch('/api/public/firms')
+      .then((r) => r.json())
+      .then((res) => setFirms(res.data ?? []))
+      .catch(() => {});
+  }, []);
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-black">
 
@@ -104,7 +116,7 @@ export default function HeroSection() {
           <motion.div variants={item} className="w-full">
             <p className="text-[10px] text-white/25 uppercase tracking-widest mb-3 font-medium">Supported Prop Firms</p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              {PROP_FIRMS.filter(f => f.id !== 'other').map((firm) => (
+              {firms.filter(f => f.id !== 'other').map((firm) => (
                 <span
                   key={firm.id}
                   className="text-[11px] font-semibold text-white/35 hover:text-white/65 transition-colors duration-200 border border-[rgba(230,57,70,0.28)] hover:border-[rgba(230,57,70,0.55)] px-3 py-1.5 rounded-md"

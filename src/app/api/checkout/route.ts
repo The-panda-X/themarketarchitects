@@ -2,9 +2,6 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
-import { CHALLENGE_PASSING_PLANS, ACCOUNT_MANAGEMENT_PLANS, ACCOUNT_GROWTH_PLANS } from '@/lib/constants';
-
-const ALL_PLANS = [...CHALLENGE_PASSING_PLANS, ...ACCOUNT_MANAGEMENT_PLANS, ...ACCOUNT_GROWTH_PLANS];
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,8 +13,8 @@ export async function POST(req: NextRequest) {
       return errorResponse('Missing required fields', 400);
     }
 
-    const plan = ALL_PLANS.find((p) => p.id === planId);
-    if (!plan) return errorResponse('Invalid plan', 400);
+    const plan = await prisma.servicePlan.findUnique({ where: { id: planId } });
+    if (!plan || !plan.isActive) return errorResponse('Invalid plan', 400);
 
     const isProfitSplit = !plan.price && !!plan.priceLabel;
     const canonicalPrice = plan.price ?? 0;

@@ -7,88 +7,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ScrollReveal from '@/components/effects/ScrollReveal';
 import SectionBadge from '@/components/ui/SectionBadge';
 
-export const PLANS = [
-  {
-    id: 1,
-    category: 'Challenge Passing',
-    name: 'Starter Challenge Pass',
-    description: 'Perfect entry point — pass your first prop firm challenge hassle-free.',
-    accountSize: '$10K',
-    successRate: 97,
-    features: ['Phase 1 + Phase 2', 'FTMO / Apex / E8 supported', '14-day delivery', 'Refund guarantee'],
-    price: 149,
-    originalPrice: 199,
-    delivery: '14 days',
-    popular: false,
-  },
-  {
-    id: 2,
-    category: 'Challenge Passing',
-    name: 'Pro Challenge Pass',
-    description: 'Our most popular package. Trusted by 500+ clients.',
-    accountSize: '$50K',
-    successRate: 97,
-    features: ['Phase 1 + Phase 2', 'All major firms', 'Priority handling', 'Refund guarantee', 'Dedicated trader'],
-    price: 349,
-    originalPrice: 499,
-    delivery: '14 days',
-    popular: true,
-  },
-  {
-    id: 3,
-    category: 'Challenge Passing',
-    name: 'Elite Challenge Pass',
-    description: 'Large account specialist package for serious traders.',
-    accountSize: '$100K–$200K',
-    successRate: 95,
-    features: ['Phase 1 + Phase 2', 'All major firms', 'VIP support', 'Refund guarantee', 'Progress updates', 'Senior trader'],
-    price: 699,
-    originalPrice: 999,
-    delivery: '21 days',
-    popular: false,
-  },
-  {
-    id: 4,
-    category: 'Account Management',
-    name: 'Managed Account – Starter',
-    description: 'Let our experts grow your funded account. Pay only from profits.',
-    accountSize: 'Up to $50K',
-    successRate: 92,
-    features: ['20% profit split', 'Weekly reporting', 'Low risk strategy', 'Full transparency'],
-    priceLabel: 'Profit Split Only',
-    delivery: '30 days',
-    popular: false,
-  },
-  {
-    id: 5,
-    category: 'Account Management',
-    name: 'Managed Account – Pro',
-    description: 'Our premium management service for larger funded accounts.',
-    accountSize: '$50K–$200K',
-    successRate: 94,
-    features: ['15% profit split', 'Daily reporting', 'Dedicated manager', 'Risk dashboard', 'Monthly review call'],
-    priceLabel: 'Profit Split Only',
-    delivery: '30 days',
-    popular: true,
-  },
-  {
-    id: 6,
-    category: 'Account Growth',
-    name: 'Account Growth Plan',
-    description: 'Systematic account growth to maximize your capital over time.',
-    accountSize: 'Any size',
-    successRate: 96,
-    features: ['Structured scaling', 'Compounding strategy', 'Monthly targets', 'Full reporting', 'No drawdown risk'],
-    price: 249,
-    originalPrice: 349,
-    delivery: '30 days',
-    popular: false,
-  },
-];
+interface PlanData {
+  id: string;
+  name: string;
+  serviceType: string;
+  description: string;
+  accountSizes: string[];
+  successRate: number | null;
+  features: string[];
+  price: number | null;
+  originalPrice: number | null;
+  priceLabel: string | null;
+  deliveryDays: number | null;
+  popular: boolean;
+}
 
-const TABS = ['All Services', 'Challenge Passing', 'Account Management', 'Account Growth'];
+function serviceLabel(type: string) {
+  if (type === 'CHALLENGE_PASSING') return 'Challenge Passing';
+  if (type === 'ACCOUNT_MANAGEMENT') return 'Account Management';
+  if (type === 'ACCOUNT_GROWTH') return 'Account Growth';
+  return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
-function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
+function PlanCard({ plan }: { plan: PlanData }) {
   const isPopular = plan.popular;
 
   return (
@@ -116,7 +57,7 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
 
       {/* Category + Title */}
       <div className="mb-4">
-        <span className="text-xs text-accent-primary font-semibold tracking-widest uppercase">{plan.category}</span>
+        <span className="text-xs text-accent-primary font-semibold tracking-widest uppercase">{serviceLabel(plan.serviceType)}</span>
         <h3 className="font-heading font-semibold text-2xl text-white mt-1">{plan.name}</h3>
         <p className="text-text-tertiary text-sm mt-2">{plan.description}</p>
       </div>
@@ -124,8 +65,8 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
       {/* Account size + success rate */}
       <div className="flex items-center gap-3 mb-5 py-3 border-y border-white/[0.06]">
         <span className="text-text-tertiary text-xs">Account Size:</span>
-        <span className="text-white text-sm font-medium">{plan.accountSize}</span>
-        <span className="ml-auto text-xs text-success">{plan.successRate}% success</span>
+        <span className="text-white text-sm font-medium">{plan.accountSizes.join(' / ')}</span>
+        {plan.successRate && <span className="ml-auto text-xs text-success">{plan.successRate}% success</span>}
       </div>
 
       {/* Features */}
@@ -141,7 +82,7 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
       {/* Price */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          {'price' in plan && plan.price ? (
+          {plan.price ? (
             <>
               <span className="font-heading text-3xl font-bold text-white">${plan.price}</span>
               {plan.originalPrice && (
@@ -149,10 +90,10 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
               )}
             </>
           ) : (
-            <span className="font-semibold text-xl text-accent-primary">{(plan as any).priceLabel}</span>
+            <span className="font-semibold text-xl text-accent-primary">{plan.priceLabel ?? 'Contact Us'}</span>
           )}
         </div>
-        <span className="text-xs text-text-tertiary">{plan.delivery}</span>
+        {plan.deliveryDays && <span className="text-xs text-text-tertiary">{plan.deliveryDays} days</span>}
       </div>
 
       {/* CTA */}
@@ -182,12 +123,16 @@ function PlanCard({ plan }: { plan: typeof PLANS[0] }) {
   );
 }
 
-export default function PricingSection() {
+export default function PricingSection({ plans = [] }: { plans?: PlanData[] }) {
   const [activeTab, setActiveTab] = useState('All Services');
 
+  // Derive tabs from actual plan data
+  const uniqueTypes = [...new Set(plans.map((p) => p.serviceType))];
+  const TABS = ['All Services', ...uniqueTypes.map(serviceLabel)];
+
   const filtered = activeTab === 'All Services'
-    ? PLANS
-    : PLANS.filter((p) => p.category === activeTab);
+    ? plans
+    : plans.filter((p) => serviceLabel(p.serviceType) === activeTab);
 
   return (
     <section id="pricing" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">

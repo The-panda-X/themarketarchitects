@@ -3,12 +3,18 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
-import { HOMEPAGE_FAQ } from '@/lib/constants';
 import ScrollReveal from '@/components/effects/ScrollReveal';
 import { cn } from '@/lib/utils';
 import SectionBadge from '@/components/ui/SectionBadge';
 
-export default function FAQSection() {
+interface FAQItemData {
+  id: string;
+  question: string;
+  answer: string;
+  sortOrder: number;
+}
+
+export default function FAQSection({ items = [] }: { items?: FAQItemData[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
@@ -28,7 +34,7 @@ export default function FAQSection() {
 
         <ScrollReveal>
           <div className="max-w-3xl mx-auto space-y-3">
-            {HOMEPAGE_FAQ.map((faq, i) => {
+            {items.map((faq, i) => {
               const isOpen = openIndex === i;
 
               return (
