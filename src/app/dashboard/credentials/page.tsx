@@ -146,7 +146,7 @@ export default function CredentialsPage() {
             </Select>
 
             <Input
-              label="Server (optional)"
+              label="Server"
               placeholder="e.g., FTMO-Server3"
               error={errors.server?.message}
               {...register('server')}

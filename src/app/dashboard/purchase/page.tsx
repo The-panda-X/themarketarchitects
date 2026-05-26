@@ -269,6 +269,7 @@ export default function PurchasePage() {
 
   const handleSubmitCredentials = async () => {
     if (!credPlatform) { addToast('Please select a trading platform.', 'error'); return; }
+    if (!credServer.trim()) { addToast('Please enter the server name.', 'error'); return; }
     if (!credLoginId.trim()) { addToast('Please enter your login ID.', 'error'); return; }
     if (!credPassword.trim()) { addToast('Please enter your password.', 'error'); return; }
     if (!cryptoOrderId) { addToast('Order not found.', 'error'); return; }
@@ -281,7 +282,7 @@ export default function PurchasePage() {
         body: JSON.stringify({
           orderId: cryptoOrderId,
           platform: credPlatform,
-          server: credServer || undefined,
+          server: credServer,
           loginId: credLoginId,
           password: credPassword,
           notes: credNotes || undefined,
@@ -686,7 +687,7 @@ export default function PurchasePage() {
                 </Select>
 
                 <Input
-                  label="Server (optional)"
+                  label="Server"
                   placeholder="e.g., FTMO-Server3"
                   value={credServer}
                   onChange={(e) => setCredServer(e.target.value)}
