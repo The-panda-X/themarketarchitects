@@ -29,6 +29,7 @@ import {
 import { setLastPanel } from '@/hooks/useLastPanel';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
+import useChatUnread from '@/hooks/useChatUnread';
 import Avatar from '@/components/ui/Avatar';
 
 const navItems = [
@@ -55,6 +56,7 @@ export default function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const { user, isStaff } = useAuth();
+  const chatUnread = useChatUnread();
 
   return (
     <>
@@ -110,21 +112,33 @@ export default function DashboardSidebar() {
                 )}
                 title={collapsed ? item.label : undefined}
               >
-                <item.icon
-                  className={cn(
-                    'h-[18px] w-[18px] shrink-0 transition-colors',
-                    isActive ? 'text-accent-primary' : 'text-text-tertiary group-hover:text-text-secondary'
+                <div className="relative shrink-0">
+                  <item.icon
+                    className={cn(
+                      'h-[18px] w-[18px] transition-colors',
+                      isActive ? 'text-accent-primary' : 'text-text-tertiary group-hover:text-text-secondary'
+                    )}
+                  />
+                  {item.href === '/dashboard/chat' && chatUnread > 0 && collapsed && (
+                    <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-accent-primary text-[9px] font-bold text-white">
+                      {chatUnread > 9 ? '9+' : chatUnread}
+                    </span>
                   )}
-                />
+                </div>
                 <AnimatePresence>
                   {!collapsed && (
                     <motion.span
                       initial={{ opacity: 0, width: 0 }}
                       animate={{ opacity: 1, width: 'auto' }}
                       exit={{ opacity: 0, width: 0 }}
-                      className="whitespace-nowrap overflow-hidden"
+                      className="whitespace-nowrap overflow-hidden flex items-center gap-2"
                     >
                       {item.label}
+                      {item.href === '/dashboard/chat' && chatUnread > 0 && (
+                        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent-primary text-[10px] font-bold text-white leading-none">
+                          {chatUnread > 9 ? '9+' : chatUnread}
+                        </span>
+                      )}
                     </motion.span>
                   )}
                 </AnimatePresence>

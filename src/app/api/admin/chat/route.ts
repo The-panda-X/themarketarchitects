@@ -72,6 +72,15 @@ export async function POST(req: NextRequest) {
             userUnread: { increment: 1 },
           },
         }),
+        prisma.notification.create({
+          data: {
+            userId,
+            title: 'New message from support',
+            message: trimmed.slice(0, 120),
+            type: 'info',
+            link: '/dashboard/chat',
+          },
+        }),
       ]);
     } else {
       // Create new conversation with first message
@@ -89,6 +98,16 @@ export async function POST(req: NextRequest) {
               body: trimmed,
             },
           },
+        },
+      });
+      // Create notification for the user
+      await prisma.notification.create({
+        data: {
+          userId,
+          title: 'New message from support',
+          message: trimmed.slice(0, 120),
+          type: 'info',
+          link: '/dashboard/chat',
         },
       });
     }

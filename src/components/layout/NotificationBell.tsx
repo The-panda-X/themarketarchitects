@@ -69,9 +69,8 @@ export default function NotificationBell({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchNotifications = useCallback(async () => {
-    if (fetched) return;
-    setLoading(true);
+  const fetchNotifications = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const res = await fetch('/api/dashboard/notifications');
       if (res.ok) {
@@ -84,7 +83,14 @@ export default function NotificationBell({
       setLoading(false);
       setFetched(true);
     }
-  }, [fetched]);
+  }, []);
+
+  // Poll for new notifications every 30s to keep badge count up to date
+  useEffect(() => {
+    fetchNotifications(false);
+    const id = setInterval(() => fetchNotifications(false), 30_000);
+    return () => clearInterval(id);
+  }, [fetchNotifications]);
 
   const handleToggle = () => {
     if (!open) fetchNotifications();

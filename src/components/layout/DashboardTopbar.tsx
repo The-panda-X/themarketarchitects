@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
+import useChatUnread from '@/hooks/useChatUnread';
 import Avatar from '@/components/ui/Avatar';
 import NotificationBell from '@/components/layout/NotificationBell';
 import Dropdown from '@/components/ui/Dropdown';
@@ -58,6 +59,7 @@ export default function DashboardTopbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { user, isStaff } = useAuth();
+  const chatUnread = useChatUnread();
   const breadcrumb = getBreadcrumb(pathname);
 
   return (
@@ -181,6 +183,11 @@ export default function DashboardTopbar() {
                     >
                       <item.icon className="h-[18px] w-[18px] shrink-0" />
                       {item.label}
+                      {item.href === '/dashboard/chat' && chatUnread > 0 && (
+                        <span className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent-primary text-[10px] font-bold text-white leading-none">
+                          {chatUnread > 9 ? '9+' : chatUnread}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

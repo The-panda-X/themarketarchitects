@@ -70,24 +70,36 @@ export async function POST(
 
     const role = getSessionRole(session as { user: { role?: string } });
 
-    const msg = await prisma.chatMessage.create({
-      data: {
-        conversationId: params.id,
-        senderId: session.user.id,
-        senderRole: role,
-        body: message.trim(),
-      },
-    });
+    const trimmed = message.trim();
 
-    await prisma.conversation.update({
-      where: { id: params.id },
-      data: {
-        lastMessage: message.trim().slice(0, 200),
-        lastAt: new Date(),
-        userUnread: { increment: 1 },
-        isClosed: false,
-      },
-    });
+    const [msg] = await prisma.$transaction([
+      prisma.chatMessage.create({
+        data: {
+          conversationId: params.id,
+          senderId: session.user.id,
+          senderRole: role,
+          body: trimmed,
+        },
+      }),
+      prisma.conversation.update({
+        where: { id: params.id },
+        data: {
+          lastMessage: trimmed.slice(0, 200),
+          lastAt: new Date(),
+          userUnread: { increment: 1 },
+          isClosed: false,
+        },
+      }),
+      prisma.notification.create({
+        data: {
+          userId: conversation.userId,
+          title: 'New message from support',
+          message: trimmed.slice(0, 120),
+          type: 'info',
+          link: '/dashboard/chat',
+        },
+      }),
+    ]);
 
     return successResponse(msg, 201);
   } catch (err) {
