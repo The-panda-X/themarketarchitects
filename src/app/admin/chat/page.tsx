@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Send,
   Loader2,
@@ -68,6 +69,10 @@ function fullTime(dateStr: string) {
 export default function AdminChatPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const autoOpenUserId = searchParams.get('userId');
+  const autoOpenHandled = useRef(false);
 
   const [conversations, setConversations] = useState<ConversationWithUser[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -127,6 +132,36 @@ export default function AdminChatPage() {
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
+
+  // Auto-open conversation when navigated with ?userId=...
+  useEffect(() => {
+    if (!autoOpenUserId || autoOpenHandled.current || loading) return;
+    autoOpenHandled.current = true;
+
+    // Check if there's an existing conversation with this user
+    const existing = conversations.find((c) => c.userId === autoOpenUserId);
+    if (existing) {
+      openConversation(existing);
+    } else {
+      // Fetch user info and open the New Chat modal pre-filled
+      (async () => {
+        try {
+          const res = await fetch(`/api/admin/users/${autoOpenUserId}`);
+          if (res.ok) {
+            const data = await res.json();
+            const u = data.data;
+            if (u) {
+              setSelectedUser({ id: u.id, name: u.name, email: u.email, image: u.avatar ?? null });
+              setShowNewChat(true);
+            }
+          }
+        } catch { /* silent */ }
+      })();
+    }
+
+    // Clean up the URL param
+    router.replace('/admin/chat', { scroll: false });
+  }, [autoOpenUserId, loading, conversations, router]);
 
   // Poll for updates — pause when tab is hidden
   useEffect(() => {

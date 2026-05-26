@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ShoppingBag, Target, Mail, Calendar, Shield } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Target, Mail, Calendar, Shield, MessageCircle } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -89,11 +89,20 @@ export default function AdminUserDetailPage() {
           <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>Users</Button>
         </Link>
         <h1 className="text-xl font-heading font-bold flex-1">User Detail</h1>
-        {(isHeadAdmin || isAdmin) && (
-          <Button variant="secondary" size="sm" onClick={() => setShowRoleModal(true)}>
-            Change Role
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {user.role === 'USER' && (
+            <Link href={`/admin/chat?userId=${user.id}`}>
+              <Button variant="secondary" size="sm" icon={<MessageCircle className="h-4 w-4" />}>
+                Message
+              </Button>
+            </Link>
+          )}
+          {(isHeadAdmin || isAdmin) && (
+            <Button variant="secondary" size="sm" onClick={() => setShowRoleModal(true)}>
+              Change Role
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Profile */}

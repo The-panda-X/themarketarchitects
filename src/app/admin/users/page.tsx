@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, UserCheck, UserX, Trash2 } from 'lucide-react';
+import { Search, UserCheck, UserX, Trash2, MessageCircle } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
@@ -109,12 +109,12 @@ export default function AdminUsersPage() {
                   <TableHead align="center">Orders</TableHead>
                   <TableHead align="center">Challenges</TableHead>
                   <TableHead>Joined</TableHead>
-                  {canDelete && <TableHead align="center">Action</TableHead>}
+                  <TableHead align="center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.length === 0 ? (
-                  <TableEmpty colSpan={canDelete ? 7 : 6} message="No users found" />
+                  <TableEmpty colSpan={7} message="No users found" />
                 ) : (
                   users.map((user) => (
                     <TableRow key={user.id} onClick={() => window.location.href = `/admin/users/${user.id}`}>
@@ -142,9 +142,19 @@ export default function AdminUsersPage() {
                       <TableCell align="center">{user._count.orders}</TableCell>
                       <TableCell align="center">{user._count.challenges}</TableCell>
                       <TableCell>{formatRelativeTime(user.createdAt)}</TableCell>
-                      {canDelete && (
-                        <TableCell align="center">
-                          {user.role !== 'ADMIN' && user.role !== 'HEAD_ADMIN' && user.role !== 'MODERATOR' && (
+                      <TableCell align="center">
+                        <div className="flex items-center justify-center gap-1">
+                          {user.role === 'USER' && (
+                            <Link
+                              href={`/admin/chat?userId=${user.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 rounded-lg text-text-tertiary hover:text-accent-primary hover:bg-accent-primary/10 transition-colors"
+                              title="Message user"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Link>
+                          )}
+                          {canDelete && user.role !== 'ADMIN' && user.role !== 'HEAD_ADMIN' && user.role !== 'MODERATOR' && (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDelete(user.id, user.email); }}
                               disabled={deleting === user.id}
@@ -154,8 +164,8 @@ export default function AdminUsersPage() {
                               <Trash2 className="h-4 w-4" />
                             </button>
                           )}
-                        </TableCell>
-                      )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
