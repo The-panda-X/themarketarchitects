@@ -203,6 +203,7 @@ export default function PurchasePage() {
   const handleSizeChange = (size: string) => cart.setAccount(size, cart.firmName!);
 
   const [firmConfirmed, setFirmConfirmed] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   const handleConfirmAccount = () => {
     if (!cart.firmName) { addToast('Please select a prop firm.', 'error'); return; }
@@ -250,12 +251,14 @@ export default function PurchasePage() {
         const data = await res.json();
         if (data.data?.type === 'profit_split') {
           setCryptoOrderId(data.data.orderId);
+          setOrderPlaced(true);
           addToast('Agreement submitted! Now submit your trading credentials.', 'success');
           cart.setStep(4); // Go to credential step
         } else if (data.data?.type === 'crypto') {
           setCryptoOrderId(data.data.orderId);
           setCryptoAmount(data.data.amount);
-          cart.setStep(4); // Go to credential step first, then crypto
+          setOrderPlaced(true);
+          // Stay on step 3 — show crypto payment UI
         }
       } else {
         addToast('Something went wrong. Please try again.', 'error');
@@ -286,16 +289,9 @@ export default function PurchasePage() {
       });
 
       if (res.ok) {
-        addToast('Credentials submitted securely!', 'success');
-        // If crypto payment needed, go to step 5
-        if (cryptoAmount > 0) {
-          cart.setStep(5);
-        } else {
-          // Profit split — no payment needed, done
-          addToast('Our team will contact you within 24 hours.', 'success');
-          cart.reset();
-          window.location.href = '/dashboard/payments';
-        }
+        addToast('Credentials submitted securely! Our team will contact you within 24 hours.', 'success');
+        cart.reset();
+        window.location.href = '/dashboard/payments';
       } else {
         const err = await res.json();
         addToast(err.error || 'Failed to submit credentials.', 'error');
@@ -305,12 +301,8 @@ export default function PurchasePage() {
   };
 
   const handleSkipCredentials = () => {
-    if (cryptoAmount > 0) {
-      cart.setStep(5);
-    } else {
-      cart.reset();
-      window.location.href = '/dashboard/payments';
-    }
+    cart.reset();
+    window.location.href = '/dashboard/payments';
   };
 
   const handlePaymentSent = async () => {
@@ -325,9 +317,8 @@ export default function PurchasePage() {
 
       await fetch('/api/dashboard/payment-proof', { method: 'POST', body: formData });
 
-      addToast('Payment proof submitted! Our team will verify and activate your order within 24 hours.', 'success');
-      cart.reset();
-      window.location.href = '/dashboard/payments';
+      addToast('Payment proof submitted! Now submit your trading credentials.', 'success');
+      cart.setStep(4); // Go to credential step
     } catch {
       addToast('Failed to upload proof. Please try again.', 'error');
     } finally {
@@ -369,10 +360,10 @@ export default function PurchasePage() {
         <div>
           <h1 className="text-2xl font-heading font-bold">Purchase a Plan</h1>
           <p className="text-text-secondary mt-1">
-            {cart.step <= 3 ? `Step ${cart.step} of 3` : cart.step === 4 ? 'Submit Credentials' : 'Complete Payment'}
+            {cart.step <= 4 ? `Step ${cart.step} of 4` : ''}
           </p>
         </div>
-        {cart.step > 1 && cart.step <= 3 && (
+        {cart.step > 1 && cart.step <= 3 && !orderPlaced && (
           <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}
             onClick={() => { if (cart.step === 3) setFirmConfirmed(false); cart.setStep(cart.step - 1); if (cart.step === 2) setSelectedPlan(null); }}>
             Back
@@ -381,9 +372,9 @@ export default function PurchasePage() {
       </div>
 
       {/* Progress bar */}
-      {cart.step <= 3 && (
+      {cart.step <= 4 && (
         <div className="flex gap-2">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= cart.step ? 'bg-accent-primary' : 'bg-white/[0.06]'}`} />
           ))}
         </div>
@@ -421,126 +412,242 @@ export default function PurchasePage() {
           </motion.div>
         )}
 
-        {/* ── Step 3: Firm + Account Size + Order Summary (combined) ── */}
+        {/* ── Step 3: Account Details + Order Summary (one card) + Crypto Payment ── */}
         {cart.step === 3 && selectedPlan && (
           <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
             className="space-y-4">
-            <GlassCard padding="lg">
-              <h3 className="text-lg font-heading font-semibold mb-4">Account Details</h3>
-              {/* Plan summary */}
-              <div className="flex items-center gap-3 mb-5 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">{selectedPlan.name}</p>
-                  <p className="text-xs text-text-tertiary mt-0.5">
-                    Account: <span className="text-white font-medium">{selectedPlan.accountSizes.join(' / ')}</span>
-                    {selectedPlan.deliveryDays ? ` · ${selectedPlan.deliveryDays}-day delivery` : ''}
-                  </p>
+
+            {/* Before order is placed: Account Details + Order Summary in ONE card */}
+            {!orderPlaced && (
+              <GlassCard padding="lg">
+                <h3 className="text-lg font-heading font-semibold mb-4">Account Details</h3>
+
+                {/* Plan summary badge */}
+                <div className="flex items-center gap-3 mb-5 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white">{selectedPlan.name}</p>
+                    <p className="text-xs text-text-tertiary mt-0.5">
+                      Account: <span className="text-white font-medium">{selectedPlan.accountSizes.join(' / ')}</span>
+                      {selectedPlan.deliveryDays ? ` · ${selectedPlan.deliveryDays}-day delivery` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    {profitSplitPlan
+                      ? <span className="text-accent-primary font-semibold text-sm">{selectedPlan.priceLabel}</span>
+                      : <span className="text-white font-bold">${selectedPlan.price}</span>
+                    }
+                  </div>
                 </div>
-                <div className="text-right">
-                  {profitSplitPlan
-                    ? <span className="text-accent-primary font-semibold text-sm">{selectedPlan.priceLabel}</span>
-                    : <span className="text-white font-bold">${selectedPlan.price}</span>
-                  }
-                </div>
-              </div>
-              <div className="space-y-4 max-w-md">
-                <Select label="Prop Firm" value={cart.firmName ?? ''} onChange={(e) => { handleFirmChange(e.target.value); setFirmConfirmed(false); }}>
-                  <option value="">Select a firm...</option>
-                  {firms.map((f) => <option key={f.id} value={f.name}>{f.name}</option>)}
-                </Select>
 
-                {cart.firmName && (
-                  autoSize ? (
-                    <div className="space-y-1">
-                      <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide">Account Size</label>
-                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] text-sm">
-                        <Check className="h-4 w-4 text-accent-primary shrink-0" />
-                        <span className="text-white font-medium">{autoSize}</span>
-                        <span className="text-text-tertiary text-xs ml-auto">Fixed by plan</span>
-                      </div>
-                    </div>
-                  ) : sizesForDropdown.length > 0 ? (
-                    <Select label="Account Size" value={cart.accountSize ?? ''} onChange={(e) => { handleSizeChange(e.target.value); setFirmConfirmed(false); }}>
-                      <option value="">Select size...</option>
-                      {sizesForDropdown.map((size) => <option key={size} value={size}>{size}</option>)}
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-yellow-400 px-1">⚠️ This firm doesn&apos;t offer {selectedPlan.accountSizes.join('/')} accounts. Please select a different firm.</p>
-                  )
-                )}
+                {/* Firm & Size selectors */}
+                <div className="space-y-4 max-w-md">
+                  <Select label="Prop Firm" value={cart.firmName ?? ''} onChange={(e) => { handleFirmChange(e.target.value); setFirmConfirmed(false); }}>
+                    <option value="">Select a firm...</option>
+                    {firms.map((f) => <option key={f.id} value={f.name}>{f.name}</option>)}
+                  </Select>
 
-                {cart.firmName && (sizesForDropdown.length > 0 || autoSize) && !firmConfirmed && (
-                  <Button variant="secondary" fullWidth icon={<Check className="h-4 w-4" />}
-                    onClick={() => { if (autoSize) cart.setAccount(autoSize, cart.firmName!); handleConfirmAccount(); }}
-                    disabled={!autoSize && !cart.accountSize}>
-                    Confirm Account Details
-                  </Button>
-                )}
-              </div>
-            </GlassCard>
-
-            {/* Order Summary — appears after firm is confirmed */}
-            {firmConfirmed && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <GlassCard padding="lg">
-                  <h3 className="text-lg font-heading font-semibold mb-5">
-                    {profitSplitPlan ? 'Agreement Summary' : 'Order Summary'}
-                  </h3>
-
-                  {profitSplitPlan && selectedPlan && (
-                    <div className="mb-5 p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/5">
-                      <div className="flex items-start gap-3">
-                        <HandshakeIcon className="h-5 w-5 text-accent-primary shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-semibold text-white">Profit Split Agreement — No Upfront Payment</p>
-                          <p className="text-xs text-text-secondary mt-1">
-                            Our team trades your funded account. Zero cost to get started.
-                          </p>
+                  {cart.firmName && (
+                    autoSize ? (
+                      <div className="space-y-1">
+                        <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide">Account Size</label>
+                        <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] text-sm">
+                          <Check className="h-4 w-4 text-accent-primary shrink-0" />
+                          <span className="text-white font-medium">{autoSize}</span>
+                          <span className="text-text-tertiary text-xs ml-auto">Fixed by plan</span>
                         </div>
                       </div>
-                    </div>
+                    ) : sizesForDropdown.length > 0 ? (
+                      <Select label="Account Size" value={cart.accountSize ?? ''} onChange={(e) => { handleSizeChange(e.target.value); setFirmConfirmed(false); }}>
+                        <option value="">Select size...</option>
+                        {sizesForDropdown.map((size) => <option key={size} value={size}>{size}</option>)}
+                      </Select>
+                    ) : (
+                      <p className="text-sm text-yellow-400 px-1">⚠️ This firm doesn&apos;t offer {selectedPlan.accountSizes.join('/')} accounts. Please select a different firm.</p>
+                    )
                   )}
 
-                  {!profitSplitPlan && (
-                    <div className="mb-5 p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2">
-                      <Bitcoin className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
-                      <p className="text-xs text-yellow-300">Payment accepted in <strong>USDT</strong> cryptocurrency only (BEP-20, TRC-20, ERC-20). Wallet details shown after placing order.</p>
-                    </div>
+                  {cart.firmName && (sizesForDropdown.length > 0 || autoSize) && !firmConfirmed && (
+                    <Button variant="secondary" fullWidth icon={<Check className="h-4 w-4" />}
+                      onClick={() => { if (autoSize) cart.setAccount(autoSize, cart.firmName!); handleConfirmAccount(); }}
+                      disabled={!autoSize && !cart.accountSize}>
+                      Confirm Account Details
+                    </Button>
                   )}
+                </div>
 
-                  <div className="space-y-3 mb-6">
-                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Service</span><span>{cart.serviceType?.replace(/_/g, ' ')}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Plan</span><span>{cart.planName}</span></div>
-                    {cart.firmName && <div className="flex justify-between text-sm"><span className="text-text-secondary">Firm</span><span>{cart.firmName}</span></div>}
-                    {cart.accountSize && <div className="flex justify-between text-sm"><span className="text-text-secondary">Account Size</span><span>{cart.accountSize}</span></div>}
-                    <div className="border-t border-white/[0.06] my-2" />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      <span className="font-mono">
-                        {profitSplitPlan
-                          ? <span className="text-accent-primary text-base font-semibold">{selectedPlan?.priceLabel}</span>
-                          : formatCurrency(cart.getFinalPrice())}
-                      </span>
-                    </div>
-                    {!profitSplitPlan && cart.discountAmount > 0 && (
-                      <div className="flex justify-between text-sm text-green-400">
-                        <span>Discount ({cart.couponCode})</span><span>-{formatCurrency(cart.discountAmount)}</span>
+                {/* Order Summary — slides in after firm is confirmed */}
+                {firmConfirmed && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="overflow-hidden">
+                    <div className="border-t border-white/[0.06] mt-6 pt-6">
+                      <h4 className="text-base font-heading font-semibold mb-4">
+                        {profitSplitPlan ? 'Agreement Summary' : 'Order Summary'}
+                      </h4>
+
+                      {profitSplitPlan && (
+                        <div className="mb-5 p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/5">
+                          <div className="flex items-start gap-3">
+                            <HandshakeIcon className="h-5 w-5 text-accent-primary shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-semibold text-white">Profit Split Agreement — No Upfront Payment</p>
+                              <p className="text-xs text-text-secondary mt-1">Our team trades your funded account. Zero cost to get started.</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {!profitSplitPlan && (
+                        <div className="mb-5 p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2">
+                          <Bitcoin className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
+                          <p className="text-xs text-yellow-300">Payment accepted in <strong>USDT</strong> cryptocurrency only (BEP-20, TRC-20, ERC-20). Wallet details shown after placing order.</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-3 mb-6">
+                        <div className="flex justify-between text-sm"><span className="text-text-secondary">Service</span><span>{cart.serviceType?.replace(/_/g, ' ')}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-text-secondary">Plan</span><span>{cart.planName}</span></div>
+                        {cart.firmName && <div className="flex justify-between text-sm"><span className="text-text-secondary">Firm</span><span>{cart.firmName}</span></div>}
+                        {cart.accountSize && <div className="flex justify-between text-sm"><span className="text-text-secondary">Account Size</span><span>{cart.accountSize}</span></div>}
+                        <div className="border-t border-white/[0.06] my-2" />
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Total</span>
+                          <span className="font-mono">
+                            {profitSplitPlan
+                              ? <span className="text-accent-primary text-base font-semibold">{selectedPlan?.priceLabel}</span>
+                              : formatCurrency(cart.getFinalPrice())}
+                          </span>
+                        </div>
+                        {!profitSplitPlan && cart.discountAmount > 0 && (
+                          <div className="flex justify-between text-sm text-green-400">
+                            <span>Discount ({cart.couponCode})</span><span>-{formatCurrency(cart.discountAmount)}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
+
+                      {/* Coupon — paid plans only */}
+                      {!profitSplitPlan && (
+                        <div className="flex gap-2 mb-6">
+                          <Input placeholder="Coupon code" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1" />
+                          <Button variant="secondary" size="sm" onClick={handleApplyCoupon} loading={couponLoading}>Apply</Button>
+                        </div>
+                      )}
+
+                      <Button variant="primary" fullWidth glow loading={checkoutLoading}
+                        icon={profitSplitPlan ? <HandshakeIcon className="h-5 w-5" /> : <Bitcoin className="h-5 w-5" />}
+                        onClick={handlePlaceOrder}>
+                        {profitSplitPlan ? 'Confirm Agreement' : `Place Order — ${formatCurrency(cart.getFinalPrice())}`}
+                      </Button>
+
+                      <p className="text-xs text-text-tertiary text-center mt-3">
+                        Next: {profitSplitPlan ? 'submit your trading credentials' : 'complete payment & submit credentials'}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </GlassCard>
+            )}
+
+            {/* After order is placed (crypto only): Show payment UI within step 3 */}
+            {orderPlaced && cryptoAmount > 0 && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                <GlassCard padding="lg">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 rounded-xl bg-accent-primary/10">
+                      <Bitcoin className="h-6 w-6 text-accent-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-heading font-semibold">Send Crypto Payment</h3>
+                      <p className="text-text-tertiary text-sm">Order #{cryptoOrderId?.slice(-8).toUpperCase()} · <span className="text-white font-semibold">{formatCurrency(cryptoAmount)}</span></p>
+                    </div>
                   </div>
 
-                  {/* Coupon — paid plans only */}
-                  {!profitSplitPlan && (
-                    <div className="flex gap-2 mb-6">
-                      <Input placeholder="Coupon code" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1" />
-                      <Button variant="secondary" size="sm" onClick={handleApplyCoupon} loading={couponLoading}>Apply</Button>
-                    </div>
-                  )}
+                  {/* Wallet selector */}
+                  <div className="mb-5">
+                    <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide block mb-2">
+                      Select Payment Network
+                    </label>
+                    <select
+                      value={selectedWallet}
+                      onChange={(e) => setSelectedWallet(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-white/[0.10] bg-white/[0.04] text-white text-sm focus:outline-none focus:border-accent-primary transition-colors"
+                    >
+                      {CRYPTO_WALLETS.map((w) => (
+                        <option key={w.id} value={w.id} className="bg-[#0d0303]">
+                          {w.icon} {w.name} — {w.network}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                  <Button variant="primary" fullWidth glow loading={checkoutLoading}
-                    icon={profitSplitPlan ? <HandshakeIcon className="h-5 w-5" /> : <Bitcoin className="h-5 w-5" />}
-                    onClick={handlePlaceOrder}>
-                    {profitSplitPlan ? 'Confirm Agreement' : `Place Order — ${formatCurrency(cart.getFinalPrice())}`}
+                  {/* Wallet details */}
+                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4 mb-4">
+                    <div>
+                      <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">Network</p>
+                      <p className="text-sm text-white font-medium">{activeWallet.network}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Wallet Address</p>
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-black/30 border border-white/[0.06]">
+                        <p className="text-sm font-mono text-white break-all flex-1">{activeWallet.address}</p>
+                        <CopyButton text={activeWallet.address} />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Amount to Send (USD equivalent)</p>
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-black/30 border border-white/[0.06]">
+                        <p className="text-xl font-mono font-bold text-white flex-1">{formatCurrency(cryptoAmount)}</p>
+                        <CopyButton text={String(cryptoAmount)} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Network warning */}
+                  <div className="p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2 mb-6">
+                    <AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-yellow-300">{activeWallet.note}. Sending wrong network or coin may result in permanent loss of funds.</p>
+                  </div>
+
+                  {/* Proof upload */}
+                  <div className="mb-6">
+                    <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide block mb-2">
+                      Upload Proof of Payment <span className="text-accent-primary">*</span>
+                    </label>
+                    <div
+                      className={`relative rounded-xl border-2 border-dashed transition-all duration-200 ${
+                        proofFile
+                          ? 'border-green-500/50 bg-green-500/5'
+                          : 'border-white/[0.12] bg-white/[0.02] hover:border-accent-primary/50 hover:bg-accent-primary/5'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
+                      />
+                      <div className="flex flex-col items-center justify-center py-8 px-4 text-center pointer-events-none">
+                        {proofFile ? (
+                          <>
+                            <CheckCheck className="h-8 w-8 text-green-400 mb-2" />
+                            <p className="text-sm font-medium text-green-400">{proofFile.name}</p>
+                            <p className="text-xs text-text-tertiary mt-1">{(proofFile.size / 1024).toFixed(0)} KB · Click to change</p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 text-text-tertiary mb-2" />
+                            <p className="text-sm text-white font-medium">Click or drag to upload screenshot</p>
+                            <p className="text-xs text-text-tertiary mt-1">PNG, JPG, PDF — Max 5MB</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button variant="primary" fullWidth glow
+                    icon={<CheckCheck className="h-5 w-5" />}
+                    disabled={!proofFile}
+                    loading={checkoutLoading}
+                    onClick={handlePaymentSent}>
+                    Submit Payment Proof
                   </Button>
 
                   <p className="text-xs text-text-tertiary text-center mt-3">
@@ -619,7 +726,7 @@ export default function PurchasePage() {
                 <Button variant="primary" fullWidth glow loading={credSubmitting}
                   icon={<Check className="h-5 w-5" />}
                   onClick={handleSubmitCredentials}>
-                  Submit Credentials {cryptoAmount > 0 ? '& Continue to Payment' : '& Complete'}
+                  Submit Credentials & Complete
                 </Button>
 
                 <button
@@ -634,123 +741,6 @@ export default function PurchasePage() {
           </motion.div>
         )}
 
-        {/* ── Step 5: Crypto Payment ── */}
-        {cart.step === 5 && (
-          <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-            className="space-y-4">
-            <GlassCard padding="lg">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 rounded-xl bg-accent-primary/10">
-                  <Bitcoin className="h-6 w-6 text-accent-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-heading font-semibold">Send Crypto Payment</h3>
-                  <p className="text-text-tertiary text-sm">Order #{cryptoOrderId?.slice(-8).toUpperCase()} · <span className="text-white font-semibold">{formatCurrency(cryptoAmount)}</span></p>
-                </div>
-              </div>
-
-              {/* Wallet selector — dropdown */}
-              <div className="mb-5">
-                <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide block mb-2">
-                  Select Payment Network
-                </label>
-                <select
-                  value={selectedWallet}
-                  onChange={(e) => setSelectedWallet(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-white/[0.10] bg-white/[0.04] text-white text-sm focus:outline-none focus:border-accent-primary transition-colors"
-                >
-                  {CRYPTO_WALLETS.map((w) => (
-                    <option key={w.id} value={w.id} className="bg-[#0d0303]">
-                      {w.icon} {w.name} — {w.network}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Wallet details */}
-              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4 mb-4">
-                <div>
-                  <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">Network</p>
-                  <p className="text-sm text-white font-medium">{activeWallet.network}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Wallet Address</p>
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-black/30 border border-white/[0.06]">
-                    <p className="text-sm font-mono text-white break-all flex-1">{activeWallet.address}</p>
-                    <CopyButton text={activeWallet.address} />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Amount to Send (USD equivalent)</p>
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-black/30 border border-white/[0.06]">
-                    <p className="text-xl font-mono font-bold text-white flex-1">{formatCurrency(cryptoAmount)}</p>
-                    <CopyButton text={String(cryptoAmount)} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Network warning */}
-              <div className="p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2 mb-6">
-                <AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-yellow-300">{activeWallet.note}. Sending wrong network or coin may result in permanent loss of funds.</p>
-              </div>
-
-              {/* Proof of payment upload */}
-              <div className="mb-6">
-                <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide block mb-2">
-                  Upload Proof of Payment <span className="text-accent-primary">*</span>
-                </label>
-                <div
-                  className={`relative rounded-xl border-2 border-dashed transition-all duration-200 ${
-                    proofFile
-                      ? 'border-green-500/50 bg-green-500/5'
-                      : 'border-white/[0.12] bg-white/[0.02] hover:border-accent-primary/50 hover:bg-accent-primary/5'
-                  }`}
-                >
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      setProofFile(file);
-                    }}
-                  />
-                  <div className="flex flex-col items-center justify-center py-8 px-4 text-center pointer-events-none">
-                    {proofFile ? (
-                      <>
-                        <CheckCheck className="h-8 w-8 text-green-400 mb-2" />
-                        <p className="text-sm font-medium text-green-400">{proofFile.name}</p>
-                        <p className="text-xs text-text-tertiary mt-1">{(proofFile.size / 1024).toFixed(0)} KB · Click to change</p>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-8 w-8 text-text-tertiary mb-2" />
-                        <p className="text-sm text-white font-medium">Click or drag to upload screenshot</p>
-                        <p className="text-xs text-text-tertiary mt-1">PNG, JPG, PDF — Max 5MB</p>
-                      </>
-                    )}
-                  </div>
-                </div>
-                {!proofFile && (
-                  <p className="text-xs text-text-tertiary mt-1.5 px-1">Upload a screenshot of your transaction confirmation.</p>
-                )}
-              </div>
-
-              <Button variant="primary" fullWidth glow
-                icon={<CheckCheck className="h-5 w-5" />}
-                disabled={!proofFile}
-                loading={checkoutLoading}
-                onClick={handlePaymentSent}>
-                Submit Payment Proof
-              </Button>
-
-              <p className="text-xs text-text-tertiary text-center mt-3">
-                Our team will verify your payment and activate your order within <strong className="text-white">24 hours</strong>.
-              </p>
-            </GlassCard>
-          </motion.div>
-        )}
 
       </AnimatePresence>
     </div>
