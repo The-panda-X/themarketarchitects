@@ -6,14 +6,14 @@ import useAuth from '@/hooks/useAuth';
 import { getLastPanel } from '@/hooks/useLastPanel';
 
 export default function AdminPanelRedirect() {
-  const { user } = useAuth();
+  const { isStaff } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user?.role === 'ADMIN' && getLastPanel() === 'admin') {
+    if (isStaff && getLastPanel() === 'admin') {
       router.replace('/admin');
     }
-  }, [user, router]);
+  }, [isStaff, router]);
 
   return null;
 }

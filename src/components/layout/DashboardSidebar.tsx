@@ -52,7 +52,7 @@ const toolItems = [
 export default function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isStaff } = useAuth();
 
   return (
     <>
@@ -180,7 +180,7 @@ export default function DashboardSidebar() {
           })}
 
           {/* Admin Panel switch — only for admins */}
-          {user?.role === 'ADMIN' && (
+          {isStaff && (
             <>
               <div className="border-t border-white/[0.04] my-3" />
               <Link

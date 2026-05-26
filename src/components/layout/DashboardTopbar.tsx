@@ -55,7 +55,7 @@ function getBreadcrumb(pathname: string): string[] {
 export default function DashboardTopbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isStaff } = useAuth();
   const breadcrumb = getBreadcrumb(pathname);
 
   return (
@@ -186,7 +186,7 @@ export default function DashboardTopbar() {
 
               {/* Footer */}
               <div className="border-t border-white/[0.06] p-3 space-y-1">
-                {user?.role === 'ADMIN' && (
+                {isStaff && (
                   <Link
                     href="/admin"
                     onClick={() => setMobileOpen(false)}
