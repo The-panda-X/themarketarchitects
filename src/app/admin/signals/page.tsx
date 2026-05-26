@@ -32,6 +32,7 @@ interface Signal {
   tp1: number | null;
   tp2: number | null;
   tp3: number | null;
+  riskPct: number | null;
   source: string;
   totalSent: number;
   totalSkipped: number;
@@ -61,7 +62,7 @@ export default function AdminSignalsPage() {
   const [deleting, setDeleting]   = useState(false);
   const [form, setForm] = useState({
     pair: 'XAUUSD', direction: 'BUY',
-    entry: '', sl: '', tp1: '', tp2: '', tp3: '',
+    entry: '', sl: '', tp1: '', tp2: '', tp3: '', riskOverride: '',
   });
 
   const fetchSignals = useCallback(async () => {
@@ -94,7 +95,7 @@ export default function AdminSignalsPage() {
       if (res.ok) {
         addToast(`Signal logged — ${d.data.sent} sent, ${d.data.skipped} skipped`, 'success');
         setModalOpen(false);
-        setForm({ pair: 'XAUUSD', direction: 'BUY', entry: '', sl: '', tp1: '', tp2: '', tp3: '' });
+        setForm({ pair: 'XAUUSD', direction: 'BUY', entry: '', sl: '', tp1: '', tp2: '', tp3: '', riskOverride: '' });
         fetchSignals();
       } else {
         addToast(d.error ?? 'Failed', 'error');
@@ -188,6 +189,7 @@ export default function AdminSignalsPage() {
                   <TableHead>Time</TableHead>
                   <TableHead>Signal</TableHead>
                   <TableHead>Entry / SL</TableHead>
+                  <TableHead>Risk %</TableHead>
                   <TableHead>TPs</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead align="center">Sent</TableHead>
@@ -198,7 +200,7 @@ export default function AdminSignalsPage() {
               </TableHeader>
               <TableBody>
                 {signals.length === 0 ? (
-                  <TableEmpty colSpan={canDelete ? 9 : 8} message="No signals yet. Post a signal in Discord or use Manual Signal." />
+                  <TableEmpty colSpan={canDelete ? 10 : 9} message="No signals yet. Post a signal in Discord or use Manual Signal." />
                 ) : signals.map(sig => (
                   <>
                     <TableRow key={sig.id} onClick={() => setExpandedId(expandedId === sig.id ? null : sig.id)}>
@@ -213,6 +215,13 @@ export default function AdminSignalsPage() {
                       </TableCell>
                       <TableCell>
                         <p className="text-xs font-mono">{sig.entry ?? 'Market'} / <span className="text-danger">{sig.sl}</span></p>
+                      </TableCell>
+                      <TableCell>
+                        {sig.riskPct ? (
+                          <span className="font-mono text-xs font-semibold text-accent-primary">{sig.riskPct}%</span>
+                        ) : (
+                          <span className="text-xs text-text-tertiary">Default</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <p className="text-xs font-mono text-text-tertiary">
@@ -250,7 +259,7 @@ export default function AdminSignalsPage() {
                     {/* Expanded delivery details */}
                     {expandedId === sig.id && sig.deliveries.length > 0 && (
                       <tr key={`${sig.id}-expanded`}>
-                        <td colSpan={canDelete ? 9 : 8} className="px-4 pb-3">
+                        <td colSpan={canDelete ? 10 : 9} className="px-4 pb-3">
                           <div className="bg-white/[0.03] rounded-xl p-4 space-y-2">
                             <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                               Delivery Report — {sig.deliveries.length} accounts
@@ -312,9 +321,10 @@ export default function AdminSignalsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <Input label="Entry Price (0 = market)" type="number" placeholder="e.g. 2350" value={form.entry} onChange={e => setForm(f => ({...f, entry: e.target.value}))} />
             <Input label="Stop Loss *" type="number" placeholder="e.g. 2340" value={form.sl} onChange={e => setForm(f => ({...f, sl: e.target.value}))} />
+            <Input label="Risk % Override" type="number" placeholder="e.g. 1.5" value={form.riskOverride} onChange={e => setForm(f => ({...f, riskOverride: e.target.value}))} />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
