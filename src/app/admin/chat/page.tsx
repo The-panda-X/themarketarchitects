@@ -128,13 +128,30 @@ export default function AdminChatPage() {
     fetchConversations();
   }, [fetchConversations]);
 
-  // Poll for updates
+  // Poll for updates — pause when tab is hidden
   useEffect(() => {
-    pollRef.current = setInterval(() => {
+    const poll = () => {
       fetchConversations();
       if (activeId) fetchMessages(activeId, true);
-    }, 5000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    };
+    const startPoll = () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(poll, 5000);
+    };
+    const stopPoll = () => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    };
+    const handleVisibility = () => {
+      if (document.hidden) stopPoll();
+      else { poll(); startPoll(); }
+    };
+
+    startPoll();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      stopPoll();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [activeId, fetchConversations, fetchMessages]);
 
   useEffect(() => { scrollToBottom(); }, [messages.length]);

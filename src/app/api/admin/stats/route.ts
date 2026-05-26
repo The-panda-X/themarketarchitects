@@ -13,10 +13,7 @@ export async function GET() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [
-      revenueToday,
-      revenueWeek,
-      revenueMonth,
-      revenueTotal,
+      payments,
       newUsersToday,
       totalUsers,
       pendingOrders,
@@ -24,10 +21,11 @@ export async function GET() {
       activeChallenges,
       challengesByStatus,
     ] = await Promise.all([
-      prisma.payment.aggregate({ where: { createdAt: { gte: todayStart }, status: 'succeeded' }, _sum: { amount: true } }),
-      prisma.payment.aggregate({ where: { createdAt: { gte: weekStart }, status: 'succeeded' }, _sum: { amount: true } }),
-      prisma.payment.aggregate({ where: { createdAt: { gte: monthStart }, status: 'succeeded' }, _sum: { amount: true } }),
-      prisma.payment.aggregate({ where: { status: 'succeeded' }, _sum: { amount: true } }),
+      // Single query gets all payments — filter in JS instead of 4 separate aggregate calls
+      prisma.payment.findMany({
+        where: { status: 'succeeded' },
+        select: { amount: true, createdAt: true },
+      }),
       prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
       prisma.user.count({ where: { role: 'USER' } }),
       prisma.order.count({ where: { status: 'PENDING_PAYMENT' } }),
@@ -36,15 +34,26 @@ export async function GET() {
       prisma.challenge.groupBy({ by: ['status'], _count: { id: true } }),
     ]);
 
+    // Compute revenue buckets in JS (1 query vs 4)
+    let revenueToday = 0, revenueWeek = 0, revenueMonth = 0, revenueTotal = 0;
+    for (const p of payments) {
+      const amt = p.amount ?? 0;
+      revenueTotal += amt;
+      const t = p.createdAt.getTime();
+      if (t >= monthStart.getTime()) revenueMonth += amt;
+      if (t >= weekStart.getTime()) revenueWeek += amt;
+      if (t >= todayStart.getTime()) revenueToday += amt;
+    }
+
     const challengeMap = Object.fromEntries(
       challengesByStatus.map((c) => [c.status, c._count.id])
     );
 
     return successResponse({
-      revenueToday: revenueToday._sum.amount ?? 0,
-      revenueWeek: revenueWeek._sum.amount ?? 0,
-      revenueMonth: revenueMonth._sum.amount ?? 0,
-      revenueTotal: revenueTotal._sum.amount ?? 0,
+      revenueToday,
+      revenueWeek,
+      revenueMonth,
+      revenueTotal,
       newUsersToday,
       totalUsers,
       pendingOrders,

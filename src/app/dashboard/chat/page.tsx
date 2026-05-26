@@ -73,9 +73,26 @@ export default function UserChatPage() {
 
   useEffect(() => {
     fetchChat();
-    // Poll every 5 seconds for new messages
-    pollRef.current = setInterval(() => fetchChat(true), 5000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+
+    // Poll every 5s but pause when tab is hidden
+    const startPoll = () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(() => fetchChat(true), 5000);
+    };
+    const stopPoll = () => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    };
+    const handleVisibility = () => {
+      if (document.hidden) stopPoll();
+      else { fetchChat(true); startPoll(); }
+    };
+
+    startPoll();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      stopPoll();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [fetchChat]);
 
   useEffect(() => { scrollToBottom(); }, [messages.length]);
