@@ -404,25 +404,11 @@ export default function PurchasePage() {
   // Derive unique service categories for Step 1
   const serviceCategories = [...new Set(allPlans.map((p) => p.serviceType))];
 
-  // Get the lowest price across all plans of a service type (including per-size pricing)
-  const getLowestPrice = (st: string): number | null => {
-    const typed = allPlans.filter(p => p.serviceType === st);
-    const prices: number[] = [];
-    typed.forEach(p => {
-      if (p.sizePricing && p.sizePricing.length > 0) {
-        p.sizePricing.forEach(sp => prices.push(sp.price));
-      } else if (p.price) {
-        prices.push(p.price);
-      }
-    });
-    return prices.length > 0 ? Math.min(...prices) : null;
-  };
-
   // Icon + label mapping for service types
-  const SERVICE_META: Record<string, { icon: typeof Target; label: string; desc: string; priceHint: string; sizeHint: string }> = {
-    CHALLENGE_PASSING: { icon: Target, label: 'Challenge Passing', desc: 'We pass your prop firm challenge. You get funded.', priceHint: `From $${getLowestPrice('CHALLENGE_PASSING') ?? 149}`, sizeHint: allPlans.filter(p => p.serviceType === 'CHALLENGE_PASSING').flatMap(p => p.accountSizes).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3).join(' · ') },
-    ACCOUNT_MANAGEMENT: { icon: Shield, label: 'Account Management', desc: 'We trade your funded account. You earn profits.', priceHint: 'Profit Split Only', sizeHint: 'No upfront fee' },
-    ACCOUNT_GROWTH: { icon: TrendingUp, label: 'Account Growth', desc: 'Systematic scaling to maximize your capital.', priceHint: `From $${getLowestPrice('ACCOUNT_GROWTH') ?? 249}`, sizeHint: 'Any account size' },
+  const SERVICE_META: Record<string, { icon: typeof Target; label: string; desc: string }> = {
+    CHALLENGE_PASSING: { icon: Target, label: 'Challenge Passing', desc: 'We pass your prop firm challenge. You get funded.' },
+    ACCOUNT_MANAGEMENT: { icon: Shield, label: 'Account Management', desc: 'We trade your funded account. You earn profits.' },
+    ACCOUNT_GROWTH: { icon: TrendingUp, label: 'Account Growth', desc: 'Systematic scaling to maximize your capital.' },
   };
 
   if (dataLoading) {
@@ -467,7 +453,7 @@ export default function PurchasePage() {
           <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {serviceCategories.map((type) => {
-              const meta = SERVICE_META[type] ?? { icon: Target, label: type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '', priceHint: '', sizeHint: '' };
+              const meta = SERVICE_META[type] ?? { icon: Target, label: type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
               const Icon = meta.icon;
               return (
                 <GlassCard key={type} hover padding="lg" className="cursor-pointer" onClick={() => handleSelectService(type as ServiceType)}>
@@ -475,8 +461,6 @@ export default function PurchasePage() {
                     <Icon className="h-12 w-12 text-accent-primary mx-auto mb-3" />
                     <h3 className="text-lg font-heading font-semibold">{meta.label}</h3>
                     <p className="text-sm text-text-secondary mt-2">{meta.desc}</p>
-                    <p className="text-accent-primary font-semibold mt-3">{meta.priceHint}</p>
-                    <p className="text-xs text-text-tertiary mt-1">{meta.sizeHint}</p>
                   </div>
                 </GlassCard>
               );
