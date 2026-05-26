@@ -29,17 +29,17 @@ import Badge from '@/components/ui/Badge';
 import Dropdown from '@/components/ui/Dropdown';
 import NotificationBell from '@/components/layout/NotificationBell';
 
-const mobileAdminItems = [
+const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin' }[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Challenges', href: '/admin/challenges', icon: Target },
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
-  { label: 'Services', href: '/admin/services', icon: Layers },
+  { label: 'Services', href: '/admin/services', icon: Layers, minRole: 'admin' },
   { label: 'Blog', href: '/admin/blog', icon: FileText },
-  { label: 'Coupons', href: '/admin/coupons', icon: Tag },
-  { label: 'Logs', href: '/admin/logs', icon: ScrollText },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
+  { label: 'Coupons', href: '/admin/coupons', icon: Tag, minRole: 'admin' },
+  { label: 'Logs', href: '/admin/logs', icon: ScrollText, minRole: 'admin' },
+  { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: 'admin' },
 ];
 
 function getBreadcrumb(pathname: string): string[] {
@@ -50,8 +50,14 @@ function getBreadcrumb(pathname: string): string[] {
 export default function AdminTopbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isHeadAdmin, isAdmin, canViewSensitive } = useAuth();
   const breadcrumb = getBreadcrumb(pathname);
+
+  const badgeLabel = isHeadAdmin ? 'Head Admin' : isAdmin ? 'Admin' : 'Moderator';
+  const visibleMobileItems = mobileAdminItems.filter((item) => {
+    if (item.minRole === 'admin' && !canViewSensitive) return false;
+    return true;
+  });
 
   return (
     <>
@@ -66,7 +72,7 @@ export default function AdminTopbar() {
               <Menu className="h-5 w-5" />
             </button>
             <Badge variant="gold" size="sm" className="hidden sm:inline-flex">
-              <Shield className="h-3 w-3" /> Admin
+              <Shield className="h-3 w-3" /> {badgeLabel}
             </Badge>
             <nav className="hidden md:flex items-center gap-1.5 text-sm">
               {breadcrumb.map((crumb, i) => (
@@ -154,7 +160,7 @@ export default function AdminTopbar() {
               </div>
 
               <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-                {mobileAdminItems.map((item) => {
+                {visibleMobileItems.map((item) => {
                   const isActive =
                     pathname === item.href ||
                     (item.href !== '/admin' && pathname.startsWith(item.href));

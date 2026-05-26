@@ -1,14 +1,14 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireModerator, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const adminSession = await requireAdmin();
+    const adminSession = await requireModerator();
     const { message, status } = await req.json();
 
     if (!message?.trim()) return errorResponse('Message is required', 400);

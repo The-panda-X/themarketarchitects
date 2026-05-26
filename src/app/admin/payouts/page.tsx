@@ -13,6 +13,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Skeleton from '@/components/ui/Skeleton';
 import useToast from '@/hooks/useToast';
+import useAuth from '@/hooks/useAuth';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ const statusBadge: Record<string, 'yellow' | 'green' | 'red' | 'gold'> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function AdminPayoutsPage() {
   const { addToast } = useToast();
+  const { canDelete } = useAuth();
 
   const [splits,   setSplits]   = useState<ProfitSplit[]>([]);
   const [stats,    setStats]    = useState<Stats>({ pending: 0, confirmed: 0, disputed: 0, totalConfirmedAmount: 0 });
@@ -300,17 +302,19 @@ export default function AdminPayoutsPage() {
                     )}
 
                     {/* Delete button */}
-                    <div className="flex justify-end">
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        icon={<Trash2 className="h-3.5 w-3.5" />}
-                        loading={deleting === s.id}
-                        onClick={() => handleDelete(s.id)}
-                      >
-                        Delete Record
-                      </Button>
-                    </div>
+                    {canDelete && (
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          icon={<Trash2 className="h-3.5 w-3.5" />}
+                          loading={deleting === s.id}
+                          onClick={() => handleDelete(s.id)}
+                        >
+                          Delete Record
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Review actions — only for PENDING or DISPUTED */}
                     {(s.status === 'PENDING' || s.status === 'DISPUTED') && (

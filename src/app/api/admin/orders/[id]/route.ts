@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireAdmin, requireModerator, requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { OrderStatus } from '@/types';
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAdmin();
+    await requireModerator();
 
     const order = await prisma.order.findUnique({
       where: { id: params.id },
@@ -86,7 +86,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const adminSession = await requireAdmin();
+    const adminSession = await requireHeadAdmin();
 
     const order = await prisma.order.findUnique({
       where: { id: params.id },

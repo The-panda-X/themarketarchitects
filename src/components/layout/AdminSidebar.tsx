@@ -28,24 +28,34 @@ import useAuth from '@/hooks/useAuth';
 import Avatar from '@/components/ui/Avatar';
 import { setLastPanel } from '@/hooks/useLastPanel';
 
-const adminNavItems = [
+/** Navigation items with optional minimum role requirement.
+ *  'admin' = ADMIN or HEAD_ADMIN only. Omit = all staff. */
+const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin' }[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Challenges', href: '/admin/challenges', icon: Target },
-  { label: 'Signal Hub', href: '/admin/signals', icon: Radio },
+  { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'admin' },
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
-  { label: 'Services', href: '/admin/services', icon: Layers },
+  { label: 'Services', href: '/admin/services', icon: Layers, minRole: 'admin' },
   { label: 'Blog', href: '/admin/blog', icon: FileText },
-  { label: 'Coupons', href: '/admin/coupons', icon: Tag },
-  { label: 'Activity Logs', href: '/admin/logs', icon: ScrollText },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
+  { label: 'Coupons', href: '/admin/coupons', icon: Tag, minRole: 'admin' },
+  { label: 'Activity Logs', href: '/admin/logs', icon: ScrollText, minRole: 'admin' },
+  { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: 'admin' },
 ];
 
 export default function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, role, isHeadAdmin, isAdmin, canViewSensitive } = useAuth();
+
+  const roleLabel = isHeadAdmin ? 'Head Administrator' : isAdmin ? 'Administrator' : 'Moderator';
+
+  // Filter nav items based on role
+  const visibleNavItems = adminNavItems.filter((item) => {
+    if (item.minRole === 'admin' && !canViewSensitive) return false;
+    return true;
+  });
 
   return (
     <motion.aside
@@ -84,7 +94,7 @@ export default function AdminSidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto no-scrollbar py-4 px-2 space-y-1">
-        {adminNavItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive =
             pathname === item.href ||
             (item.href !== '/admin' && pathname.startsWith(item.href));
@@ -166,7 +176,7 @@ export default function AdminSidebar() {
                 <p className="text-sm font-medium text-text-primary truncate">
                   {user?.name || 'Admin'}
                 </p>
-                <p className="text-[10px] text-accent-gold font-medium">Administrator</p>
+                <p className="text-[10px] text-accent-gold font-medium">{roleLabel}</p>
               </motion.div>
             )}
           </AnimatePresence>

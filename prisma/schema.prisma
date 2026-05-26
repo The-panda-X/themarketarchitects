@@ -10,7 +10,9 @@ datasource db {
 
 enum Role {
   USER
+  MODERATOR
   ADMIN
+  HEAD_ADMIN
 }
 
 enum ChallengeStatus {

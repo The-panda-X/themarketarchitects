@@ -1,14 +1,15 @@
 export const dynamic = 'force-dynamic';
 ﻿import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireAdmin, requireHeadAdmin, getAuthSession, handleApiError, successResponse, errorResponse, isHeadAdmin, getSessionRole } from '@/lib/api-helpers';
 
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
+    const viewerRole = getSessionRole(session as { user: { role?: string } });
 
     const user = await prisma.user.findUnique({
       where: { id: params.id },
@@ -21,6 +22,11 @@ export async function GET(
     });
 
     if (!user) return errorResponse('User not found', 404);
+
+    // Hide HEAD_ADMIN users from non-HEAD_ADMIN viewers
+    if ((user.role as string) === 'HEAD_ADMIN' && !isHeadAdmin(viewerRole)) {
+      return errorResponse('User not found', 404);
+    }
 
     // Omit password hash
     const { passwordHash: _pw, ...safeUser } = user as typeof user & { passwordHash?: string };
@@ -38,10 +44,32 @@ export async function PATCH(
     const adminSession = await requireAdmin();
     const body = await req.json();
     const { role, name } = body;
+    const viewerRole = getSessionRole(adminSession as { user: { role?: string } });
 
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
-    if (role === 'USER' || role === 'ADMIN') updateData.role = role;
+
+    // Role assignment restrictions
+    if (role) {
+      const validRoles = ['USER', 'MODERATOR', 'ADMIN', 'HEAD_ADMIN'];
+      if (!validRoles.includes(role)) {
+        return errorResponse('Invalid role', 400);
+      }
+      // Only HEAD_ADMIN can assign HEAD_ADMIN role
+      if (role === 'HEAD_ADMIN' && !isHeadAdmin(viewerRole)) {
+        return errorResponse('Forbidden', 403);
+      }
+      // Only HEAD_ADMIN can assign ADMIN role
+      if (role === 'ADMIN' && !isHeadAdmin(viewerRole)) {
+        return errorResponse('Forbidden', 403);
+      }
+      // Prevent non-HEAD_ADMIN from changing a HEAD_ADMIN user's role
+      const target = await prisma.user.findUnique({ where: { id: params.id }, select: { role: true } });
+      if ((target?.role as string) === 'HEAD_ADMIN' && !isHeadAdmin(viewerRole)) {
+        return errorResponse('Forbidden', 403);
+      }
+      updateData.role = role;
+    }
 
     const user = await prisma.user.update({
       where: { id: params.id },
@@ -68,7 +96,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const adminSession = await requireAdmin();
+    const adminSession = await requireHeadAdmin();
 
     if (params.id === adminSession.user.id) {
       return errorResponse('You cannot delete your own account', 400);
@@ -79,6 +107,11 @@ export async function DELETE(
       select: { id: true, email: true, role: true },
     });
     if (!user) return errorResponse('User not found', 404);
+
+    // Prevent deleting another HEAD_ADMIN
+    if ((user.role as string) === 'HEAD_ADMIN') {
+      return errorResponse('Cannot delete a Head Admin account', 400);
+    }
 
     // Delete all user data in order
     await prisma.$transaction([

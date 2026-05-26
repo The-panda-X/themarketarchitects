@@ -1,11 +1,11 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, parsePagination } from '@/lib/api-helpers';
+import { requireModerator, handleApiError, successResponse, parsePagination } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireModerator();
     const { searchParams } = req.nextUrl;
     const { page, limit, skip } = parsePagination(searchParams);
     const status = searchParams.get('status') ?? '';

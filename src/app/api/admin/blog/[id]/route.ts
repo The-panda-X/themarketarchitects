@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireAdmin, requireModerator, requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { blogPostSchema } from '@/lib/validations';
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAdmin();
+    await requireModerator();
     const post = await prisma.blogPost.findUnique({ where: { id: params.id } });
     if (!post) return errorResponse('Post not found', 404);
     return successResponse(post);
@@ -52,7 +52,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAdmin();
+    await requireHeadAdmin();
     await prisma.blogPost.delete({ where: { id: params.id } });
     return successResponse({ deleted: true });
   } catch (err) {

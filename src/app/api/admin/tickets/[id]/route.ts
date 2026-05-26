@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireModerator, requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAdmin();
+    await requireModerator();
 
     const ticket = await prisma.supportTicket.findUnique({
       where: { id: params.id },
@@ -26,7 +26,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const adminSession = await requireAdmin();
+    const adminSession = await requireHeadAdmin();
 
     const ticket = await prisma.supportTicket.findUnique({
       where: { id: params.id },

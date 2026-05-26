@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse } from '@/lib/api-helpers';
+import { requireModerator, handleApiError, successResponse } from '@/lib/api-helpers';
 
 export async function GET() {
   try {
-    await requireAdmin();
+    await requireModerator();
 
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());

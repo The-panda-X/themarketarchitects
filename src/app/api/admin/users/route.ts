@@ -1,24 +1,37 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, parsePagination } from '@/lib/api-helpers';
+import { requireModerator, handleApiError, successResponse, parsePagination, getSessionRole, isHeadAdmin } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin();
+    const session = await requireModerator();
+    const viewerRole = getSessionRole(session as { user: { role?: string } });
+    const viewerIsHeadAdmin = isHeadAdmin(viewerRole);
+
     const { searchParams } = req.nextUrl;
     const { page, limit, skip } = parsePagination(searchParams);
     const search = searchParams.get('search') ?? '';
     const role = searchParams.get('role') ?? '';
 
-    const where = {
+    // Build the where clause — cast role filters to `any` since Prisma types
+    // may not yet include HEAD_ADMIN/MODERATOR until after `prisma db push`
+    const roleFilter: Record<string, unknown> = {};
+    if (role) {
+      roleFilter.role = role;
+    } else if (!viewerIsHeadAdmin) {
+      // Hide HEAD_ADMIN users from non-HEAD_ADMIN viewers
+      roleFilter.role = { not: 'HEAD_ADMIN' };
+    }
+
+    const where: Record<string, unknown> = {
       ...(search && {
         OR: [
           { email: { contains: search, mode: 'insensitive' as const } },
           { name: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
-      ...(role && { role: role as 'USER' | 'ADMIN' }),
+      ...roleFilter,
     };
 
     const [users, total] = await Promise.all([

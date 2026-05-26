@@ -1,12 +1,14 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
+const ADMIN_ROLES = ['HEAD_ADMIN', 'ADMIN', 'MODERATOR'];
+
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
     const token = req.nextauth.token;
 
-    if (pathname.startsWith('/admin') && token?.role !== 'ADMIN') {
+    if (pathname.startsWith('/admin') && !ADMIN_ROLES.includes(token?.role as string)) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 

@@ -1,14 +1,14 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
+import { requireAdmin, requireModerator, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
 import { ChallengeStatus } from '@/types';
 
 const VALID_CHALLENGE_STATUSES = new Set(Object.values(ChallengeStatus));
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireModerator();
     const { searchParams } = req.nextUrl;
     const { page, limit, skip } = parsePagination(searchParams);
     const status = searchParams.get('status') ?? '';

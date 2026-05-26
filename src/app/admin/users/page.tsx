@@ -14,13 +14,14 @@ import {
 } from '@/components/ui/Table';
 import { formatRelativeTime } from '@/lib/utils';
 import useToast from '@/hooks/useToast';
+import useAuth from '@/hooks/useAuth';
 
 interface UserRow {
   id: string;
   email: string;
   name: string | null;
   avatar: string | null;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'MODERATOR' | 'ADMIN' | 'HEAD_ADMIN';
   emailVerified: string | null;
   createdAt: string;
   _count: { orders: number; challenges: number };
@@ -28,6 +29,7 @@ interface UserRow {
 
 export default function AdminUsersPage() {
   const { addToast } = useToast();
+  const { canDelete } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -107,12 +109,12 @@ export default function AdminUsersPage() {
                   <TableHead align="center">Orders</TableHead>
                   <TableHead align="center">Challenges</TableHead>
                   <TableHead>Joined</TableHead>
-                  <TableHead align="center">Action</TableHead>
+                  {canDelete && <TableHead align="center">Action</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.length === 0 ? (
-                  <TableEmpty colSpan={7} message="No users found" />
+                  <TableEmpty colSpan={canDelete ? 7 : 6} message="No users found" />
                 ) : (
                   users.map((user) => (
                     <TableRow key={user.id} onClick={() => window.location.href = `/admin/users/${user.id}`}>
@@ -126,8 +128,8 @@ export default function AdminUsersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'ADMIN' ? 'gold' : 'default'} size="sm">
-                          {user.role}
+                        <Badge variant={user.role === 'HEAD_ADMIN' ? 'purple' : user.role === 'ADMIN' ? 'gold' : user.role === 'MODERATOR' ? 'blue' : 'default'} size="sm">
+                          {user.role === 'HEAD_ADMIN' ? 'HEAD ADMIN' : user.role}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -140,18 +142,20 @@ export default function AdminUsersPage() {
                       <TableCell align="center">{user._count.orders}</TableCell>
                       <TableCell align="center">{user._count.challenges}</TableCell>
                       <TableCell>{formatRelativeTime(user.createdAt)}</TableCell>
-                      <TableCell align="center">
-                        {user.role !== 'ADMIN' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDelete(user.id, user.email); }}
-                            disabled={deleting === user.id}
-                            className="p-1.5 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
-                            title="Delete user"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </TableCell>
+                      {canDelete && (
+                        <TableCell align="center">
+                          {user.role !== 'ADMIN' && user.role !== 'HEAD_ADMIN' && user.role !== 'MODERATOR' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDelete(user.id, user.email); }}
+                              disabled={deleting === user.id}
+                              className="p-1.5 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                              title="Delete user"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}

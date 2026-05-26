@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireAdmin, requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { decrypt } from '@/lib/encrypt';
 
 export async function GET(
@@ -42,7 +42,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const adminSession = await requireAdmin();
+    const adminSession = await requireHeadAdmin();
 
     const credential = await prisma.credential.findUnique({
       where: { id: params.id },

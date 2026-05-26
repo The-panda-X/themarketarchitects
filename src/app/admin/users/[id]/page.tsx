@@ -12,6 +12,7 @@ import Skeleton from '@/components/ui/Skeleton';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
 import useToast from '@/hooks/useToast';
+import useAuth from '@/hooks/useAuth';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
 
 interface UserDetail {
@@ -31,6 +32,7 @@ export default function AdminUserDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { addToast } = useToast();
+  const { isHeadAdmin, isAdmin, isModerator } = useAuth();
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRoleModal, setShowRoleModal] = useState(false);
@@ -87,9 +89,11 @@ export default function AdminUserDetailPage() {
           <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>Users</Button>
         </Link>
         <h1 className="text-xl font-heading font-bold flex-1">User Detail</h1>
-        <Button variant="secondary" size="sm" onClick={() => setShowRoleModal(true)}>
-          Change Role
-        </Button>
+        {(isHeadAdmin || isAdmin) && (
+          <Button variant="secondary" size="sm" onClick={() => setShowRoleModal(true)}>
+            Change Role
+          </Button>
+        )}
       </div>
 
       {/* Profile */}
@@ -100,7 +104,9 @@ export default function AdminUserDetailPage() {
             <p className="font-heading font-semibold text-lg">{user.name ?? 'No name'}</p>
             <p className="text-sm text-text-tertiary">{user.email}</p>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={user.role === 'ADMIN' ? 'gold' : 'default'} size="sm">{user.role}</Badge>
+              <Badge variant={user.role === 'HEAD_ADMIN' ? 'purple' : user.role === 'ADMIN' ? 'gold' : user.role === 'MODERATOR' ? 'blue' : 'default'} size="sm">
+                {user.role === 'HEAD_ADMIN' ? 'HEAD ADMIN' : user.role}
+              </Badge>
               {user.emailVerified ? (
                 <Badge variant="green" size="sm">Verified</Badge>
               ) : (
@@ -178,7 +184,9 @@ export default function AdminUserDetailPage() {
         <div className="space-y-4">
           <Select label="Role" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
             <option value="USER">User</option>
-            <option value="ADMIN">Admin</option>
+            <option value="MODERATOR">Moderator</option>
+            {isHeadAdmin && <option value="ADMIN">Admin</option>}
+            {isHeadAdmin && <option value="HEAD_ADMIN">Head Admin</option>}
           </Select>
           <div className="flex gap-3">
             <Button variant="primary" loading={saving} onClick={handleRoleUpdate} fullWidth>Save</Button>

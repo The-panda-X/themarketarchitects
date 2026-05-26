@@ -1,12 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
+import { requireAdmin, requireModerator, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
 import { blogPostSchema } from '@/lib/validations';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireModerator();
     const { searchParams } = req.nextUrl;
     const { page, limit, skip } = parsePagination(searchParams);
 

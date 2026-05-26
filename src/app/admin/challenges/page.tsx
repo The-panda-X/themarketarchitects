@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/Table';
 import { formatRelativeTime } from '@/lib/utils';
 import useToast from '@/hooks/useToast';
+import useAuth from '@/hooks/useAuth';
 
 interface ChallengeRow {
   id: string;
@@ -54,6 +55,7 @@ const statusVariant: Record<string, 'yellow' | 'blue' | 'green' | 'red' | 'defau
 
 export default function AdminChallengesPage() {
   const { addToast } = useToast();
+  const { canDelete } = useAuth();
 
   // List state
   const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
@@ -210,12 +212,12 @@ export default function AdminChallengesPage() {
                   <TableHead>Drawdown</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead align="center">Action</TableHead>
+                  {canDelete && <TableHead align="center">Action</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {challenges.length === 0 ? (
-                  <TableEmpty colSpan={8} message="No challenges found" />
+                  <TableEmpty colSpan={canDelete ? 8 : 7} message="No challenges found" />
                 ) : (
                   challenges.map((ch) => (
                     <TableRow key={ch.id} onClick={() => window.location.href = `/admin/challenges/${ch.id}`}>
@@ -266,16 +268,18 @@ export default function AdminChallengesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{formatRelativeTime(ch.createdAt)}</TableCell>
-                      <TableCell align="center">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(ch.id, ch.firmName); }}
-                          disabled={deleting === ch.id}
-                          className="p-1.5 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
-                          title="Delete challenge"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </TableCell>
+                      {canDelete && (
+                        <TableCell align="center">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(ch.id, ch.firmName); }}
+                            disabled={deleting === ch.id}
+                            className="p-1.5 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                            title="Delete challenge"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}
