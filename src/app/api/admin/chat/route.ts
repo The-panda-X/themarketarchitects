@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireModerator, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireModerator, requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 
 /** GET – list all conversations for staff */
 export async function GET() {
@@ -94,6 +94,29 @@ export async function POST(req: NextRequest) {
     }
 
     return successResponse({ conversationId: conversation.id }, 201);
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
+/** DELETE – Head Admin can delete conversations */
+export async function DELETE(req: NextRequest) {
+  try {
+    await requireHeadAdmin();
+    const { searchParams } = req.nextUrl;
+    const id = searchParams.get('id');
+    const all = searchParams.get('all');
+
+    if (all === 'true') {
+      // Messages cascade-delete automatically
+      const { count } = await prisma.conversation.deleteMany();
+      return successResponse({ deleted: count });
+    }
+
+    if (!id) return errorResponse('id or all=true is required', 400);
+
+    await prisma.conversation.delete({ where: { id } });
+    return successResponse({ deleted: true });
   } catch (err) {
     return handleApiError(err);
   }

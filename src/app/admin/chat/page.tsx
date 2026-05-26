@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Plus,
   X,
+  Trash2,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Avatar from '@/components/ui/Avatar';
@@ -94,6 +95,12 @@ export default function AdminChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [startingSending, setStartingSending] = useState(false);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Delete state
+  const { canDelete } = useAuth();
+  const [deleteTarget, setDeleteTarget] = useState<ConversationWithUser | null>(null);
+  const [clearAllOpen, setClearAllOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -327,6 +334,36 @@ export default function AdminChatPage() {
     setNewMessage('');
   };
 
+  const handleDeleteOne = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/chat?id=${deleteTarget.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        addToast('Conversation deleted', 'success');
+        setDeleteTarget(null);
+        if (activeId === deleteTarget.id) { setActiveId(null); setActiveConv(null); setMessages([]); }
+        fetchConversations();
+      } else addToast('Failed to delete', 'error');
+    } catch { addToast('Failed to delete', 'error'); }
+    finally { setDeleting(false); }
+  };
+
+  const handleClearAll = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/admin/chat?all=true', { method: 'DELETE' });
+      if (res.ok) {
+        const d = await res.json();
+        addToast(`Cleared ${d.data?.deleted ?? 0} conversations`, 'success');
+        setClearAllOpen(false);
+        setActiveId(null); setActiveConv(null); setMessages([]);
+        fetchConversations();
+      } else addToast('Failed to clear', 'error');
+    } catch { addToast('Failed to clear', 'error'); }
+    finally { setDeleting(false); }
+  };
+
   const filteredConvs = conversations.filter((c) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -347,13 +384,24 @@ export default function AdminChatPage() {
           </h1>
           <p className="text-text-secondary mt-1">Direct messaging with users</p>
         </div>
-        <button
-          onClick={() => setShowNewChat(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-primary text-white text-sm font-medium hover:bg-accent-primary/90 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          New Chat
-        </button>
+        <div className="flex items-center gap-2">
+          {canDelete && conversations.length > 0 && (
+            <button
+              onClick={() => setClearAllOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-danger/30 text-danger text-sm font-medium hover:bg-danger/5 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear All
+            </button>
+          )}
+          <button
+            onClick={() => setShowNewChat(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-primary text-white text-sm font-medium hover:bg-accent-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            New Chat
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-4 h-[calc(100%-3.5rem)]">
@@ -486,6 +534,15 @@ export default function AdminChatPage() {
                     </>
                   )}
                 </button>
+                {canDelete && activeConv && (
+                  <button
+                    onClick={() => setDeleteTarget(activeConv)}
+                    className="p-1.5 rounded-lg text-text-tertiary hover:text-danger hover:bg-danger/5 transition-colors"
+                    title="Delete conversation"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
 
               {/* Messages */}
@@ -712,6 +769,36 @@ export default function AdminChatPage() {
               </div>
             </>
           )}
+        </div>
+      </Modal>
+
+      {/* Delete single conversation */}
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Conversation" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            Delete the entire conversation with <strong className="text-text-primary">{deleteTarget?.user?.name || deleteTarget?.user?.email}</strong>? All messages will be permanently removed.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-xl text-sm text-text-secondary hover:bg-white/[0.04]">Cancel</button>
+            <button onClick={handleDeleteOne} disabled={deleting} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-danger text-white text-sm font-medium disabled:opacity-40">
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />} Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Clear all conversations */}
+      <Modal isOpen={clearAllOpen} onClose={() => setClearAllOpen(false)} title="Clear All Conversations" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            This will permanently delete <strong className="text-text-primary">all {conversations.length} conversations</strong> and their messages. This cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setClearAllOpen(false)} className="px-4 py-2 rounded-xl text-sm text-text-secondary hover:bg-white/[0.04]">Cancel</button>
+            <button onClick={handleClearAll} disabled={deleting} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-danger text-white text-sm font-medium disabled:opacity-40">
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />} Clear All
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
