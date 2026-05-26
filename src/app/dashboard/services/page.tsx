@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CircleCheck, Clock, ArrowRight, Loader2 } from 'lucide-react';
-import GlowBorder from '@/components/ui/GlowBorder';
 import Tabs from '@/components/ui/Tabs';
 
 interface PlanData {
@@ -34,7 +33,7 @@ function PlanCard({ plan }: { plan: PlanData }) {
   const isProfitSplit = !plan.price && !!plan.priceLabel;
 
   const card = (
-    <div className="relative pt-5 h-full">
+    <div className="relative h-full">
       {isPopular && (
         <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
           <span
@@ -113,7 +112,7 @@ function PlanCard({ plan }: { plan: PlanData }) {
     </div>
   );
 
-  return isPopular ? <GlowBorder color="gold">{card}</GlowBorder> : card;
+  return card;
 }
 
 export default function ServicesPage() {
