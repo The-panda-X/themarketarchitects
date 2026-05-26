@@ -23,6 +23,7 @@ import {
   Radio,
   Layers,
   MessageCircle,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
@@ -41,6 +42,7 @@ const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
   { label: 'Services', href: '/admin/services', icon: Layers, minRole: 'admin' },
   { label: 'Blog', href: '/admin/blog', icon: FileText },
+  { label: 'Home Page', href: '/admin/home-page', icon: Home, minRole: 'admin' },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag, minRole: 'admin' },
   { label: 'Activity Logs', href: '/admin/logs', icon: ScrollText, minRole: 'admin' },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: 'admin' },
