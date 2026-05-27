@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Search, Trophy, Trash2 } from 'lucide-react';
+import { Plus, Search, Trophy, Trash2, Wifi, WifiOff } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -30,6 +30,13 @@ interface ChallengeRow {
   maxDrawdown: number | null;
   balance: number | null;
   equity: number | null;
+  openProfit: number | null;
+  totalTrades: number;
+  winCount: number;
+  openTrades: number;
+  winRate: number;
+  lastReportedAt: string | null;
+  eaToken: string | null;
   createdAt: string;
   user: { email: string; name: string | null };
   order: { planName: string };
@@ -211,16 +218,18 @@ export default function AdminChallengesPage() {
                   <TableHead>Firm / Size</TableHead>
                   <TableHead>Phase</TableHead>
                   <TableHead>Balance / Equity</TableHead>
+                  <TableHead>Trades</TableHead>
                   <TableHead>Profit</TableHead>
                   <TableHead>Drawdown</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead align="center">EA</TableHead>
                   <TableHead>Created</TableHead>
                   {canDelete && <TableHead align="center">Action</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {challenges.length === 0 ? (
-                  <TableEmpty colSpan={canDelete ? 9 : 8} message="No challenges found" />
+                  <TableEmpty colSpan={canDelete ? 11 : 10} message="No challenges found" />
                 ) : (
                   challenges.map((ch) => (
                     <TableRow key={ch.id} onClick={() => window.location.href = `/admin/challenges/${ch.id}`}>
@@ -248,6 +257,25 @@ export default function AdminChallengesPage() {
                         ) : (
                           <span className="text-xs text-text-tertiary">—</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="text-xs font-mono">
+                            <span className="text-success">{ch.winCount}W</span>
+                            <span className="text-text-tertiary"> / </span>
+                            <span className="text-danger">{ch.totalTrades - ch.winCount}L</span>
+                          </p>
+                          {ch.openTrades > 0 && (
+                            <p className="text-[10px] text-text-tertiary mt-0.5">
+                              {ch.openTrades} open
+                              {ch.openProfit != null && (
+                                <span className={ch.openProfit >= 0 ? ' text-success' : ' text-danger'}>
+                                  {' '}{ch.openProfit >= 0 ? '+' : ''}{ch.openProfit.toFixed(0)}
+                                </span>
+                              )}
+                            </p>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="w-24">
@@ -281,6 +309,23 @@ export default function AdminChallengesPage() {
                         <Badge variant={statusVariant[ch.status] ?? 'default'} size="sm">
                           {ch.status.replace('_', ' ')}
                         </Badge>
+                      </TableCell>
+                      <TableCell align="center">
+                        {(ch.eaToken || ch.order) ? (() => {
+                          const connected = !!(ch.eaToken);
+                          const online = ch.lastReportedAt
+                            ? (Date.now() - new Date(ch.lastReportedAt).getTime()) < 5 * 60 * 1000
+                            : false;
+                          return connected ? (
+                            online
+                              ? <Wifi className="h-4 w-4 text-success mx-auto" />
+                              : <WifiOff className="h-4 w-4 text-danger mx-auto" />
+                          ) : (
+                            <span className="text-xs text-text-tertiary">—</span>
+                          );
+                        })() : (
+                          <span className="text-xs text-text-tertiary">—</span>
+                        )}
                       </TableCell>
                       <TableCell>{formatRelativeTime(ch.createdAt)}</TableCell>
                       {canDelete && (
