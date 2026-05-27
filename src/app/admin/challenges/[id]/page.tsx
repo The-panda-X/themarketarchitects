@@ -30,6 +30,10 @@ interface ChallengeDetail {
   winRate: number;
   balance: number | null;
   equity: number | null;
+  openProfit: number | null;
+  totalTrades: number;
+  winCount: number;
+  openTrades: number;
   adminNotes: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -222,6 +226,7 @@ export default function AdminChallengeDetailPage() {
   const ddPct = challenge.maxDrawdown ? (challenge.currentDrawdown / challenge.maxDrawdown) * 100 : 0;
 
   // EA live status: consider online if reported within last 5 minutes
+  const eaConnected = !!(challenge.eaToken || challenge.signalFilePath);
   const eaOnline = challenge.lastReportedAt
     ? (Date.now() - new Date(challenge.lastReportedAt).getTime()) < 5 * 60 * 1000
     : false;
@@ -274,6 +279,24 @@ export default function AdminChallengeDetailPage() {
           <p className="text-xs text-text-tertiary mt-1">{challenge.daysTraded} days traded</p>
         </GlassCard>
         <GlassCard>
+          <p className="text-xs text-text-tertiary uppercase tracking-wider">Open Trades</p>
+          <p className="text-xl font-bold font-mono mt-1">{challenge.openTrades}</p>
+          {challenge.openProfit != null && (
+            <p className={`text-xs font-mono mt-1 ${challenge.openProfit >= 0 ? 'text-success' : 'text-danger'}`}>
+              {challenge.openProfit >= 0 ? '+' : ''}{challenge.openProfit.toFixed(2)} P/L
+            </p>
+          )}
+        </GlassCard>
+        <GlassCard>
+          <p className="text-xs text-text-tertiary uppercase tracking-wider">Total Trades</p>
+          <p className="text-xl font-bold font-mono mt-1">{challenge.totalTrades}</p>
+          <p className="text-xs text-text-tertiary mt-1">
+            <span className="text-success">{challenge.winCount}W</span>
+            {' / '}
+            <span className="text-danger">{challenge.totalTrades - challenge.winCount}L</span>
+          </p>
+        </GlassCard>
+        <GlassCard>
           <p className="text-xs text-text-tertiary uppercase tracking-wider">Client</p>
           <Link href={`/admin/users/${challenge.user.id}`} className="text-sm text-accent-primary hover:underline mt-1 block truncate">
             {challenge.user.email}
@@ -284,7 +307,7 @@ export default function AdminChallengeDetailPage() {
         <GlassCard>
           <p className="text-xs text-text-tertiary uppercase tracking-wider">EA Status</p>
           <div className="flex items-center gap-2 mt-1">
-            {challenge.signalFilePath ? (
+            {eaConnected ? (
               eaOnline ? (
                 <Wifi className="h-5 w-5 text-success" />
               ) : (
@@ -294,10 +317,10 @@ export default function AdminChallengeDetailPage() {
               <WifiOff className="h-5 w-5 text-text-tertiary" />
             )}
             <span className={`text-sm font-semibold ${
-              !challenge.signalFilePath ? 'text-text-tertiary' :
+              !eaConnected ? 'text-text-tertiary' :
               eaOnline ? 'text-success' : 'text-danger'
             }`}>
-              {!challenge.signalFilePath ? 'Not set' : eaOnline ? 'Live' : 'Offline'}
+              {!eaConnected ? 'Not set' : eaOnline ? 'Live' : 'Offline'}
             </span>
           </div>
           <p className="text-xs text-text-tertiary mt-1">

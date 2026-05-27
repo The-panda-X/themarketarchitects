@@ -115,6 +115,10 @@ export interface Challenge {
   winRate: number;
   balance: number | null;
   equity: number | null;
+  openProfit: number | null;
+  totalTrades: number;
+  winCount: number;
+  openTrades: number;
   proofImages: string[];
   adminNotes: string | null;
   createdAt: string;

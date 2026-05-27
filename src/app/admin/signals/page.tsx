@@ -57,6 +57,7 @@ interface VpsSignal {
   status: string;
   sentCount: number;
   failedCount: number;
+  errorMessage: string | null;
   createdAt: string;
   executedAt: string | null;
 }
@@ -384,15 +385,22 @@ export default function AdminSignalsPage() {
                           )}
                         </TableCell>
                         <TableCell align="center">
-                          <Badge
-                            variant={sig.status === 'executed' ? 'green' : sig.status === 'failed' ? 'red' : 'yellow'}
-                            size="sm"
-                          >
-                            {sig.status === 'pending' && <Clock className="h-3 w-3 mr-1 inline" />}
-                            {sig.status === 'executed' && <CheckCircle className="h-3 w-3 mr-1 inline" />}
-                            {sig.status === 'failed' && <XCircle className="h-3 w-3 mr-1 inline" />}
-                            {sig.status.charAt(0).toUpperCase() + sig.status.slice(1)}
-                          </Badge>
+                          <div className="flex flex-col items-center gap-1">
+                            <Badge
+                              variant={sig.status === 'executed' ? 'green' : sig.status === 'failed' ? 'red' : 'yellow'}
+                              size="sm"
+                            >
+                              {sig.status === 'pending' && <Clock className="h-3 w-3 mr-1 inline" />}
+                              {sig.status === 'executed' && <CheckCircle className="h-3 w-3 mr-1 inline" />}
+                              {sig.status === 'failed' && <XCircle className="h-3 w-3 mr-1 inline" />}
+                              {sig.status.charAt(0).toUpperCase() + sig.status.slice(1)}
+                            </Badge>
+                            {sig.errorMessage && (
+                              <span className="text-[10px] text-danger/80 max-w-[120px] truncate" title={sig.errorMessage}>
+                                {sig.errorMessage}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell align="center">
                           <span className="text-success font-mono font-bold">{sig.sentCount}</span>

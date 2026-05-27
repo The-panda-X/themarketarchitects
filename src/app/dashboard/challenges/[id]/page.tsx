@@ -137,6 +137,8 @@ export default function ChallengeDetailPage() {
           label="Win Rate"
           value={`${challenge.winRate}%`}
           icon={<Award className="h-5 w-5" />}
+          change={challenge.totalTrades > 0 ? `${challenge.winCount}W / ${challenge.totalTrades - challenge.winCount}L` : undefined}
+          changeType="neutral"
         />
         <StatCard
           label="Days Traded"
@@ -145,9 +147,18 @@ export default function ChallengeDetailPage() {
         />
         <StatCard
           label="Current Drawdown"
-          value={formatCurrency(challenge.currentDrawdown)}
+          value={`${challenge.currentDrawdown.toFixed(2)}%`}
           icon={<TrendingDown className="h-5 w-5" />}
         />
+        {challenge.openTrades > 0 && (
+          <StatCard
+            label="Open Trades"
+            value={String(challenge.openTrades)}
+            icon={<BarChart3 className="h-5 w-5" />}
+            change={challenge.openProfit != null ? `${challenge.openProfit >= 0 ? '+' : ''}${formatCurrency(challenge.openProfit)} P/L` : undefined}
+            changeType={challenge.openProfit != null ? (challenge.openProfit >= 0 ? 'positive' : 'negative') : 'neutral'}
+          />
+        )}
       </div>
 
       {/* Progress Bars */}

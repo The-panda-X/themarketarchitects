@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
       status?: string;
       sent?: number;
       failed?: number;
+      error?: string;
     };
 
     const { id, status, sent, failed } = body;
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
         status,
         sentCount: sent ?? 0,
         failedCount: failed ?? 0,
+        errorMessage: body.error || null,
         executedAt: new Date(),
       },
     });

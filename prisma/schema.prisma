@@ -182,6 +182,10 @@ model Challenge {
   winRate         Float           @default(0)
   balance         Float?                             // latest balance from EA
   equity          Float?                             // latest equity from EA
+  openProfit      Float?                             // floating P/L of open trades
+  totalTrades     Int             @default(0)
+  winCount        Int             @default(0)
+  openTrades      Int             @default(0)        // number of currently open positions
   proofImages     String[]
   adminNotes      String?
   // Signal routing fields
@@ -221,10 +225,11 @@ model Signal {
   risk        Float     @default(0)           // 0 = use account defaults
   source      String    @default("admin_panel")
   status      String    @default("pending")   // pending / executed / failed
-  sentCount   Int       @default(0)
-  failedCount Int       @default(0)
-  createdAt   DateTime  @default(now())
-  executedAt  DateTime?
+  sentCount    Int       @default(0)
+  failedCount  Int       @default(0)
+  errorMessage String?                             // failure reason from VPS
+  createdAt    DateTime  @default(now())
+  executedAt   DateTime?
 
   @@index([status])
   @@index([createdAt])

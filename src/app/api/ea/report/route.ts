@@ -30,14 +30,14 @@ export async function POST(req: NextRequest) {
       signalFile?:      string;   // fallback: match by signal file name
       balance?:         number;
       equity?:          number;
-      openProfit?:      number;
+      openProfit?:      number;   // floating P/L of open positions
       currentProfit?:   number;   // closed profit $ from start balance
       currentDrawdown?: number;   // % drawdown from start balance
       winRate?:         number;
       daysTraded?:      number;
-      totalTrades?:     number;
-      winCount?:        number;
-      openTrades?:      number;
+      totalTrades?:     number;   // lifetime trade count
+      winCount?:        number;   // lifetime win count
+      openTrades?:      number;   // number of open positions
     };
 
     const { token, signalFile } = body;
@@ -79,6 +79,10 @@ export async function POST(req: NextRequest) {
     if (body.daysTraded      !== undefined) updateData.daysTraded      = body.daysTraded;
     if (body.balance         !== undefined) updateData.balance         = body.balance;
     if (body.equity          !== undefined) updateData.equity          = body.equity;
+    if (body.openProfit      !== undefined) updateData.openProfit      = body.openProfit;
+    if (body.totalTrades     !== undefined) updateData.totalTrades     = body.totalTrades;
+    if (body.winCount        !== undefined) updateData.winCount        = body.winCount;
+    if (body.openTrades      !== undefined) updateData.openTrades      = body.openTrades;
 
     // ── Auto-status logic ─────────────────────────────────────────────
     let newStatus:        string | null = null;
