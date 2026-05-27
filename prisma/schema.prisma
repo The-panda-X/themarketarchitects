@@ -207,6 +207,29 @@ model Challenge {
   @@index([status])
 }
 
+// ── VPS Signal Distribution ──────────────────────────────────────────
+// Signals queued for the Multi-Account Trade Manager (VPS polls these)
+model Signal {
+  id          String    @id @default(cuid())
+  pair        String
+  direction   String                          // BUY or SELL
+  entry       Float     @default(0)           // 0 = market price
+  sl          Float
+  tp1         Float
+  tp2         Float?
+  tp3         Float?
+  risk        Float     @default(0)           // 0 = use account defaults
+  source      String    @default("admin_panel")
+  status      String    @default("pending")   // pending / executed / failed
+  sentCount   Int       @default(0)
+  failedCount Int       @default(0)
+  createdAt   DateTime  @default(now())
+  executedAt  DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
 model SignalLog {
   id           String   @id @default(cuid())
   pair         String
