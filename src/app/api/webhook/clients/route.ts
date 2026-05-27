@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       where: {
         status: { in: ['PENDING', 'IN_PROGRESS', 'PHASE_1', 'PHASE_2'] },
         isPaused: false,
-        signalFilePath: { not: null },
+        eaToken: { not: null },
       },
       select: {
         id: true,
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
         totalDDLimit: true,
         dailyCapPct: true,
         allowedPairs: true,
-        signalFilePath: true,
+        eaToken: true,
         isPaused: true,
         user: { select: { email: true, name: true } },
         order: { select: { planName: true } },

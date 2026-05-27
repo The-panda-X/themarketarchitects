@@ -26,8 +26,7 @@ export async function POST(req: NextRequest) {
 
     // ── Parse body ────────────────────────────────────────────────────
     const body = await req.json() as {
-      token?:           string;   // preferred: unique EA token from admin panel
-      signalFile?:      string;   // fallback: match by signal file name
+      token?:           string;   // unique EA token from admin panel
       balance?:         number;
       equity?:          number;
       openProfit?:      number;   // floating P/L of open positions
@@ -40,31 +39,23 @@ export async function POST(req: NextRequest) {
       openTrades?:      number;   // number of open positions
     };
 
-    const { token, signalFile } = body;
-    if (!token && !signalFile) {
-      return errorResponse('token or signalFile is required', 400);
+    const { token } = body;
+    if (!token) {
+      return errorResponse('token is required', 400);
     }
 
     // ── Find active challenge ─────────────────────────────────────────
-    // Token takes priority (exact unique match); signalFile is the legacy fallback
     const include = { user: { select: { name: true, email: true } } };
-    const challenge = token
-      ? await prisma.challenge.findFirst({
-          where:   { eaToken: token, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
-          include,
-        })
-      : await prisma.challenge.findFirst({
-          where:   { signalFilePath: signalFile, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
-          include,
-        });
+    const challenge = await prisma.challenge.findFirst({
+      where:   { eaToken: token, status: { notIn: ['FAILED', 'PASSED', 'FUNDED'] } },
+      include,
+    });
 
     if (!challenge) {
       // 200 so EA doesn't spam error logs — just log and move on
       return successResponse({
         found:   false,
-        message: token
-          ? 'No active challenge found for this token. Check InpAccountToken or challenge status.'
-          : 'No active challenge found for this signal file.',
+        message: 'No active challenge found for this token. Check InpAccountToken or challenge status.',
       });
     }
 

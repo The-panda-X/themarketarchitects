@@ -49,12 +49,12 @@ export async function POST(req: NextRequest) {
       return errorResponse('pair, direction, and sl are required', 400);
     }
 
-    // Fetch all active, unpaused accounts with a signal file path
+    // Fetch all active, unpaused accounts with an EA token
     const challenges = await prisma.challenge.findMany({
       where: {
         status: { in: ['PENDING', 'IN_PROGRESS', 'PHASE_1', 'PHASE_2'] },
         isPaused: false,
-        signalFilePath: { not: null },
+        eaToken: { not: null },
       },
       select: {
         id: true,
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
         totalDDLimit: true,
         dailyCapPct: true,
         allowedPairs: true,
-        signalFilePath: true,
+        eaToken: true,
         currentProfit: true,
         currentDrawdown: true,
       },
