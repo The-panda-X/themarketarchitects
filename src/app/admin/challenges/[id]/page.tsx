@@ -44,7 +44,6 @@ interface ChallengeDetail {
   totalDDLimit: number;
   dailyCapPct: number;
   allowedPairs: string[];
-  signalFilePath: string | null;
   isPaused: boolean;
   lastReportedAt: string | null;
   eaToken: string | null;
@@ -84,7 +83,6 @@ export default function AdminChallengeDetailPage() {
     totalDDLimit: 7.0,
     dailyCapPct: 3.0,
     allowedPairs: '',
-    signalFilePath: '',
   });
 
   useEffect(() => {
@@ -112,7 +110,6 @@ export default function AdminChallengeDetailPage() {
             totalDDLimit: d.data.totalDDLimit ?? 7.0,
             dailyCapPct: d.data.dailyCapPct ?? 3.0,
             allowedPairs: (d.data.allowedPairs ?? []).join(', '),
-            signalFilePath: d.data.signalFilePath ?? '',
           });
         }
       })
@@ -131,7 +128,6 @@ export default function AdminChallengeDetailPage() {
           totalDDLimit: signalForm.totalDDLimit,
           dailyCapPct: signalForm.dailyCapPct,
           allowedPairs: signalForm.allowedPairs.split(',').map(s => s.trim().toUpperCase()).filter(Boolean),
-          signalFilePath: signalForm.signalFilePath || null,
         }),
       });
       if (res.ok) {
@@ -226,7 +222,7 @@ export default function AdminChallengeDetailPage() {
   const ddPct = challenge.maxDrawdown ? (challenge.currentDrawdown / challenge.maxDrawdown) * 100 : 0;
 
   // EA live status: consider online if reported within last 5 minutes
-  const eaConnected = !!(challenge.eaToken || challenge.signalFilePath);
+  const eaConnected = !!challenge.eaToken;
   const eaOnline = challenge.lastReportedAt
     ? (Date.now() - new Date(challenge.lastReportedAt).getTime()) < 5 * 60 * 1000
     : false;
@@ -526,15 +522,6 @@ export default function AdminChallengeDetailPage() {
             value={signalForm.allowedPairs}
             onChange={e => setSignalForm(f => ({...f, allowedPairs: e.target.value}))}
           />
-          <Input
-            label="Signal File Name (for signal delivery)"
-            placeholder="e.g. signal_001.txt"
-            value={signalForm.signalFilePath}
-            onChange={e => setSignalForm(f => ({...f, signalFilePath: e.target.value}))}
-          />
-          <p className="text-xs text-text-tertiary -mt-2">
-            Filename only — must match the EA's <code className="text-accent-primary">InpFileName</code>. Used by the Discord bridge to deliver signals.
-          </p>
         </div>
 
         {/* ── Connection Token ───────────────────────────────────────── */}

@@ -182,7 +182,6 @@ export const updateChallengeSchema = z.object({
   totalDDLimit: z.number().min(0).max(100).optional(),
   dailyCapPct: z.number().min(0).max(100).optional(),
   allowedPairs: z.array(z.string()).optional(),
-  signalFilePath: z.string().optional().nullable(),
   isPaused: z.boolean().optional(),
 });
 
