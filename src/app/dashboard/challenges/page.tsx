@@ -120,6 +120,23 @@ export default function ChallengesPage() {
                       <ProgressBar value={progress} color="red" size="sm" />
                     </div>
 
+                    {(challenge.balance != null || challenge.equity != null) && (
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/[0.04]">
+                        <div className="text-center">
+                          <p className="text-xs text-text-tertiary">Balance</p>
+                          <p className="text-sm font-mono font-semibold text-white">
+                            {formatCurrency(challenge.balance ?? 0)}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-text-tertiary">Equity</p>
+                          <p className={`text-sm font-mono font-semibold ${(challenge.equity ?? 0) >= (challenge.balance ?? 0) ? 'text-success' : 'text-danger'}`}>
+                            {formatCurrency(challenge.equity ?? 0)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/[0.04]">
                       <div className="text-center">
                         <p className="text-xs text-text-tertiary">Days</p>

@@ -13,6 +13,7 @@ import {
   Award,
   Activity,
   BarChart3,
+  Wallet,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import StatCard from '@/components/ui/StatCard';
@@ -112,7 +113,21 @@ export default function ChallengeDetailPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {challenge.balance != null && (
+          <StatCard
+            label="Balance"
+            value={formatCurrency(challenge.balance)}
+            icon={<Wallet className="h-5 w-5" />}
+          />
+        )}
+        {challenge.equity != null && (
+          <StatCard
+            label="Equity"
+            value={formatCurrency(challenge.equity)}
+            icon={<Activity className="h-5 w-5" />}
+          />
+        )}
         <StatCard
           label="Current Profit"
           value={formatCurrency(challenge.currentProfit)}

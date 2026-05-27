@@ -77,6 +77,8 @@ export async function POST(req: NextRequest) {
     if (body.currentDrawdown !== undefined) updateData.currentDrawdown = body.currentDrawdown;
     if (body.winRate         !== undefined) updateData.winRate         = body.winRate;
     if (body.daysTraded      !== undefined) updateData.daysTraded      = body.daysTraded;
+    if (body.balance         !== undefined) updateData.balance         = body.balance;
+    if (body.equity          !== undefined) updateData.equity          = body.equity;
 
     // ── Auto-status logic ─────────────────────────────────────────────
     let newStatus:        string | null = null;

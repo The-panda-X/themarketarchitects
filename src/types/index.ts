@@ -113,6 +113,8 @@ export interface Challenge {
   currentDrawdown: number;
   daysTraded: number;
   winRate: number;
+  balance: number | null;
+  equity: number | null;
   proofImages: string[];
   adminNotes: string | null;
   createdAt: string;
