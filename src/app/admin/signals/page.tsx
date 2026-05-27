@@ -139,7 +139,7 @@ export default function AdminSignalsPage() {
   // Auto-refresh VPS signals every 10s when on VPS tab
   useEffect(() => {
     if (activeTab !== 'vps') return;
-    const interval = setInterval(fetchVpsSignals, 10000);
+    const interval = setInterval(fetchVpsSignals, 5000);
     return () => clearInterval(interval);
   }, [activeTab, fetchVpsSignals]);
 
