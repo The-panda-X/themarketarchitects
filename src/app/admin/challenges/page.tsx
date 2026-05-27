@@ -28,6 +28,8 @@ interface ChallengeRow {
   targetProfit: number | null;
   currentDrawdown: number;
   maxDrawdown: number | null;
+  balance: number | null;
+  equity: number | null;
   createdAt: string;
   user: { email: string; name: string | null };
   order: { planName: string };
@@ -208,6 +210,7 @@ export default function AdminChallengesPage() {
                   <TableHead>Client</TableHead>
                   <TableHead>Firm / Size</TableHead>
                   <TableHead>Phase</TableHead>
+                  <TableHead>Balance / Equity</TableHead>
                   <TableHead>Profit</TableHead>
                   <TableHead>Drawdown</TableHead>
                   <TableHead>Status</TableHead>
@@ -217,7 +220,7 @@ export default function AdminChallengesPage() {
               </TableHeader>
               <TableBody>
                 {challenges.length === 0 ? (
-                  <TableEmpty colSpan={canDelete ? 8 : 7} message="No challenges found" />
+                  <TableEmpty colSpan={canDelete ? 9 : 8} message="No challenges found" />
                 ) : (
                   challenges.map((ch) => (
                     <TableRow key={ch.id} onClick={() => window.location.href = `/admin/challenges/${ch.id}`}>
@@ -233,6 +236,18 @@ export default function AdminChallengesPage() {
                       </TableCell>
                       <TableCell align="center">
                         <Badge variant="default" size="sm">P{ch.currentPhase}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {ch.balance != null ? (
+                          <div>
+                            <p className="text-xs font-mono text-white">${ch.balance.toFixed(0)}</p>
+                            <p className={`text-xs font-mono ${(ch.equity ?? 0) >= ch.balance ? 'text-success' : 'text-danger'}`}>
+                              ${(ch.equity ?? 0).toFixed(0)}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-text-tertiary">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="w-24">

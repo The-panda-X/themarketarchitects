@@ -16,6 +16,7 @@ import {
   BarChart3,
   CalendarDays,
   TrendingDown,
+  Wallet,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import StatCard from '@/components/ui/StatCard';
@@ -171,6 +172,30 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </div>
+
+                    {/* Balance / Equity row */}
+                    {(challenge.balance != null || challenge.equity != null) && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2">
+                          <Wallet className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                          <div>
+                            <p className="text-[10px] text-text-tertiary uppercase">Balance</p>
+                            <p className="text-sm font-mono font-semibold text-white">
+                              {formatCurrency(challenge.balance ?? 0)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                          <div>
+                            <p className="text-[10px] text-text-tertiary uppercase">Equity</p>
+                            <p className={`text-sm font-mono font-semibold ${(challenge.equity ?? 0) >= (challenge.balance ?? 0) ? 'text-success' : 'text-danger'}`}>
+                              {formatCurrency(challenge.equity ?? 0)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Stats row */}
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

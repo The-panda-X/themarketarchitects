@@ -28,6 +28,8 @@ interface ChallengeDetail {
   maxDrawdown: number | null;
   daysTraded: number;
   winRate: number;
+  balance: number | null;
+  equity: number | null;
   adminNotes: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -240,6 +242,20 @@ export default function AdminChallengeDetailPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {challenge.balance != null && (
+          <GlassCard>
+            <p className="text-xs text-text-tertiary uppercase tracking-wider">Balance</p>
+            <p className="text-xl font-bold font-mono mt-1 text-white">${challenge.balance.toFixed(2)}</p>
+          </GlassCard>
+        )}
+        {challenge.equity != null && (
+          <GlassCard>
+            <p className="text-xs text-text-tertiary uppercase tracking-wider">Equity</p>
+            <p className={`text-xl font-bold font-mono mt-1 ${(challenge.equity) >= (challenge.balance ?? 0) ? 'text-success' : 'text-danger'}`}>
+              ${challenge.equity.toFixed(2)}
+            </p>
+          </GlassCard>
+        )}
         <GlassCard>
           <p className="text-xs text-text-tertiary uppercase tracking-wider">Profit</p>
           <p className="text-xl font-bold font-mono mt-1 text-success">${challenge.currentProfit.toFixed(2)}</p>
