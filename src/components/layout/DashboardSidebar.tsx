@@ -17,7 +17,6 @@ import {
   HeadphonesIcon,
   Users,
   Settings,
-  Calculator,
   LineChart,
   LogOut,
   ChevronLeft,
@@ -48,7 +47,6 @@ const navItems = [
 ];
 
 const toolItems = [
-  { label: 'Calculator', href: '/dashboard/tools/calculator', icon: Calculator },
   { label: 'Market Widgets', href: '/dashboard/tools/widgets', icon: LineChart },
 ];
 

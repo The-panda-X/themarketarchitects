@@ -47,7 +47,7 @@ const testimonials = [
     avatar: null,
     title: 'Account Management — $100K',
     content:
-      'Been using their account management for 3 months now. Consistent 4-6% monthly returns with minimal drawdown. The profit split calculator helped me plan my earnings perfectly.',
+      'Been using their account management for 3 months now. Consistent 4-6% monthly returns with minimal drawdown. The profit split system helped me plan my earnings perfectly.',
     rating: 5,
   },
   {
