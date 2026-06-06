@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { notifyAdmins } from '@/lib/admin-notify';
 
 export async function POST(req: NextRequest) {
   try {
@@ -81,6 +82,14 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // Notify admins about new order
+      await notifyAdmins({
+        title: 'New Order Received',
+        message: `${user.name ?? user.email} placed a ${planName} order (Profit Split Agreement).`,
+        type: 'payment',
+        link: `/admin/orders/${order.id}`,
+      });
+
       return successResponse({ orderId: order.id, type: 'profit_split' }, 201);
     }
 
@@ -109,6 +118,14 @@ export async function POST(req: NextRequest) {
         type: 'info',
         link: '/dashboard/payments',
       },
+    });
+
+    // Notify admins about new order
+    await notifyAdmins({
+      title: 'New Order Received',
+      message: `${user.name ?? user.email} placed a ${planName} order — $${finalPrice.toFixed(2)} (crypto). Awaiting payment proof.`,
+      type: 'payment',
+      link: `/admin/orders/${order.id}`,
     });
 
     return successResponse({

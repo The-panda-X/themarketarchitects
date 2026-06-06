@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -34,10 +34,10 @@ import { setLastPanel } from '@/hooks/useLastPanel';
 
 /** Navigation items with optional minimum role requirement.
  *  'admin' = ADMIN or HEAD_ADMIN only. Omit = all staff. */
-const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin' }[] = [
+const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin'; badgeKey?: string }[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
+  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders' },
   { label: 'Challenges', href: '/admin/challenges', icon: Target },
   { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'admin' },
   { label: 'Chat', href: '/admin/chat', icon: MessageCircle },
@@ -55,7 +55,8 @@ const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard
 export default function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user, role, isHeadAdmin, isAdmin, canViewSensitive } = useAuth();
+  const { user, isHeadAdmin, isAdmin, canViewSensitive } = useAuth();
+  const [pendingOrders, setPendingOrders] = useState(0);
 
   const roleLabel = isHeadAdmin ? 'Head Administrator' : isAdmin ? 'Administrator' : 'Moderator';
 
@@ -64,6 +65,39 @@ export default function AdminSidebar() {
     if (item.minRole === 'admin' && !canViewSensitive) return false;
     return true;
   });
+
+  // Fetch pending order count and poll every 30s
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchPendingCount() {
+      try {
+        const res = await fetch('/api/admin/orders/pending-count');
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted) setPendingOrders(data.data?.count ?? 0);
+        }
+      } catch {
+        // silent
+      }
+    }
+
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 30_000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
+
+  // Clear badge when admin visits the orders page
+  useEffect(() => {
+    if (pathname.startsWith('/admin/orders')) {
+      setPendingOrders(0);
+    }
+  }, [pathname]);
+
+  // Map badgeKey → count
+  const badgeCounts: Record<string, number> = {
+    orders: pendingOrders,
+  };
 
   return (
     <motion.aside
@@ -106,13 +140,14 @@ export default function AdminSidebar() {
           const isActive =
             pathname === item.href ||
             (item.href !== '/admin' && pathname.startsWith(item.href));
+          const badgeCount = item.badgeKey ? (badgeCounts[item.badgeKey] ?? 0) : 0;
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative',
                 isActive
                   ? 'bg-accent-primary/10 text-accent-primary'
                   : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]',
@@ -120,24 +155,38 @@ export default function AdminSidebar() {
               )}
               title={collapsed ? item.label : undefined}
             >
-              <item.icon
-                className={cn(
-                  'h-[18px] w-[18px] shrink-0',
-                  isActive ? 'text-accent-primary' : 'text-text-tertiary group-hover:text-text-secondary'
+              <div className="relative shrink-0">
+                <item.icon
+                  className={cn(
+                    'h-[18px] w-[18px]',
+                    isActive ? 'text-accent-primary' : 'text-text-tertiary group-hover:text-text-secondary'
+                  )}
+                />
+                {/* Red dot for collapsed sidebar */}
+                {collapsed && badgeCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
+                    {badgeCount > 99 ? '99+' : badgeCount}
+                  </span>
                 )}
-              />
+              </div>
               <AnimatePresence>
                 {!collapsed && (
                   <motion.span
                     initial={{ opacity: 0, width: 0 }}
                     animate={{ opacity: 1, width: 'auto' }}
                     exit={{ opacity: 0, width: 0 }}
-                    className="whitespace-nowrap overflow-hidden"
+                    className="whitespace-nowrap overflow-hidden flex-1"
                   >
                     {item.label}
                   </motion.span>
                 )}
               </AnimatePresence>
+              {/* Badge for expanded sidebar */}
+              {!collapsed && badgeCount > 0 && (
+                <span className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-danger text-[11px] font-bold text-white shrink-0">
+                  {badgeCount > 99 ? '99+' : badgeCount}
+                </span>
+              )}
             </Link>
           );
         })}

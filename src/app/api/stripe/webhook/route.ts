@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import prisma from '@/lib/prisma';
 import { constructWebhookEvent } from '@/lib/stripe';
 import { sendOrderConfirmationEmail } from '@/lib/email';
+import { notifyAdmins } from '@/lib/admin-notify';
 import type Stripe from 'stripe';
 
 export async function POST(req: NextRequest) {
@@ -81,6 +82,14 @@ export async function POST(req: NextRequest) {
             orderId: order.id,
             planName: order.planName,
             amount: order.totalAmount,
+          });
+
+          // Notify admins about new paid order
+          await notifyAdmins({
+            title: 'New Paid Order',
+            message: `${user.name ?? user.email} paid $${order.totalAmount.toFixed(2)} for ${order.planName} via Stripe.`,
+            type: 'payment',
+            link: `/admin/orders/${orderId}`,
           });
         }
 

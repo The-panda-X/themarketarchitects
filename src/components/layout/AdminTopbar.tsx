@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -34,10 +34,10 @@ import Badge from '@/components/ui/Badge';
 import Dropdown from '@/components/ui/Dropdown';
 import NotificationBell from '@/components/layout/NotificationBell';
 
-const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin' }[] = [
+const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin'; badgeKey?: string }[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
+  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders' },
   { label: 'Challenges', href: '/admin/challenges', icon: Target },
   { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'admin' },
   { label: 'Chat', href: '/admin/chat', icon: MessageCircle },
@@ -68,6 +68,30 @@ export default function AdminTopbar() {
     if (item.minRole === 'admin' && !canViewSensitive) return false;
     return true;
   });
+
+  const [pendingOrders, setPendingOrders] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchPendingCount() {
+      try {
+        const res = await fetch('/api/admin/orders/pending-count');
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted) setPendingOrders(data.data?.count ?? 0);
+        }
+      } catch { /* silent */ }
+    }
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 30_000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
+
+  useEffect(() => {
+    if (pathname.startsWith('/admin/orders')) setPendingOrders(0);
+  }, [pathname]);
+
+  const badgeCounts: Record<string, number> = { orders: pendingOrders };
 
   return (
     <>
@@ -174,6 +198,7 @@ export default function AdminTopbar() {
                   const isActive =
                     pathname === item.href ||
                     (item.href !== '/admin' && pathname.startsWith(item.href));
+                  const itemBadge = item.badgeKey ? (badgeCounts[item.badgeKey] ?? 0) : 0;
                   return (
                     <Link
                       key={item.href}
@@ -187,7 +212,12 @@ export default function AdminTopbar() {
                       )}
                     >
                       <item.icon className="h-[18px] w-[18px] shrink-0" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {itemBadge > 0 && (
+                        <span className="h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-danger text-[11px] font-bold text-white">
+                          {itemBadge > 99 ? '99+' : itemBadge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
