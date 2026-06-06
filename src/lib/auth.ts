@@ -4,7 +4,18 @@ import GoogleProvider from 'next-auth/providers/google';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import type { Adapter } from 'next-auth/adapters';
 import bcrypt from 'bcryptjs';
+import { randomInt, createHash } from 'crypto';
 import prisma from '@/lib/prisma';
+
+/** Hash a 2FA OTP so it is never stored in plaintext */
+function hashOtp(code: string): string {
+  return createHash('sha256').update(code).digest('hex');
+}
+
+/** Max failed OTP attempts before lockout */
+const MAX_OTP_ATTEMPTS = 5;
+/** Lockout duration after max failed OTP attempts (30 minutes) */
+const OTP_LOCKOUT_MS = 30 * 60 * 1000;
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -20,7 +31,7 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-      allowDangerousEmailAccountLinking: true,
+      // Removed allowDangerousEmailAccountLinking to prevent account takeover (CB-5)
     }),
     CredentialsProvider({
       name: 'credentials',
@@ -53,15 +64,31 @@ export const authOptions: NextAuthOptions = {
 
         // ── 2FA check ──
         if (user.twoFactorEnabled) {
+          // CB-7: Check brute-force lockout
+          if (
+            user.otpLockedUntil &&
+            user.otpLockedUntil > new Date()
+          ) {
+            const minutesLeft = Math.ceil((user.otpLockedUntil.getTime() - Date.now()) / 60000);
+            throw new Error(`Too many failed attempts. Try again in ${minutesLeft} minutes.`);
+          }
+
           const code = credentials.twoFactorCode;
           if (!code) {
-            // Generate and send OTP, then signal the client to show 2FA form
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            // Generate and send OTP using crypto.randomInt (CB-2 fix)
+            const otp = randomInt(100000, 1000000).toString();
             const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+            // CB-6: Store hashed OTP, never plaintext
             await prisma.user.update({
               where: { id: user.id },
-              data: { twoFactorSecret: `${otp}|${expiry.toISOString()}` },
+              data: {
+                twoFactorSecret: `${hashOtp(otp)}|${expiry.toISOString()}`,
+                otpAttempts: 0, // Reset attempts on new code generation
+                otpLockedUntil: null,
+              },
             });
+
             // Send OTP email (dynamic import to avoid circular deps)
             const { send2FACode } = await import('@/lib/email');
             await send2FACode(user.email, otp);
@@ -72,18 +99,44 @@ export const authOptions: NextAuthOptions = {
           if (!user.twoFactorSecret) {
             throw new Error('Invalid 2FA code');
           }
-          const [storedCode, expiryStr] = user.twoFactorSecret.split('|');
-          if (!storedCode || !expiryStr || new Date(expiryStr) < new Date()) {
+
+          const [storedHash, expiryStr] = user.twoFactorSecret.split('|');
+          if (!storedHash || !expiryStr || new Date(expiryStr) < new Date()) {
             throw new Error('2FA code expired. Please try logging in again.');
           }
-          if (code !== storedCode) {
+
+          // CB-6: Compare hashed values
+          if (hashOtp(code) !== storedHash) {
+            // CB-7: Increment failed attempts
+            const newAttempts = (user.otpAttempts ?? 0) + 1;
+            const updateData: { otpAttempts: number; otpLockedUntil?: Date; twoFactorSecret?: null } = {
+              otpAttempts: newAttempts,
+            };
+
+            if (newAttempts >= MAX_OTP_ATTEMPTS) {
+              updateData.otpLockedUntil = new Date(Date.now() + OTP_LOCKOUT_MS);
+              updateData.twoFactorSecret = null; // Invalidate the code
+            }
+
+            await prisma.user.update({
+              where: { id: user.id },
+              data: updateData,
+            });
+
+            if (newAttempts >= MAX_OTP_ATTEMPTS) {
+              throw new Error('Too many failed attempts. Account locked for 30 minutes.');
+            }
             throw new Error('Invalid 2FA code');
           }
 
-          // Clear the used code
+          // Clear the used code and reset attempts
           await prisma.user.update({
             where: { id: user.id },
-            data: { twoFactorSecret: null },
+            data: {
+              twoFactorSecret: null,
+              otpAttempts: 0,
+              otpLockedUntil: null,
+            },
           });
         }
 
@@ -118,8 +171,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id?: string }).id = token.id as string;
-        (session.user as { role?: string }).role = token.role as string;
+        session.user.id = token.id as string;
+        session.user.role = token.role as 'USER' | 'MODERATOR' | 'ADMIN' | 'HEAD_ADMIN';
       }
       return session;
     },
@@ -139,8 +192,9 @@ export const authOptions: NextAuthOptions = {
         }
         return true;
       } catch (error) {
+        // CB-12: Return false on error instead of swallowing and allowing auth
         console.error('SignIn callback error:', error);
-        return true;
+        return false;
       }
     },
     async redirect({ url, baseUrl }) {

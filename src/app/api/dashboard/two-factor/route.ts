@@ -1,8 +1,15 @@
 export const dynamic = 'force-dynamic';
 
+import { randomInt, createHash } from 'crypto';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { send2FACode } from '@/lib/email';
+import { authLimiter, getClientIp } from '@/lib/rate-limit';
+
+/** Hash OTP so it is never stored in plaintext */
+function hashOtp(code: string): string {
+  return createHash('sha256').update(code).digest('hex');
+}
 
 /** GET — check 2FA status */
 export async function GET() {
@@ -19,8 +26,12 @@ export async function GET() {
 }
 
 /** POST — initiate 2FA enable: generate OTP, send email */
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    // Rate limit: 5 OTP sends per minute per IP
+    const { success } = authLimiter.check(getClientIp(req));
+    if (!success) return errorResponse('Too many requests. Please try again later.', 429);
+
     const session = await requireAuth();
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -30,13 +41,14 @@ export async function POST() {
     if (!user) return errorResponse('User not found', 404);
     if (user.twoFactorEnabled) return errorResponse('2FA is already enabled', 400);
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate 6-digit OTP using crypto.randomInt (not Math.random)
+    const otp = randomInt(100000, 1000000).toString();
     const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
+    // Store hashed OTP — never plaintext
     await prisma.user.update({
       where: { id: user.id },
-      data: { twoFactorSecret: `${otp}|${expiry.toISOString()}` },
+      data: { twoFactorSecret: `${hashOtp(otp)}|${expiry.toISOString()}` },
     });
 
     try {
@@ -79,11 +91,13 @@ export async function PUT(req: Request) {
       return errorResponse('No verification code pending. Please request a new one.', 400);
     }
 
-    const [storedCode, expiryStr] = user.twoFactorSecret.split('|');
-    if (!storedCode || !expiryStr || new Date(expiryStr) < new Date()) {
+    const [storedHash, expiryStr] = user.twoFactorSecret.split('|');
+    if (!storedHash || !expiryStr || new Date(expiryStr) < new Date()) {
       return errorResponse('Verification code expired. Please request a new one.', 400);
     }
-    if (code.trim() !== storedCode) {
+
+    // Compare hashed values
+    if (hashOtp(code.trim()) !== storedHash) {
       return errorResponse('Invalid verification code', 400);
     }
 

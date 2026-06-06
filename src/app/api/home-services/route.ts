@@ -2,8 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 import prisma from '@/lib/prisma';
-import { successResponse } from '@/lib/api-helpers';
-import { NextResponse } from 'next/server';
+import { successResponse, handleApiError } from '@/lib/api-helpers';
 
 /** GET – public: fetch active home services for the landing page */
 export async function GET() {
@@ -13,7 +12,8 @@ export async function GET() {
       orderBy: { sortOrder: 'asc' },
     });
     return successResponse(services);
-  } catch {
-    return NextResponse.json({ data: [] });
+  } catch (err) {
+    console.error('Home services fetch error:', err);
+    return successResponse([]);
   }
 }

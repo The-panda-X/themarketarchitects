@@ -74,6 +74,10 @@ model User {
   referralCode     String    @unique @default(cuid())
   referredBy       String?
 
+  // 2FA brute-force protection (CB-7)
+  otpAttempts      Int       @default(0)
+  otpLockedUntil   DateTime?
+
   // Location tracking (updated on each login)
   lastLoginIp      String?
   lastLoginCountry String?
@@ -154,7 +158,7 @@ model Order {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   challenge    Challenge?
   payments     Payment[]
   credentials  Credential[]
@@ -162,6 +166,7 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([couponCode])
 }
 
 model Challenge {
@@ -194,7 +199,6 @@ model Challenge {
   totalDDLimit    Float           @default(7.0)
   dailyCapPct     Float           @default(3.0)
   allowedPairs    String[]
-  signalFilePath  String?
   isPaused        Boolean         @default(false)
   lastReportedAt  DateTime?                        // set by EA reporter
   eaToken         String?         @unique          // unique connection token per account
@@ -202,7 +206,7 @@ model Challenge {
   updatedAt       DateTime        @updatedAt
 
   order        Order            @relation(fields: [orderId], references: [id])
-  user         User             @relation(fields: [userId], references: [id])
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   dailyStats   DailyStat[]
   deliveries   SignalDelivery[]
   profitSplits ProfitSplit[]
@@ -285,7 +289,7 @@ model DailyStat {
 
   challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
-  @@index([challengeId])
+  @@index([challengeId, date])
 }
 
 model Payment {
@@ -300,11 +304,12 @@ model Payment {
   invoiceUrl      String?
   createdAt       DateTime      @default(now())
 
-  order Order @relation(fields: [orderId], references: [id])
-  user  User  @relation(fields: [userId], references: [id])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([orderId])
+  @@index([status])
 }
 
 model Credential {
@@ -317,7 +322,7 @@ model Credential {
   notes       String?
   submittedAt DateTime @default(now())
 
-  order Order @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
 }
@@ -342,14 +347,29 @@ model SupportTicket {
   message   String
   status    TicketStatus @default(OPEN)
   priority  String       @default("medium")
-  responses Json[]
+  responses Json[]       // @deprecated — use TicketReply relation instead
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies TicketReply[]
 
   @@index([userId])
   @@index([status])
+}
+
+// AI-7: Proper relational model for ticket replies (replaces Json[] responses)
+model TicketReply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  senderId  String
+  senderRole String  // USER, MODERATOR, ADMIN, HEAD_ADMIN
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
 }
 
 model Notification {
@@ -362,7 +382,7 @@ model Notification {
   link      String?
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
 }
@@ -406,9 +426,10 @@ model Referral {
   paid          Boolean  @default(false)
   createdAt     DateTime @default(now())
 
-  referrer User @relation("referrer", fields: [referrerId], references: [id])
+  referrer User @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
 
   @@index([referrerId])
+  @@index([referredEmail])
 }
 
 model AdminLog {
@@ -419,7 +440,7 @@ model AdminLog {
   ipAddress String?
   createdAt DateTime @default(now())
 
-  admin User @relation(fields: [adminId], references: [id])
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
   @@index([createdAt])
@@ -554,13 +575,15 @@ model ProfitSplit {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  user         User        @relation(fields: [userId], references: [id])
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   challenge    Challenge?  @relation(fields: [challengeId], references: [id])
   order        Order?      @relation(fields: [orderId], references: [id])
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([challengeId])
+  @@index([orderId])
 }
 
 model HomeService {

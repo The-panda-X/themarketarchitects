@@ -4,9 +4,14 @@ import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { sendVerificationEmail } from '@/lib/email';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
+import { authLimiter, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 requests per minute per IP
+    const { success } = authLimiter.check(getClientIp(request));
+    if (!success) return errorResponse('Too many requests. Please try again later.', 429);
+
     const { token, email, action } = await request.json();
 
     if (action === 'resend') {

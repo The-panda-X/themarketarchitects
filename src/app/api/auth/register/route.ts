@@ -6,6 +6,7 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { sendVerificationEmail } from '@/lib/email';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
+import { authLimiter, getClientIp } from '@/lib/rate-limit';
 
 const serverRegisterSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -21,6 +22,10 @@ const serverRegisterSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 registrations per minute per IP
+    const { success } = authLimiter.check(getClientIp(request));
+    if (!success) return errorResponse('Too many requests. Please try again later.', 429);
+
     const body = await request.json();
     const parsed = serverRegisterSchema.safeParse(body);
 

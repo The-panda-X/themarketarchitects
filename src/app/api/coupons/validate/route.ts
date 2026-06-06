@@ -1,10 +1,15 @@
 export const dynamic = 'force-dynamic';
-﻿import { type NextRequest } from 'next/server';
+import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { couponLimiter, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 coupon validations per minute per IP
+    const { success } = couponLimiter.check(getClientIp(req));
+    if (!success) return errorResponse('Too many requests. Please try again later.', 429);
+
     await requireAuth();
     const { code, amount } = await req.json();
 

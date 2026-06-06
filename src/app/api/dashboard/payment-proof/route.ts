@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAuth, handleApiError } from '@/lib/api-helpers';
+import { requireAuth, handleApiError, successResponse } from '@/lib/api-helpers';
 import { uploadProofImage } from '@/lib/storage';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, proofUrl });
+    return successResponse({ proofUrl });
   } catch (err) {
     return handleApiError(err);
   }

@@ -75,11 +75,14 @@ export async function POST(req: NextRequest) {
     });
 
     // Notify the user
+    const isChallenge = order.status === 'IN_PROGRESS' || !order.planName.toLowerCase().includes('manage');
     await prisma.notification.create({
       data: {
         userId: order.userId,
-        title: 'Challenge Started',
-        message: `Your challenge for ${order.planName} has been created and is now pending. Our team will begin trading shortly.`,
+        title: isChallenge ? 'Challenge Started' : 'Account Linked',
+        message: isChallenge
+          ? `Your challenge for ${order.planName} has been created and is now pending. Our team will begin trading shortly.`
+          : `Your account for ${order.planName} has been set up. You can now track progress from your dashboard.`,
         type: 'info',
         link: `/dashboard/challenges/${challenge.id}`,
       },

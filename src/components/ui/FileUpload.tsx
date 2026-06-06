@@ -54,11 +54,11 @@ export default function FileUpload({
       setFileError(null);
       const valid = validateFiles(Array.from(files));
       if (valid.length > 0) {
-        setSelectedFiles(multiple ? [...selectedFiles, ...valid] : valid);
+        setSelectedFiles(prev => multiple ? [...prev, ...valid] : valid);
         onFilesSelected(valid);
       }
     },
-    [validateFiles, multiple, selectedFiles, onFilesSelected]
+    [validateFiles, multiple, onFilesSelected]
   );
 
   const handleDrag = (e: DragEvent) => {

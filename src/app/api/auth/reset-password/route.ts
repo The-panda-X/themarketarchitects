@@ -3,18 +3,24 @@ import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
+import { resetPasswordSchema } from '@/lib/validations';
+import { authLimiter, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
-    const { token, password } = await request.json();
+    // Rate limit: 5 attempts per minute per IP
+    const { success } = authLimiter.check(getClientIp(request));
+    if (!success) return errorResponse('Too many requests. Please try again later.', 429);
 
-    if (!token || !password) {
-      return errorResponse('Token and password are required', 400);
+    const body = await request.json();
+    const parsed = resetPasswordSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message ?? 'Invalid input';
+      return errorResponse(firstError, 400);
     }
 
-    if (password.length < 8) {
-      return errorResponse('Password must be at least 8 characters', 400);
-    }
+    const { token, password } = parsed.data;
 
     const verificationToken = await prisma.verificationToken.findUnique({
       where: { token },

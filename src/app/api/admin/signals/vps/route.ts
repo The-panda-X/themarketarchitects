@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, parsePagination } from '@/lib/api-helpers';
+import { requireAdmin, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   try {
@@ -48,7 +48,7 @@ export async function DELETE(req: NextRequest) {
   try {
     await requireAdmin();
     const id = req.nextUrl.searchParams.get('id');
-    if (!id) return successResponse({ error: 'id required' });
+    if (!id) return errorResponse('id query parameter is required', 400);
 
     await prisma.signal.delete({ where: { id } });
     return successResponse({ deleted: true });

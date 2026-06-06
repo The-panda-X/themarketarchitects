@@ -96,7 +96,7 @@ export async function send2FACode(email: string, code: string) {
   await getResend().emails.send({
     from: `${SITE_NAME} <${FROM_EMAIL}>`,
     to: email,
-    subject: `${code} is your verification code`,
+    subject: 'Your login verification code',
     html: emailTemplate({
       title: 'Login Verification Code',
       body: `
@@ -130,7 +130,7 @@ function emailTemplate({ title, body }: { title: string; body: string }) {
           <h1 style="color:#dc2626;font-size:24px;margin:0;">${SITE_NAME}</h1>
         </div>
         <div style="background:#12121e;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:32px;color:#e5e7eb;">
-          <h2 style="color:#fff;margin-top:0;">${title}</h2>
+          <h2 style="color:#fff;margin-top:0;">${escapeHtml(title)}</h2>
           ${body}
         </div>
         <div style="text-align:center;margin-top:32px;font-size:12px;color:#6b7280;">

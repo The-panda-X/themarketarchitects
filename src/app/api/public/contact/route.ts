@@ -3,9 +3,14 @@ import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { successResponse, errorResponse, handleApiError } from '@/lib/api-helpers';
 import { contactFormSchema } from '@/lib/validations';
+import { formLimiter, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 3 contact submissions per minute per IP
+    const { success } = formLimiter.check(getClientIp(req));
+    if (!success) return errorResponse('Too many requests. Please try again later.', 429);
+
     const body = await req.json();
     const parsed = contactFormSchema.safeParse(body);
 

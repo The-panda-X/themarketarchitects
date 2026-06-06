@@ -3,7 +3,12 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client
 const S3_BUCKET = process.env.S3_BUCKET_NAME ?? '';
 const S3_REGION = process.env.S3_REGION ?? 'us-east-1';
 
+// Singleton S3 client (reuse across requests like Prisma)
+let _s3Client: S3Client | null = null;
+
 function getS3Client() {
+  if (_s3Client) return _s3Client;
+
   const accessKeyId = process.env.S3_ACCESS_KEY_ID;
   const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
 
@@ -11,10 +16,17 @@ function getS3Client() {
     throw new Error('S3 credentials are not configured');
   }
 
-  return new S3Client({
+  _s3Client = new S3Client({
     region: S3_REGION,
     credentials: { accessKeyId, secretAccessKey },
   });
+
+  return _s3Client;
+}
+
+/** Sanitize filename to prevent path traversal */
+function sanitizeFilename(filename: string): string {
+  return filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
 interface UploadResult {
@@ -28,7 +40,8 @@ export async function uploadToS3(
   contentType: string
 ): Promise<UploadResult> {
   const client = getS3Client();
-  const key = `uploads/${Date.now()}-${filename}`;
+  const safeName = sanitizeFilename(filename);
+  const key = `uploads/${Date.now()}-${safeName}`;
 
   await client.send(
     new PutObjectCommand({

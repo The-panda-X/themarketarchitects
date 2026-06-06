@@ -12,8 +12,13 @@ export async function GET() {
     weekStart.setDate(weekStart.getDate() - 7);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    const succeededFilter = { status: 'succeeded' } as const;
+
     const [
-      payments,
+      revenueTotal,
+      revenueMonth,
+      revenueWeek,
+      revenueToday,
       newUsersToday,
       totalUsers,
       pendingOrders,
@@ -22,10 +27,22 @@ export async function GET() {
       challengesByStatus,
       usersByCountry,
     ] = await Promise.all([
-      // Single query gets all payments — filter in JS instead of 4 separate aggregate calls
-      prisma.payment.findMany({
-        where: { status: 'succeeded' },
-        select: { amount: true, createdAt: true },
+      // Use Prisma aggregate instead of loading all payments into memory
+      prisma.payment.aggregate({
+        where: succeededFilter,
+        _sum: { amount: true },
+      }),
+      prisma.payment.aggregate({
+        where: { ...succeededFilter, createdAt: { gte: monthStart } },
+        _sum: { amount: true },
+      }),
+      prisma.payment.aggregate({
+        where: { ...succeededFilter, createdAt: { gte: weekStart } },
+        _sum: { amount: true },
+      }),
+      prisma.payment.aggregate({
+        where: { ...succeededFilter, createdAt: { gte: todayStart } },
+        _sum: { amount: true },
       }),
       prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
       prisma.user.count({ where: { role: 'USER' } }),
@@ -42,17 +59,6 @@ export async function GET() {
       }),
     ]);
 
-    // Compute revenue buckets in JS (1 query vs 4)
-    let revenueToday = 0, revenueWeek = 0, revenueMonth = 0, revenueTotal = 0;
-    for (const p of payments) {
-      const amt = p.amount ?? 0;
-      revenueTotal += amt;
-      const t = p.createdAt.getTime();
-      if (t >= monthStart.getTime()) revenueMonth += amt;
-      if (t >= weekStart.getTime()) revenueWeek += amt;
-      if (t >= todayStart.getTime()) revenueToday += amt;
-    }
-
     const challengeMap = Object.fromEntries(
       challengesByStatus.map((c) => [c.status, c._count.id])
     );
@@ -63,10 +69,10 @@ export async function GET() {
     }));
 
     return successResponse({
-      revenueToday,
-      revenueWeek,
-      revenueMonth,
-      revenueTotal,
+      revenueToday: revenueToday._sum.amount ?? 0,
+      revenueWeek: revenueWeek._sum.amount ?? 0,
+      revenueMonth: revenueMonth._sum.amount ?? 0,
+      revenueTotal: revenueTotal._sum.amount ?? 0,
       newUsersToday,
       totalUsers,
       pendingOrders,

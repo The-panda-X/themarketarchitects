@@ -4,12 +4,19 @@ import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
+import { authLimiter, getClientIp } from '@/lib/rate-limit';
+import { forgotPasswordSchema } from '@/lib/validations';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    // Rate limit: 5 requests per minute per IP
+    const { success } = authLimiter.check(getClientIp(request));
+    if (!success) return errorResponse('Too many requests. Please try again later.', 429);
 
-    if (!email) return errorResponse('Email is required', 400);
+    const body = await request.json();
+    const parsed = forgotPasswordSchema.safeParse(body);
+    if (!parsed.success) return errorResponse('A valid email address is required', 400);
+    const { email } = parsed.data;
 
     const normalizedEmail = email.toLowerCase();
 

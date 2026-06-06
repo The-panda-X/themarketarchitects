@@ -24,6 +24,7 @@ export default function useCountUp({
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-50px' });
   const hasAnimated = useRef(false);
+  const rafId = useRef<number>();
 
   useEffect(() => {
     if (!isInView || hasAnimated.current) return;
@@ -40,11 +41,15 @@ export default function useCountUp({
       setCount(current);
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        rafId.current = requestAnimationFrame(animate);
       }
     }
 
-    requestAnimationFrame(animate);
+    rafId.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafId.current) cancelAnimationFrame(rafId.current);
+    };
   }, [isInView, end, start, duration]);
 
   const formatted = decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toLocaleString();

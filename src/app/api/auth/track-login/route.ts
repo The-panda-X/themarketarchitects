@@ -2,20 +2,19 @@ export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthSession } from '@/lib/api-helpers';
+import { getAuthSession, successResponse, errorResponse } from '@/lib/api-helpers';
 import { geolocateIp } from '@/lib/geo';
-import { NextResponse } from 'next/server';
 
 /**
  * POST /api/auth/track-login
  * Called once after login to record the user's IP + geolocation.
- * Lightweight — returns 204 immediately and geo-lookup is best-effort.
+ * Lightweight — returns immediately and geo-lookup is best-effort.
  */
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session?.user?.id) {
-      return NextResponse.json({ ok: false }, { status: 401 });
+      return errorResponse('Unauthorized', 401);
     }
 
     // Extract IP from headers (Vercel / Cloudflare / fallback)
@@ -37,7 +36,7 @@ export async function POST(req: NextRequest) {
       user?.lastLoginAt &&
       Date.now() - user.lastLoginAt.getTime() < 3600_000
     ) {
-      return NextResponse.json({ ok: true, skipped: true });
+      return successResponse({ skipped: true });
     }
 
     // Geolocate (best-effort, 3s timeout)
@@ -56,9 +55,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ ok: true });
+    return successResponse({ tracked: true });
   } catch (error) {
     console.error('Track login error:', error);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return errorResponse('Internal server error', 500);
   }
 }

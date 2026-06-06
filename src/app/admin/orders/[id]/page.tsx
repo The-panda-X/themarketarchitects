@@ -223,57 +223,60 @@ export default function AdminOrderDetailPage() {
         </GlassCard>
       )}
 
-      {/* Challenge */}
-      {order.serviceType === 'CHALLENGE_PASSING' && (
-        <GlassCard padding="lg">
-          <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-accent-primary" />Challenge
-          </h3>
-          {challengeId ? (
-            <div className="flex items-center gap-3">
-              <Badge variant="green" size="sm">Challenge Created</Badge>
-              <Link href={`/admin/challenges/${challengeId}`} className="flex items-center gap-1 text-sm text-accent-primary hover:underline">
-                View Challenge <ExternalLink className="h-3 w-3" />
-              </Link>
+      {/* Challenge / Account Tracking */}
+      <GlassCard padding="lg">
+        <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-accent-primary" />
+          {order.serviceType === 'CHALLENGE_PASSING' ? 'Challenge' : 'Account Tracking'}
+        </h3>
+        {challengeId ? (
+          <div className="flex items-center gap-3">
+            <Badge variant="green" size="sm">
+              {order.serviceType === 'CHALLENGE_PASSING' ? 'Challenge Created' : 'Account Linked'}
+            </Badge>
+            <Link href={`/admin/challenges/${challengeId}`} className="flex items-center gap-1 text-sm text-accent-primary hover:underline">
+              {order.serviceType === 'CHALLENGE_PASSING' ? 'View Challenge' : 'View Account'} <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-text-secondary">
+              {order.serviceType === 'CHALLENGE_PASSING'
+                ? <>No challenge has been created for this order yet. Fill in the targets below and click <strong>Create Challenge</strong> — the user will be notified automatically.</>
+                : <>No account tracking has been set up for this order yet. Create one so the client can monitor their account progress on their dashboard.</>}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label={order.serviceType === 'CHALLENGE_PASSING' ? 'Target Profit ($) — optional' : 'Initial Balance ($) — optional'}
+                type="number"
+                placeholder={order.serviceType === 'CHALLENGE_PASSING' ? 'e.g. 1000' : 'e.g. 50000'}
+                value={challengeForm.targetProfit}
+                onChange={(e) => setChallengeForm((f) => ({ ...f, targetProfit: e.target.value }))}
+              />
+              <Input
+                label="Max Drawdown (%) — optional"
+                type="number"
+                placeholder="e.g. 10"
+                value={challengeForm.maxDrawdown}
+                onChange={(e) => setChallengeForm((f) => ({ ...f, maxDrawdown: e.target.value }))}
+              />
             </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-text-secondary">
-                No challenge has been created for this order yet. Fill in the targets below and click <strong>Create Challenge</strong> — the user will be notified automatically.
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Target Profit ($) — optional"
-                  type="number"
-                  placeholder="e.g. 1000"
-                  value={challengeForm.targetProfit}
-                  onChange={(e) => setChallengeForm((f) => ({ ...f, targetProfit: e.target.value }))}
-                />
-                <Input
-                  label="Max Drawdown (%) — optional"
-                  type="number"
-                  placeholder="e.g. 10"
-                  value={challengeForm.maxDrawdown}
-                  onChange={(e) => setChallengeForm((f) => ({ ...f, maxDrawdown: e.target.value }))}
-                />
-              </div>
-              <p className="text-xs text-text-tertiary">
-                Firm: <span className="text-text-primary">{order.firmName ?? '—'}</span> &nbsp;|&nbsp;
-                Size: <span className="text-text-primary">{order.accountSize ?? '—'}</span>
-              </p>
-              <Button
-                variant="primary"
-                size="sm"
-                loading={creatingChallenge}
-                onClick={handleCreateChallenge}
-                icon={<Trophy className="h-4 w-4" />}
-              >
-                Create Challenge
-              </Button>
-            </div>
-          )}
-        </GlassCard>
-      )}
+            <p className="text-xs text-text-tertiary">
+              Firm: <span className="text-text-primary">{order.firmName ?? '—'}</span> &nbsp;|&nbsp;
+              Size: <span className="text-text-primary">{order.accountSize ?? '—'}</span>
+            </p>
+            <Button
+              variant="primary"
+              size="sm"
+              loading={creatingChallenge}
+              onClick={handleCreateChallenge}
+              icon={<Trophy className="h-4 w-4" />}
+            >
+              {order.serviceType === 'CHALLENGE_PASSING' ? 'Create Challenge' : 'Create Account Tracker'}
+            </Button>
+          </div>
+        )}
+      </GlassCard>
 
       {/* Credentials */}
       {order.credentials.length > 0 && (
