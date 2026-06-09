@@ -112,7 +112,7 @@ export const createOrderSchema = z.object({
 
 export const credentialSchema = z.object({
   orderId: z.string().min(1, 'Order is required'),
-  platform: z.enum(['MetaTrader 4', 'MetaTrader 5', 'cTrader', 'TradingView', 'Other']),
+  platform: z.enum(['MetaTrader 4', 'MetaTrader 5', 'cTrader', 'Other']),
   server: z.string().min(1, 'Server is required'),
   loginId: z.string().min(1, 'Login ID is required'),
   password: z.string().min(1, 'Password is required'),

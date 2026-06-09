@@ -50,7 +50,7 @@ export const NAV_LINKS = [
   { label: 'Contact', href: '/contact' },
 ] as const;
 
-export const TRADING_PLATFORMS = ['MetaTrader 4', 'MetaTrader 5', 'cTrader', 'TradingView', 'Other'] as const;
+export const TRADING_PLATFORMS = ['MetaTrader 4', 'MetaTrader 5', 'cTrader', 'Other'] as const;
 
 export const LIVE_NOTIFICATIONS: LiveNotification[] = [
   { id: '1', name: 'John D.', action: 'passed a $200K FTMO challenge', amount: '$200,000', timestamp: '2 min ago' },
