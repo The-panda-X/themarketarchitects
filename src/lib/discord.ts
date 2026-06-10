@@ -33,14 +33,14 @@ export async function postSignalToDiscord(signal: SignalPayload): Promise<{ ok: 
   if (signal.tp2) lines.push(`TP2: ${signal.tp2}`);
   if (signal.tp3) lines.push(`TP3: ${signal.tp3}`);
   if (signal.risk && signal.risk > 0) lines.push(`RISK: ${signal.risk}`);
-  if (signal.senderNickname) lines.push(`SENT BY: @${signal.senderNickname}`);
+  if (signal.senderNickname) lines.push(`- ${signal.senderNickname}`);
 
   const content = lines.join('\n');
 
   // Use sender nickname as the Discord webhook username so it's visible
   // in the channel feed (Discord shows webhook username as the author)
   const username = signal.senderNickname
-    ? `TMA Signal Hub · @${signal.senderNickname}`
+    ? `TMA Signal Hub · ${signal.senderNickname}`
     : 'TMA Signal Hub';
 
   try {
