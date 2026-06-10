@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin, requireHeadAdmin, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
+import { resolveSignalSender } from '@/lib/signal-sender';
 
 export async function GET(req: NextRequest) {
   try {
@@ -41,9 +42,11 @@ export async function GET(req: NextRequest) {
 // Manual signal from admin panel
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const body = await req.json();
     const { pair, direction, entry, sl, tp1, tp2, tp3, riskOverride } = body;
+
+    const { senderId, senderNickname } = await resolveSignalSender(session.user.id);
 
     if (!pair || !direction || !sl) {
       return errorResponse('pair, direction, and sl are required', 400);
@@ -98,6 +101,8 @@ export async function POST(req: NextRequest) {
         source:      'admin',
         totalSent:   sent,
         totalSkipped: skipped,
+        senderId,
+        senderNickname,
         deliveries: { create: deliveries },
       },
     });

@@ -4,7 +4,8 @@
  * Posts a signal to Discord via webhook. DiscordBridge.py picks it up
  * instantly and writes signal files for all EAs — near-zero latency.
  *
- * Also creates a VPS Signal record for tracking in the admin panel.
+ * Also creates a VPS Signal record for tracking in the admin panel,
+ * stamped with the sending admin's nickname.
  */
 export const dynamic = 'force-dynamic';
 
@@ -12,16 +13,19 @@ import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { postSignalToDiscord } from '@/lib/discord';
+import { resolveSignalSender } from '@/lib/signal-sender';
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const body = await req.json();
     const { pair, direction, entry, sl, tp1, tp2, tp3, risk } = body;
 
     if (!pair || !direction || !sl) {
       return errorResponse('pair, direction, and sl are required', 400);
     }
+
+    const { senderId, senderNickname } = await resolveSignalSender(session.user.id);
 
     const signalData = {
       pair: pair.toUpperCase(),
@@ -34,7 +38,7 @@ export async function POST(req: NextRequest) {
       risk: risk ? parseFloat(risk) : 0,
     };
 
-    const result = await postSignalToDiscord(signalData);
+    const result = await postSignalToDiscord({ ...signalData, senderNickname });
 
     const signal = await prisma.signal.create({
       data: {
@@ -43,6 +47,8 @@ export async function POST(req: NextRequest) {
         status: result.ok ? 'executed' : 'failed',
         executedAt: result.ok ? new Date() : null,
         errorMessage: result.error || null,
+        senderId,
+        senderNickname,
       },
     });
 

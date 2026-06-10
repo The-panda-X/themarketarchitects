@@ -14,6 +14,8 @@ interface SignalPayload {
   tp2?: number | null;
   tp3?: number | null;
   risk?: number | null;
+  /** Admin nickname/tag shown in the Discord message (no @mention) */
+  senderNickname?: string | null;
 }
 
 export async function postSignalToDiscord(signal: SignalPayload): Promise<{ ok: boolean; error?: string }> {
@@ -31,8 +33,15 @@ export async function postSignalToDiscord(signal: SignalPayload): Promise<{ ok: 
   if (signal.tp2) lines.push(`TP2: ${signal.tp2}`);
   if (signal.tp3) lines.push(`TP3: ${signal.tp3}`);
   if (signal.risk && signal.risk > 0) lines.push(`RISK: ${signal.risk}`);
+  if (signal.senderNickname) lines.push(`SENT BY: @${signal.senderNickname}`);
 
   const content = lines.join('\n');
+
+  // Use sender nickname as the Discord webhook username so it's visible
+  // in the channel feed (Discord shows webhook username as the author)
+  const username = signal.senderNickname
+    ? `TMA Signal Hub · @${signal.senderNickname}`
+    : 'TMA Signal Hub';
 
   try {
     const res = await fetch(webhookUrl, {
@@ -40,7 +49,7 @@ export async function postSignalToDiscord(signal: SignalPayload): Promise<{ ok: 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content,
-        username: 'TMA Signal Hub',
+        username,
       }),
     });
 
@@ -51,6 +60,9 @@ export async function postSignalToDiscord(signal: SignalPayload): Promise<{ ok: 
 
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: `Discord webhook error: ${err}` };
+    return {
+      ok: false,
+      error: `Discord webhook error: ${err instanceof Error ? err.message : String(err)}`,
+    };
   }
 }

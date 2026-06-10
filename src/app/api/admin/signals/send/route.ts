@@ -3,22 +3,26 @@
  * ─────────────────────────────────────────────────────────────────────
  * Creates a new pending signal for the VPS Multi-Account Trade Manager.
  * The manager polls /api/ea/pending-signals every 5s and picks it up.
+ * Signal is stamped with the sending admin's nickname.
  */
 export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { resolveSignalSender } from '@/lib/signal-sender';
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const body = await req.json();
     const { pair, direction, entry, sl, tp1, tp2, tp3, risk } = body;
 
     if (!pair || !direction || !sl || tp1 === undefined || tp1 === '' || tp1 === null) {
       return errorResponse('pair, direction, sl, and tp1 are required', 400);
     }
+
+    const { senderId, senderNickname } = await resolveSignalSender(session.user.id);
 
     const signal = await prisma.signal.create({
       data: {
@@ -32,6 +36,8 @@ export async function POST(req: NextRequest) {
         risk: risk ? parseFloat(risk) : 0,
         source: 'admin_panel',
         status: 'pending',
+        senderId,
+        senderNickname,
       },
     });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Send, Radio, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, Trash2, Loader2, MessageSquare } from 'lucide-react';
+import { Send, Radio, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, Trash2, Loader2, MessageSquare, AtSign, Save, Pencil, X } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -38,6 +38,7 @@ interface SignalLog {
   totalSent: number;
   totalSkipped: number;
   totalFailed: number;
+  senderNickname: string | null;
   sentAt: string;
   deliveries: Delivery[];
 }
@@ -64,6 +65,48 @@ export default function AdminSignalsPage() {
     pair: 'XAUUSD', direction: 'BUY',
     entry: '', sl: '', tp1: '', tp2: '', tp3: '', risk: '',
   });
+
+  /* ── Signal Nickname state ──────────────────────────────────────── */
+  const [nickname, setNickname]       = useState<string | null>(null);
+  const [defaultDisplay, setDefaultDisplay] = useState('Admin');
+  const [editingNick, setEditingNick] = useState(false);
+  const [nickDraft, setNickDraft]     = useState('');
+  const [savingNick, setSavingNick]   = useState(false);
+
+  const fetchNickname = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/signal-profile');
+      if (res.ok) {
+        const d = await res.json();
+        setNickname(d.data?.signalNickname ?? null);
+        setDefaultDisplay(d.data?.defaultDisplay ?? 'Admin');
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => { fetchNickname(); }, [fetchNickname]);
+
+  const handleSaveNickname = async () => {
+    setSavingNick(true);
+    try {
+      const trimmed = nickDraft.trim();
+      const res = await fetch('/api/admin/signal-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signalNickname: trimmed.length === 0 ? null : trimmed }),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        setNickname(d.data?.signalNickname ?? null);
+        setEditingNick(false);
+        addToast('Nickname saved', 'success');
+      } else {
+        addToast(d.error ?? 'Failed to save nickname', 'error');
+      }
+    } finally {
+      setSavingNick(false);
+    }
+  };
 
   /* ── Fetch Signal Logs ──────────────────────────────────────────── */
   const fetchSignals = useCallback(async () => {
@@ -160,6 +203,61 @@ export default function AdminSignalsPage() {
         </div>
       </div>
 
+      {/* Signal Nickname banner */}
+      <GlassCard padding="md">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <AtSign className="h-5 w-5 text-accent-primary shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wider text-text-tertiary">Your Signal Tag</p>
+              {editingNick ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    autoFocus
+                    value={nickDraft}
+                    onChange={(e) => setNickDraft(e.target.value)}
+                    placeholder="e.g. trader_x, alpha-1"
+                    className="!py-1.5 !text-sm w-56"
+                    maxLength={30}
+                  />
+                  <Button variant="primary" size="sm" loading={savingNick} icon={<Save className="h-3.5 w-3.5" />} onClick={handleSaveNickname}>
+                    Save
+                  </Button>
+                  <button
+                    onClick={() => { setEditingNick(false); setNickDraft(nickname ?? ''); }}
+                    className="p-1.5 text-text-tertiary hover:text-text-primary"
+                    title="Cancel"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-mono text-sm font-semibold text-text-primary">
+                    @{nickname ?? defaultDisplay.toLowerCase().replace(/[^a-z0-9]/g, '')}
+                  </span>
+                  {!nickname && (
+                    <Badge variant="default" size="sm">Fallback</Badge>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          {!editingNick && (
+            <button
+              onClick={() => { setNickDraft(nickname ?? ''); setEditingNick(true); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {nickname ? 'Edit' : 'Set Nickname'}
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-text-tertiary mt-2">
+          Your tag is stamped on every signal you send and appears in Discord so the team knows who issued the trade.
+        </p>
+      </GlassCard>
+
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
@@ -194,6 +292,7 @@ export default function AdminSignalsPage() {
                   <TableHead>Entry / SL</TableHead>
                   <TableHead>Risk %</TableHead>
                   <TableHead>TPs</TableHead>
+                  <TableHead>Sent By</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead align="center">Sent</TableHead>
                   <TableHead align="center">Skipped</TableHead>
@@ -203,7 +302,7 @@ export default function AdminSignalsPage() {
               </TableHeader>
               <TableBody>
                 {signals.length === 0 ? (
-                  <TableEmpty colSpan={canDelete ? 10 : 9} message="No signals yet. Click 'Send Signal' to post a trade to Discord." />
+                  <TableEmpty colSpan={canDelete ? 11 : 10} message="No signals yet. Click 'Send Signal' to post a trade to Discord." />
                 ) : signals.map(sig => (
                   <>
                     <TableRow key={sig.id} onClick={() => setExpandedId(expandedId === sig.id ? null : sig.id)}>
@@ -230,6 +329,13 @@ export default function AdminSignalsPage() {
                         <p className="text-xs font-mono text-text-tertiary">
                           {[sig.tp1, sig.tp2, sig.tp3].filter(Boolean).join(' · ') || '—'}
                         </p>
+                      </TableCell>
+                      <TableCell>
+                        {sig.senderNickname ? (
+                          <span className="font-mono text-xs text-text-secondary">@{sig.senderNickname}</span>
+                        ) : (
+                          <span className="text-xs text-text-tertiary">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={sig.source === 'admin' ? 'gold' : sig.source === 'discord_webhook' ? 'purple' : 'default'} size="sm">
@@ -262,7 +368,7 @@ export default function AdminSignalsPage() {
                     {/* Expanded delivery details */}
                     {expandedId === sig.id && sig.deliveries.length > 0 && (
                       <tr key={`${sig.id}-expanded`}>
-                        <td colSpan={canDelete ? 10 : 9} className="px-4 pb-3">
+                        <td colSpan={canDelete ? 11 : 10} className="px-4 pb-3">
                           <div className="bg-white/[0.03] rounded-xl p-4 space-y-2">
                             <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                               Delivery Report — {sig.deliveries.length} accounts
