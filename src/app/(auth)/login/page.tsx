@@ -38,6 +38,25 @@ export default function LoginPage() {
   async function onSubmit(data: LoginInput) {
     setLoading(true);
     try {
+      // Pre-flight check: does this account exist and is it verified?
+      const check = await fetch('/api/auth/check-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email }),
+      });
+      if (!check.ok) {
+        const d = await check.json();
+        if (d.code === 'NO_ACCOUNT') {
+          addToast('No account found with this email. Please sign up first.', 'error');
+          return;
+        }
+        if (d.code === 'EMAIL_NOT_VERIFIED') {
+          addToast('Please verify your email address before signing in.', 'error');
+          router.push('/verify-email?email=' + encodeURIComponent(data.email));
+          return;
+        }
+      }
+
       const result = await signIn('credentials', {
         email: data.email,
         password: data.password,
@@ -46,12 +65,11 @@ export default function LoginPage() {
 
       if (result?.error) {
         if (result.error.includes('2FA_REQUIRED')) {
-          // User has 2FA enabled — OTP has been sent to their email
           setSavedCredentials({ email: data.email, password: data.password });
           setNeeds2FA(true);
           addToast('Verification code sent to your email', 'info');
         } else {
-          addToast(result.error === 'CredentialsSignin' ? 'Invalid email or password' : result.error, 'error');
+          addToast('Invalid email or password', 'error');
         }
       } else {
         router.push(callbackUrl);
