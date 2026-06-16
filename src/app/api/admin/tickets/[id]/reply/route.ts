@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireModerator, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { resolveStaffDisplay } from '@/lib/staff-display';
 
 export async function POST(
   req: NextRequest,
@@ -16,14 +17,13 @@ export async function POST(
     const ticket = await prisma.supportTicket.findUnique({ where: { id: params.id } });
     if (!ticket) return errorResponse('Ticket not found', 404);
 
-    const adminUser = await prisma.user.findUnique({
-      where: { id: adminSession.user.id },
-      select: { name: true },
-    });
+    // Use the staff nickname shown to clients — never the real name
+    const { displayName } = await resolveStaffDisplay(adminSession.user.id);
 
     const newResponse = {
       sender: 'admin',
-      senderName: adminUser?.name ?? 'Support Team',
+      senderName: displayName,
+      senderId: adminSession.user.id, // kept internally so admins can audit who replied
       message: message.trim(),
       timestamp: new Date().toISOString(),
     };

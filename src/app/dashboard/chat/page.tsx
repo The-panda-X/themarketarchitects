@@ -11,6 +11,7 @@ interface Message {
   id: string;
   senderId: string;
   senderRole: string;
+  senderName: string | null;
   body: string;
   read: boolean;
   createdAt: string;
@@ -189,13 +190,19 @@ export default function UserChatPage() {
 
           {messages.map((msg) => {
             const isUser = msg.senderRole === 'USER';
+            const staffName = msg.senderName ?? 'Support Team';
             return (
               <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex items-end gap-2 max-w-[80%] ${isUser ? 'flex-row-reverse' : ''}`}>
                   {!isUser && (
-                    <Avatar name="TMA" size="xs" />
+                    <Avatar name={staffName} size="xs" />
                   )}
                   <div>
+                    {!isUser && (
+                      <p className="text-[11px] text-text-tertiary mb-0.5 ml-1 font-medium">
+                        {staffName}
+                      </p>
+                    )}
                     <div
                       className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                         isUser

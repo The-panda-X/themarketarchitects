@@ -78,7 +78,12 @@ model User {
   otpAttempts      Int       @default(0)
   otpLockedUntil   DateTime?
 
-  // Signal Hub: nickname/tag shown in Discord when this admin sends a signal
+  // Staff display name shown to clients (support tickets, chat, etc.)
+  // Hides real identity. Falls back to "Support Team" if null.
+  staffNickname    String?
+
+  // Signal Hub: nickname/tag shown in Discord when this admin sends a signal.
+  // If null, falls back to staffNickname.
   signalNickname   String?
 
   // Location tracking (updated on each login)
@@ -525,6 +530,7 @@ model ChatMessage {
   conversationId String
   senderId       String
   senderRole     String   // USER, MODERATOR, ADMIN, HEAD_ADMIN
+  senderName     String?  // snapshot of staffNickname at send time (null for USER role)
   body           String
   read           Boolean  @default(false)
   createdAt      DateTime @default(now())

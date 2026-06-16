@@ -10,6 +10,7 @@ import {
   successResponse,
   errorResponse,
 } from '@/lib/api-helpers';
+import { resolveStaffDisplay } from '@/lib/staff-display';
 
 /** GET – fetch messages for a conversation (staff side) */
 export async function GET(
@@ -72,12 +73,16 @@ export async function POST(
 
     const trimmed = message.trim();
 
+    // Resolve staff nickname so the client sees the alias, not the real name
+    const { displayName } = await resolveStaffDisplay(session.user.id);
+
     const [msg] = await prisma.$transaction([
       prisma.chatMessage.create({
         data: {
           conversationId: params.id,
           senderId: session.user.id,
           senderRole: role,
+          senderName: displayName,
           body: trimmed,
         },
       }),
