@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { notifyAdmins } from '@/lib/admin-notify';
 
-export const MIN_PAYOUT = 50;
+const MIN_PAYOUT = 50;
 
 const PAYOUT_METHODS = ['USDT_TRC20', 'USDT_BEP20'] as const;
 
