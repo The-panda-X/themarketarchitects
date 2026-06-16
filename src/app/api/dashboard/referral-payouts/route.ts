@@ -6,9 +6,9 @@ import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { notifyAdmins } from '@/lib/admin-notify';
 
-export const MIN_PAYOUT = 10;
+export const MIN_PAYOUT = 50;
 
-const PAYOUT_METHODS = ['USDT_TRC20', 'USDT_ERC20', 'USDT_BEP20', 'USDT_POLYGON'] as const;
+const PAYOUT_METHODS = ['USDT_TRC20', 'USDT_BEP20'] as const;
 
 const createSchema = z.object({
   amount: z.number().positive('Amount must be greater than zero'),

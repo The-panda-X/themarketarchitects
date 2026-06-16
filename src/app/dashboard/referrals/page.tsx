@@ -43,12 +43,10 @@ interface PayoutRow {
 
 const PAYOUT_METHODS = [
   { value: 'USDT_TRC20', label: 'USDT (TRC20 · Tron)' },
-  { value: 'USDT_ERC20', label: 'USDT (ERC20 · Ethereum)' },
   { value: 'USDT_BEP20', label: 'USDT (BEP20 · BNB Chain)' },
-  { value: 'USDT_POLYGON', label: 'USDT (Polygon)' },
 ];
 
-const MIN_PAYOUT = 10;
+const MIN_PAYOUT = 50;
 
 interface ReferralRow {
   id: string;
