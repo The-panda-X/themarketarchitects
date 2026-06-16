@@ -16,6 +16,8 @@ interface SignalPayload {
   risk?: number | null;
   /** Admin nickname/tag shown in the Discord message (no @mention) */
   senderNickname?: string | null;
+  /** Database signal ID — passed through to EA via DiscordBridge for ack callback */
+  signalId?: string | null;
 }
 
 export async function postSignalToDiscord(signal: SignalPayload): Promise<{ ok: boolean; error?: string }> {
@@ -33,6 +35,7 @@ export async function postSignalToDiscord(signal: SignalPayload): Promise<{ ok: 
   if (signal.tp2 != null && signal.tp2 > 0) lines.push(`TP2: ${signal.tp2}`);
   if (signal.tp3 != null && signal.tp3 > 0) lines.push(`TP3: ${signal.tp3}`);
   if (signal.risk && signal.risk > 0) lines.push(`RISK: ${signal.risk}`);
+  if (signal.signalId) lines.push(`SID: ${signal.signalId}`);
   if (signal.senderNickname) lines.push(`- ${signal.senderNickname}`);
 
   const content = lines.join('\n');

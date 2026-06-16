@@ -24,6 +24,10 @@ export async function POST(req: NextRequest) {
       sent?: number;
       failed?: number;
       error?: string;
+      entry?: number;
+      tp1?: number;
+      tp2?: number;
+      tp3?: number;
     };
 
     const { id, status, sent, failed } = body;
@@ -41,15 +45,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Signal not found' }, { status: 404 });
     }
 
+    const updateData: Record<string, unknown> = {
+      status,
+      sentCount: sent ?? 0,
+      failedCount: failed ?? 0,
+      errorMessage: body.error || null,
+      executedAt: new Date(),
+    };
+
+    // EA can backfill actual entry/TP prices (e.g. R:R auto-calculated TPs)
+    if (body.entry && body.entry > 0 && signal.entry === 0) {
+      updateData.entry = body.entry;
+    }
+    if (body.tp1 && body.tp1 > 0 && signal.tp1 === 0) {
+      updateData.tp1 = body.tp1;
+    }
+    if (body.tp2 && body.tp2 > 0 && !signal.tp2) {
+      updateData.tp2 = body.tp2;
+    }
+    if (body.tp3 && body.tp3 > 0 && !signal.tp3) {
+      updateData.tp3 = body.tp3;
+    }
+
     await prisma.signal.update({
       where: { id },
-      data: {
-        status,
-        sentCount: sent ?? 0,
-        failedCount: failed ?? 0,
-        errorMessage: body.error || null,
-        executedAt: new Date(),
-      },
+      data: updateData,
     });
 
     return NextResponse.json({ ok: true });

@@ -52,17 +52,26 @@ export async function POST(req: NextRequest) {
       risk: parsedRisk,
     };
 
-    const result = await postSignalToDiscord({ ...signalData, senderNickname });
-
+    // Create DB record first so we have the signal ID for the Discord message
     const signal = await prisma.signal.create({
       data: {
         ...signalData,
         source: 'discord_webhook',
+        status: 'pending',
+        senderId,
+        senderNickname,
+      },
+    });
+
+    const result = await postSignalToDiscord({ ...signalData, senderNickname, signalId: signal.id });
+
+    // Update status based on Discord delivery result
+    await prisma.signal.update({
+      where: { id: signal.id },
+      data: {
         status: result.ok ? 'executed' : 'failed',
         executedAt: result.ok ? new Date() : null,
         errorMessage: result.error || null,
-        senderId,
-        senderNickname,
       },
     });
 
