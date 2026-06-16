@@ -533,6 +533,7 @@ model ChatMessage {
   senderName     String?  // snapshot of staffNickname at send time (null for USER role)
   body           String
   read           Boolean  @default(false)
+  editedAt       DateTime?    // set when a HEAD_ADMIN edits the message body
   createdAt      DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

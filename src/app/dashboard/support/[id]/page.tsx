@@ -147,7 +147,10 @@ export default function TicketDetailPage() {
                 {response.sender === 'admin' && <Badge variant="gold" size="sm">Staff</Badge>}
               </div>
               <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap">{response.message}</p>
-              <p className="text-xs text-text-tertiary mt-2">{formatRelativeTime(response.timestamp)}</p>
+              <p className="text-xs text-text-tertiary mt-2">
+                {formatRelativeTime(response.timestamp)}
+                {response.edited && <span className="italic ml-1">· edited</span>}
+              </p>
             </div>
           </div>
         </GlassCard>

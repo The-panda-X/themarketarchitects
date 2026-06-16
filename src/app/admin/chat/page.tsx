@@ -13,6 +13,8 @@ import {
   Plus,
   X,
   Trash2,
+  Pencil,
+  Save,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Avatar from '@/components/ui/Avatar';
@@ -36,8 +38,10 @@ interface Message {
   id: string;
   senderId: string;
   senderRole: string;
+  senderName: string | null;
   body: string;
   read: boolean;
+  editedAt: string | null;
   createdAt: string;
 }
 
@@ -97,10 +101,17 @@ export default function AdminChatPage() {
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Delete state
-  const { canDelete } = useAuth();
+  const { canDelete, isHeadAdmin } = useAuth();
   const [deleteTarget, setDeleteTarget] = useState<ConversationWithUser | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Per-message edit/delete state (Head Admin only)
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteMsg, setDeleteMsg] = useState<Message | null>(null);
+  const [deletingMsg, setDeletingMsg] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -364,6 +375,48 @@ export default function AdminChatPage() {
     finally { setDeleting(false); }
   };
 
+  const handleSaveEditMsg = async () => {
+    if (!editingMsgId || !editDraft.trim()) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/admin/chat/messages/${editingMsgId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: editDraft.trim() }),
+      });
+      if (res.ok) {
+        setEditingMsgId(null);
+        setEditDraft('');
+        if (activeId) fetchMessages(activeId, true);
+        addToast('Message edited', 'success');
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to edit message', 'error');
+      }
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteMsg = async () => {
+    if (!deleteMsg) return;
+    setDeletingMsg(true);
+    try {
+      const res = await fetch(`/api/admin/chat/messages/${deleteMsg.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setDeleteMsg(null);
+        if (activeId) fetchMessages(activeId, true);
+        fetchConversations();
+        addToast('Message deleted', 'success');
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to delete message', 'error');
+      }
+    } finally {
+      setDeletingMsg(false);
+    }
+  };
+
   const filteredConvs = conversations.filter((c) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -558,10 +611,11 @@ export default function AdminChatPage() {
                 ) : (
                   messages.map((msg) => {
                     const isStaff = msg.senderRole !== 'USER';
+                    const isEditing = editingMsgId === msg.id;
                     return (
                       <div
                         key={msg.id}
-                        className={`flex ${isStaff ? 'justify-end' : 'justify-start'}`}
+                        className={`flex group ${isStaff ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
                           className={`flex items-end gap-2 max-w-[75%] ${
@@ -575,33 +629,78 @@ export default function AdminChatPage() {
                               size="xs"
                             />
                           )}
-                          <div>
+                          <div className="flex-1 min-w-0">
                             {isStaff && (
                               <p
                                 className={`text-[10px] text-text-tertiary mb-0.5 text-right`}
                               >
-                                {msg.senderRole === 'HEAD_ADMIN'
-                                  ? 'Admin'
-                                  : msg.senderRole === 'ADMIN'
-                                  ? 'Admin'
-                                  : 'Support'}
+                                {msg.senderName ?? (msg.senderRole === 'USER' ? 'User' : 'Support')}
                               </p>
                             )}
-                            <div
-                              className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                                isStaff
-                                  ? 'bg-accent-primary text-white rounded-br-md'
-                                  : 'bg-white/[0.06] text-text-primary rounded-bl-md'
-                              }`}
-                            >
-                              {msg.body}
-                            </div>
+                            {isEditing ? (
+                              <div className={`space-y-2 ${isStaff ? 'items-end' : 'items-start'} flex flex-col`}>
+                                <textarea
+                                  value={editDraft}
+                                  onChange={(e) => setEditDraft(e.target.value)}
+                                  rows={2}
+                                  autoFocus
+                                  className="w-72 max-w-full resize-none bg-white/[0.06] border border-white/[0.12] rounded-xl px-3 py-2 text-sm text-white placeholder-text-tertiary focus:outline-none focus:border-accent-primary/50"
+                                />
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={handleSaveEditMsg}
+                                    disabled={savingEdit || !editDraft.trim()}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-primary text-white text-xs font-medium hover:bg-accent-primary/90 disabled:opacity-40"
+                                  >
+                                    {savingEdit ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => { setEditingMsgId(null); setEditDraft(''); }}
+                                    className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-text-tertiary hover:text-text-primary hover:bg-white/[0.04]"
+                                  >
+                                    <X className="h-3 w-3" /> Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className={`flex items-center gap-1 ${isStaff ? 'flex-row-reverse' : ''}`}>
+                                <div
+                                  className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                                    isStaff
+                                      ? 'bg-accent-primary text-white rounded-br-md'
+                                      : 'bg-white/[0.06] text-text-primary rounded-bl-md'
+                                  }`}
+                                >
+                                  {msg.body}
+                                </div>
+                                {isHeadAdmin && (
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                                    <button
+                                      onClick={() => { setEditingMsgId(msg.id); setEditDraft(msg.body); }}
+                                      className="p-1 rounded text-text-tertiary hover:text-text-primary hover:bg-white/[0.06]"
+                                      title="Edit message"
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => setDeleteMsg(msg)}
+                                      className="p-1 rounded text-text-tertiary hover:text-danger hover:bg-danger/5"
+                                      title="Delete message"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <p
                               className={`text-[10px] text-text-tertiary mt-1 ${
                                 isStaff ? 'text-right' : ''
                               }`}
                             >
                               {fullTime(msg.createdAt)}
+                              {msg.editedAt && <span className="italic ml-1">· edited</span>}
                             </p>
                           </div>
                         </div>
@@ -782,6 +881,29 @@ export default function AdminChatPage() {
             <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-xl text-sm text-text-secondary hover:bg-white/[0.04]">Cancel</button>
             <button onClick={handleDeleteOne} disabled={deleting} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-danger text-white text-sm font-medium disabled:opacity-40">
               {deleting && <Loader2 className="h-4 w-4 animate-spin" />} Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete single message (Head Admin) */}
+      <Modal isOpen={!!deleteMsg} onClose={() => setDeleteMsg(null)} title="Delete Message" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            Delete this message? This action is logged but cannot be undone.
+          </p>
+          {deleteMsg && (
+            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <p className="text-xs text-text-tertiary">
+                {deleteMsg.senderName ?? (deleteMsg.senderRole === 'USER' ? 'User' : 'Support')}:
+              </p>
+              <p className="text-sm text-text-secondary mt-1 line-clamp-3 whitespace-pre-wrap">{deleteMsg.body}</p>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setDeleteMsg(null)} className="px-4 py-2 rounded-xl text-sm text-text-secondary hover:bg-white/[0.04]">Cancel</button>
+            <button onClick={handleDeleteMsg} disabled={deletingMsg} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-danger text-white text-sm font-medium disabled:opacity-40">
+              {deletingMsg && <Loader2 className="h-4 w-4 animate-spin" />} Delete
             </button>
           </div>
         </div>

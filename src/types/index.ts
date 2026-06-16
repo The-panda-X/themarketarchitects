@@ -195,8 +195,11 @@ export interface SupportTicket {
 export interface TicketResponse {
   sender: 'user' | 'admin';
   senderName: string;
+  senderId?: string;
   message: string;
   timestamp: string;
+  edited?: boolean;
+  editedAt?: string;
 }
 
 export interface Notification {

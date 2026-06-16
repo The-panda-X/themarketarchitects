@@ -3,15 +3,27 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Shield, Send } from 'lucide-react';
+import { ArrowLeft, User, Shield, Send, Pencil, Trash2, X, Save, Loader2 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Skeleton from '@/components/ui/Skeleton';
+import Modal from '@/components/ui/Modal';
 import useToast from '@/hooks/useToast';
+import useAuth from '@/hooks/useAuth';
 import { formatRelativeTime } from '@/lib/utils';
+
+interface TicketResponse {
+  sender: string;
+  senderName: string;
+  senderId?: string;
+  message: string;
+  timestamp: string;
+  edited?: boolean;
+  editedAt?: string;
+}
 
 interface TicketDetail {
   id: string;
@@ -21,7 +33,7 @@ interface TicketDetail {
   status: string;
   createdAt: string;
   user: { id: string; email: string; name: string | null };
-  responses: Array<{ sender: string; senderName: string; message: string; timestamp: string }>;
+  responses: TicketResponse[];
 }
 
 const statusVariant: Record<string, 'yellow' | 'blue' | 'green' | 'default'> = {
@@ -34,11 +46,19 @@ const statusVariant: Record<string, 'yellow' | 'blue' | 'green' | 'default'> = {
 export default function AdminTicketDetailPage() {
   const params = useParams();
   const { addToast } = useToast();
+  const { isHeadAdmin } = useAuth();
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState('');
   const [replyStatus, setReplyStatus] = useState('IN_PROGRESS');
   const [submitting, setSubmitting] = useState(false);
+
+  // Edit/Delete state
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/tickets/${params.id}`)
@@ -66,6 +86,51 @@ export default function AdminTicketDetailPage() {
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (editingIndex === null || !editDraft.trim()) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/admin/tickets/${params.id}/messages/${editingIndex}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: editDraft.trim() }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setTicket(d.data);
+        setEditingIndex(null);
+        setEditDraft('');
+        addToast('Message edited.', 'success');
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to edit message.', 'error');
+      }
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteIndex === null) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/tickets/${params.id}/messages/${deleteIndex}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setTicket(d.data);
+        setDeleteIndex(null);
+        addToast('Message deleted.', 'success');
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to delete message.', 'error');
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -114,27 +179,80 @@ export default function AdminTicketDetailPage() {
       </GlassCard>
 
       {/* Responses */}
-      {ticket.responses.map((resp, i) => (
-        <GlassCard key={i} padding="md" variant={resp.sender === 'admin' ? 'strong' : 'default'}>
-          <div className="flex items-start gap-3">
-            <div className={`p-2 rounded-full shrink-0 ${resp.sender === 'admin' ? 'bg-accent-gold/10' : 'bg-accent-primary/10'}`}>
-              {resp.sender === 'admin' ? (
-                <Shield className="h-4 w-4 text-accent-gold" />
-              ) : (
-                <User className="h-4 w-4 text-accent-primary" />
-              )}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium">{resp.senderName}</p>
-                {resp.sender === 'admin' && <Badge variant="gold" size="sm">Staff</Badge>}
-                <span className="text-xs text-text-tertiary">{formatRelativeTime(resp.timestamp)}</span>
+      {ticket.responses.map((resp, i) => {
+        const isEditing = editingIndex === i;
+        return (
+          <GlassCard key={i} padding="md" variant={resp.sender === 'admin' ? 'strong' : 'default'}>
+            <div className="flex items-start gap-3">
+              <div className={`p-2 rounded-full shrink-0 ${resp.sender === 'admin' ? 'bg-accent-gold/10' : 'bg-accent-primary/10'}`}>
+                {resp.sender === 'admin' ? (
+                  <Shield className="h-4 w-4 text-accent-gold" />
+                ) : (
+                  <User className="h-4 w-4 text-accent-primary" />
+                )}
               </div>
-              <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap">{resp.message}</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium">{resp.senderName}</p>
+                  {resp.sender === 'admin' && <Badge variant="gold" size="sm">Staff</Badge>}
+                  <span className="text-xs text-text-tertiary">{formatRelativeTime(resp.timestamp)}</span>
+                  {resp.edited && (
+                    <span className="text-[10px] text-text-tertiary italic">(edited)</span>
+                  )}
+                  {isHeadAdmin && !isEditing && (
+                    <div className="ml-auto flex items-center gap-1">
+                      <button
+                        onClick={() => { setEditingIndex(i); setEditDraft(resp.message); }}
+                        className="p-1 rounded text-text-tertiary hover:text-text-primary hover:bg-white/[0.04] transition-colors"
+                        title="Edit message"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteIndex(i)}
+                        className="p-1 rounded text-text-tertiary hover:text-danger hover:bg-danger/5 transition-colors"
+                        title="Delete message"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {isEditing ? (
+                  <div className="mt-2 space-y-2">
+                    <Textarea
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      rows={3}
+                      autoFocus
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        loading={savingEdit}
+                        onClick={handleSaveEdit}
+                        icon={<Save className="h-3.5 w-3.5" />}
+                      >
+                        Save
+                      </Button>
+                      <button
+                        onClick={() => { setEditingIndex(null); setEditDraft(''); }}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap">{resp.message}</p>
+                )}
+              </div>
             </div>
-          </div>
-        </GlassCard>
-      ))}
+          </GlassCard>
+        );
+      })}
 
       {/* Reply */}
       {ticket.status !== 'CLOSED' && (
@@ -171,6 +289,27 @@ export default function AdminTicketDetailPage() {
           </div>
         </GlassCard>
       )}
+
+      {/* Delete confirmation modal */}
+      <Modal isOpen={deleteIndex !== null} onClose={() => setDeleteIndex(null)} title="Delete Reply" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            Delete this reply? This action is logged but cannot be undone.
+          </p>
+          {deleteIndex !== null && ticket.responses[deleteIndex] && (
+            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <p className="text-xs text-text-tertiary">From {ticket.responses[deleteIndex].senderName}:</p>
+              <p className="text-sm text-text-secondary mt-1 line-clamp-3">{ticket.responses[deleteIndex].message}</p>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setDeleteIndex(null)} className="px-4 py-2 rounded-xl text-sm text-text-secondary hover:bg-white/[0.04]">Cancel</button>
+            <button onClick={handleDelete} disabled={deleting} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-danger text-white text-sm font-medium disabled:opacity-40">
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />} Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -14,6 +14,7 @@ interface Message {
   senderName: string | null;
   body: string;
   read: boolean;
+  editedAt: string | null;
   createdAt: string;
 }
 
@@ -214,6 +215,7 @@ export default function UserChatPage() {
                     </div>
                     <p className={`text-[10px] text-text-tertiary mt-1 ${isUser ? 'text-right' : ''}`}>
                       {timeLabel(msg.createdAt)}
+                      {msg.editedAt && <span className="italic ml-1">· edited</span>}
                     </p>
                   </div>
                 </div>
