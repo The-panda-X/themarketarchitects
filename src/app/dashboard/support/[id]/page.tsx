@@ -59,7 +59,7 @@ export default function TicketDetailPage() {
       });
       if (res.ok) {
         const result = await res.json();
-        setTicket(result.data);
+        setTicket((prev) => prev ? { ...prev, ...result.data } : result.data);
         addToast('Reply sent.', 'success');
         reset();
       } else {

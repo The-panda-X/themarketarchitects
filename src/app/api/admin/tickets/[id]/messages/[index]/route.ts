@@ -66,6 +66,9 @@ export async function PATCH(
     const updated = await prisma.supportTicket.update({
       where: { id: params.id },
       data: { responses: JSON.parse(JSON.stringify(updatedResponses)) },
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+      },
     });
 
     await prisma.adminLog.create({
@@ -113,6 +116,9 @@ export async function DELETE(
     const updated = await prisma.supportTicket.update({
       where: { id: params.id },
       data: { responses: JSON.parse(JSON.stringify(updatedResponses)) },
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+      },
     });
 
     await prisma.adminLog.create({

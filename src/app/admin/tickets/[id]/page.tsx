@@ -78,7 +78,7 @@ export default function AdminTicketDetailPage() {
       });
       if (res.ok) {
         const d = await res.json();
-        setTicket(d.data);
+        setTicket((prev) => prev ? { ...prev, ...d.data, user: d.data?.user ?? prev.user } : d.data);
         setReply('');
         addToast('Reply sent.', 'success');
       } else {
@@ -100,7 +100,7 @@ export default function AdminTicketDetailPage() {
       });
       if (res.ok) {
         const d = await res.json();
-        setTicket(d.data);
+        setTicket((prev) => prev ? { ...prev, ...d.data, user: d.data?.user ?? prev.user } : d.data);
         setEditingIndex(null);
         setEditDraft('');
         addToast('Message edited.', 'success');
@@ -122,7 +122,7 @@ export default function AdminTicketDetailPage() {
       });
       if (res.ok) {
         const d = await res.json();
-        setTicket(d.data);
+        setTicket((prev) => prev ? { ...prev, ...d.data, user: d.data?.user ?? prev.user } : d.data);
         setDeleteIndex(null);
         addToast('Message deleted.', 'success');
       } else {

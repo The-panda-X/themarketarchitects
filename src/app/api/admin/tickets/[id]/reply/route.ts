@@ -34,6 +34,9 @@ export async function POST(
         responses: JSON.parse(JSON.stringify([...(Array.isArray(ticket.responses) ? ticket.responses : []), newResponse])),
         status: ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].includes(status) ? status : 'IN_PROGRESS',
       },
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+      },
     });
 
     // Notify the user
