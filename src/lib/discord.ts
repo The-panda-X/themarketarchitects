@@ -29,9 +29,9 @@ export async function postSignalToDiscord(signal: SignalPayload): Promise<{ ok: 
   lines.push(signal.direction);
   lines.push(`ENTRY: ${signal.entry > 0 ? signal.entry : 'NOW'}`);
   lines.push(`SL: ${signal.sl}`);
-  if (signal.tp1) lines.push(`TP1: ${signal.tp1}`);
-  if (signal.tp2) lines.push(`TP2: ${signal.tp2}`);
-  if (signal.tp3) lines.push(`TP3: ${signal.tp3}`);
+  if (signal.tp1 != null && signal.tp1 > 0) lines.push(`TP1: ${signal.tp1}`);
+  if (signal.tp2 != null && signal.tp2 > 0) lines.push(`TP2: ${signal.tp2}`);
+  if (signal.tp3 != null && signal.tp3 > 0) lines.push(`TP3: ${signal.tp3}`);
   if (signal.risk && signal.risk > 0) lines.push(`RISK: ${signal.risk}`);
   if (signal.senderNickname) lines.push(`- ${signal.senderNickname}`);
 
