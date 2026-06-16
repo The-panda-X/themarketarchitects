@@ -11,15 +11,44 @@ import {
   CheckCircle,
   Clock,
   Mail,
+  Banknote,
+  XCircle,
+  ExternalLink,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import StatCard from '@/components/ui/StatCard';
 import Skeleton from '@/components/ui/Skeleton';
+import Modal from '@/components/ui/Modal';
+import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableEmpty } from '@/components/ui/Table';
 import { formatRelativeTime, formatCurrency } from '@/lib/utils';
 import useToast from '@/hooks/useToast';
+
+interface PayoutRow {
+  id: string;
+  amount: number;
+  method: string;
+  wallet: string;
+  status: 'PENDING' | 'PAID' | 'REJECTED';
+  txHash: string | null;
+  adminNote: string | null;
+  processedAt: string | null;
+  createdAt: string;
+}
+
+const PAYOUT_METHODS = [
+  { value: 'USDT_TRC20', label: 'USDT (TRC20 · Tron)' },
+  { value: 'USDT_ERC20', label: 'USDT (ERC20 · Ethereum)' },
+  { value: 'USDT_BEP20', label: 'USDT (BEP20 · BNB Chain)' },
+  { value: 'USDT_POLYGON', label: 'USDT (Polygon)' },
+];
+
+const MIN_PAYOUT = 10;
 
 interface ReferralRow {
   id: string;
@@ -50,20 +79,83 @@ export default function ReferralsPage() {
   const [data, setData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimForm, setClaimForm] = useState({ amount: '', method: 'USDT_TRC20', wallet: '' });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/dashboard/referrals');
-      if (res.ok) {
-        const d = await res.json();
+      const [refRes, payRes] = await Promise.all([
+        fetch('/api/dashboard/referrals'),
+        fetch('/api/dashboard/referral-payouts'),
+      ]);
+      if (refRes.ok) {
+        const d = await refRes.json();
         setData(d.data);
+      }
+      if (payRes.ok) {
+        const d = await payRes.json();
+        setPayouts(d.data?.payouts ?? []);
       }
     } catch { /* silent */ }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const openClaim = () => {
+    setClaimForm({
+      amount: data ? data.referralBalance.toFixed(2) : '',
+      method: 'USDT_TRC20',
+      wallet: '',
+    });
+    setClaimOpen(true);
+  };
+
+  const handleClaim = async () => {
+    if (!data) return;
+    const amt = parseFloat(claimForm.amount);
+    if (!isFinite(amt) || amt <= 0) {
+      addToast('Enter a valid amount', 'error');
+      return;
+    }
+    if (amt < MIN_PAYOUT) {
+      addToast(`Minimum payout is $${MIN_PAYOUT}`, 'error');
+      return;
+    }
+    if (amt > data.referralBalance) {
+      addToast('Amount exceeds your available balance', 'error');
+      return;
+    }
+    if (!claimForm.wallet.trim()) {
+      addToast('Wallet address is required', 'error');
+      return;
+    }
+    setClaiming(true);
+    try {
+      const res = await fetch('/api/dashboard/referral-payouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amt,
+          method: claimForm.method,
+          wallet: claimForm.wallet.trim(),
+        }),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        addToast('Payout request submitted — admins will process it shortly.', 'success');
+        setClaimOpen(false);
+        fetchData();
+      } else {
+        addToast(d.error ?? 'Failed to submit payout', 'error');
+      }
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   const referralLink =
     data?.referralCode && typeof window !== 'undefined'
@@ -115,14 +207,31 @@ export default function ReferralsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <Users className="h-6 w-6 text-accent-primary" /> Referral Program
-        </h1>
-        <p className="text-text-secondary mt-1">
-          Earn <span className="text-accent-primary font-semibold">{data.commissionRate}% commission</span> on every paid order from clients you refer.
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
+            <Users className="h-6 w-6 text-accent-primary" /> Referral Program
+          </h1>
+          <p className="text-text-secondary mt-1">
+            Earn <span className="text-accent-primary font-semibold">{data.commissionRate}% commission</span> on every paid order from clients you refer.
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          icon={<Banknote className="h-4 w-4" />}
+          onClick={openClaim}
+          disabled={data.referralBalance < MIN_PAYOUT}
+        >
+          Claim Payout
+        </Button>
       </div>
+
+      {data.referralBalance > 0 && data.referralBalance < MIN_PAYOUT && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent-gold/5 border border-accent-gold/20 text-xs text-accent-gold">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          Minimum payout amount is ${MIN_PAYOUT}. Keep referring to unlock withdrawal.
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -223,7 +332,7 @@ export default function ReferralsPage() {
           ))}
         </div>
         <p className="text-xs text-text-tertiary mt-4 pt-4 border-t border-white/[0.06]">
-          Your available balance can be applied to future purchases. To withdraw earnings to crypto/bank, contact support.
+          Click <strong className="text-text-secondary">Claim Payout</strong> when your balance is at least ${MIN_PAYOUT}. Funds are sent in USDT to the wallet address you provide — usually within 1–3 business days after approval.
         </p>
       </GlassCard>
 
@@ -301,6 +410,131 @@ export default function ReferralsPage() {
           </TableBody>
         </Table>
       </GlassCard>
+
+      {/* Payout history */}
+      <GlassCard padding="md">
+        <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-4">
+          Payout History
+        </h3>
+        <Table>
+          <TableHeader>
+            <TableRow hoverable={false}>
+              <TableHead>Requested</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Network</TableHead>
+              <TableHead>Wallet</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Tx / Note</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {payouts.length === 0 ? (
+              <TableEmpty colSpan={6} message="No payout requests yet." />
+            ) : (
+              payouts.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>
+                    <span className="text-xs text-text-tertiary">{formatRelativeTime(p.createdAt)}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono font-semibold">{formatCurrency(p.amount)}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs text-text-secondary">{p.method.replace(/_/g, ' ')}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono text-[11px] text-text-tertiary">
+                      {p.wallet.slice(0, 8)}…{p.wallet.slice(-6)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {p.status === 'PAID' && (
+                      <Badge variant="green" size="sm"><CheckCircle className="h-3 w-3" /> Paid</Badge>
+                    )}
+                    {p.status === 'PENDING' && (
+                      <Badge variant="yellow" size="sm"><Clock className="h-3 w-3" /> Pending</Badge>
+                    )}
+                    {p.status === 'REJECTED' && (
+                      <Badge variant="red" size="sm"><XCircle className="h-3 w-3" /> Rejected</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {p.txHash ? (
+                      <span className="font-mono text-[11px] text-text-secondary inline-flex items-center gap-1">
+                        {p.txHash.slice(0, 10)}…{p.txHash.slice(-6)}
+                        <ExternalLink className="h-3 w-3 text-text-tertiary" />
+                      </span>
+                    ) : p.adminNote ? (
+                      <span className="text-xs text-text-tertiary italic">{p.adminNote}</span>
+                    ) : (
+                      <span className="text-xs text-text-tertiary">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </GlassCard>
+
+      {/* Claim modal */}
+      <Modal isOpen={claimOpen} onClose={() => !claiming && setClaimOpen(false)} title="Claim Referral Payout" size="md">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+            <span className="text-xs text-text-tertiary">Available balance</span>
+            <span className="font-mono font-bold text-accent-primary">{formatCurrency(data.referralBalance)}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Amount (USD)"
+              type="number"
+              step="0.01"
+              min={MIN_PAYOUT}
+              max={data.referralBalance}
+              placeholder={`Min $${MIN_PAYOUT}`}
+              value={claimForm.amount}
+              onChange={(e) => setClaimForm((f) => ({ ...f, amount: e.target.value }))}
+            />
+            <Select
+              label="Network"
+              value={claimForm.method}
+              onChange={(e) => setClaimForm((f) => ({ ...f, method: e.target.value }))}
+            >
+              {PAYOUT_METHODS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </Select>
+          </div>
+
+          <Input
+            label="Wallet Address"
+            placeholder="Paste your USDT receiving address"
+            value={claimForm.wallet}
+            onChange={(e) => setClaimForm((f) => ({ ...f, wallet: e.target.value }))}
+            hint="Double-check the address matches the network above. We cannot reverse sends."
+          />
+
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-accent-gold/5 border border-accent-gold/20 text-xs text-accent-gold">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            <p>
+              The amount will be deducted from your balance immediately and held until the admin processes the request. If declined, it will be refunded automatically.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => !claiming && setClaimOpen(false)}
+              className="px-4 py-2 rounded-xl text-sm text-text-secondary hover:bg-white/[0.04]"
+            >
+              Cancel
+            </button>
+            <Button variant="primary" loading={claiming} onClick={handleClaim} icon={<Banknote className="h-4 w-4" />}>
+              Submit Request
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

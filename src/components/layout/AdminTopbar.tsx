@@ -43,6 +43,7 @@ const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashbo
   { label: 'Chat', href: '/admin/chat', icon: MessageCircle },
   { label: 'Tickets', href: '/admin/tickets', icon: TicketCheck },
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
+  { label: 'Referrals', href: '/admin/referrals', icon: Users },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell },
   { label: 'Services', href: '/admin/services', icon: Layers, minRole: 'admin' },
   { label: 'Blog', href: '/admin/blog', icon: FileText },

@@ -60,6 +60,12 @@ enum SplitStatus {
   REJECTED
 }
 
+enum PayoutStatus {
+  PENDING
+  PAID
+  REJECTED
+}
+
 model User {
   id               String    @id @default(cuid())
   email            String    @unique
@@ -110,6 +116,7 @@ model User {
   adminLogs     AdminLog[]
   profitSplits  ProfitSplit[]
   conversations Conversation[]
+  referralPayouts ReferralPayout[]
 
   @@index([email])
   @@index([referralCode])
@@ -599,6 +606,27 @@ model ProfitSplit {
   @@index([createdAt])
   @@index([challengeId])
   @@index([orderId])
+}
+
+model ReferralPayout {
+  id          String       @id @default(cuid())
+  userId      String
+  amount      Float                                  // amount requested (already debited from User.referralBalance)
+  method      String                                 // USDT_TRC20, USDT_ERC20, BNB, MATIC, etc.
+  wallet      String                                 // payout wallet address provided by user
+  status      PayoutStatus @default(PENDING)
+  txHash      String?                                // on-chain tx hash, set when marked PAID
+  adminNote   String?                                // admin reason on reject, or any internal note
+  processedBy String?                                // admin user id who processed (PAID or REJECTED)
+  processedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model HomeService {
