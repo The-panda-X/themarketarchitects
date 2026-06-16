@@ -73,6 +73,7 @@ model User {
   twoFactorSecret  String?
   referralCode     String    @unique @default(cuid())
   referredBy       String?
+  referralBalance  Float     @default(0)    // accumulated 20% commission credit from paid referred orders
 
   // 2FA brute-force protection (CB-7)
   otpAttempts      Int       @default(0)

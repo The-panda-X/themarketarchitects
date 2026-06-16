@@ -3,6 +3,7 @@ import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin, requireModerator, requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { OrderStatus } from '@/types';
+import { creditReferralCommission } from '@/lib/referral';
 
 export async function GET(
   _req: Request,
@@ -73,6 +74,12 @@ export async function PATCH(
           link: '/dashboard/payments',
         },
       });
+    }
+
+    // Credit referral commission on transition to PAID (idempotent — safe to call
+    // even if already credited from the Stripe webhook).
+    if (status === 'PAID' && existing.status !== 'PAID') {
+      await creditReferralCommission(params.id);
     }
 
     return successResponse(order);

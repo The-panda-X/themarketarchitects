@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { constructWebhookEvent } from '@/lib/stripe';
 import { sendOrderConfirmationEmail } from '@/lib/email';
 import { notifyAdmins } from '@/lib/admin-notify';
+import { creditReferralCommission } from '@/lib/referral';
 import type Stripe from 'stripe';
 
 export async function POST(req: NextRequest) {
@@ -93,19 +94,8 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        // Handle referral commission if applicable
-        if (user) {
-          const referrer = await prisma.referral.findFirst({
-            where: { referredEmail: user.email, orderId: null },
-          });
-          if (referrer) {
-            const commission = order.totalAmount * 0.1; // 10% commission
-            await prisma.referral.update({
-              where: { id: referrer.id },
-              data: { orderId, commission },
-            });
-          }
-        }
+        // Credit referral commission (20% — idempotent, no-op if already credited)
+        await creditReferralCommission(orderId);
         break;
       }
 
