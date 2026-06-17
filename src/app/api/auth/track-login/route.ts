@@ -39,18 +39,49 @@ export async function POST(req: NextRequest) {
       return successResponse({ skipped: true });
     }
 
-    // Geolocate (best-effort, 3s timeout)
-    const geo = await geolocateIp(ip);
+    // Vercel provides geo headers for free — use as primary source
+    const vercelCountryCode = req.headers.get('x-vercel-ip-country') || null;
+    const vercelCity = req.headers.get('x-vercel-ip-city') || null;
+    const vercelRegion = req.headers.get('x-vercel-ip-country-region') || null;
+    const vercelLat = req.headers.get('x-vercel-ip-latitude');
+    const vercelLon = req.headers.get('x-vercel-ip-longitude');
+
+    // Convert 2-letter ISO code to full country name (e.g. "US" → "United States")
+    let vercelCountry: string | null = null;
+    if (vercelCountryCode) {
+      try {
+        const dn = new Intl.DisplayNames(['en'], { type: 'region' });
+        vercelCountry = dn.of(vercelCountryCode) ?? vercelCountryCode;
+      } catch {
+        vercelCountry = vercelCountryCode;
+      }
+    }
+
+    // Fall back to ip-api.com if Vercel headers are missing (e.g. local dev)
+    let country = vercelCountry;
+    let city = vercelCity ? decodeURIComponent(vercelCity) : null;
+    let region = vercelRegion;
+    let lat = vercelLat ? parseFloat(vercelLat) : null;
+    let lon = vercelLon ? parseFloat(vercelLon) : null;
+
+    if (!country) {
+      const geo = await geolocateIp(ip);
+      country = geo.country;
+      city = geo.city;
+      region = geo.region;
+      lat = geo.lat;
+      lon = geo.lon;
+    }
 
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
         lastLoginIp: ip,
-        lastLoginCountry: geo.country,
-        lastLoginCity: geo.city,
-        lastLoginRegion: geo.region,
-        lastLoginLat: geo.lat,
-        lastLoginLon: geo.lon,
+        lastLoginCountry: country,
+        lastLoginCity: city,
+        lastLoginRegion: region,
+        lastLoginLat: lat,
+        lastLoginLon: lon,
         lastLoginAt: new Date(),
       },
     });

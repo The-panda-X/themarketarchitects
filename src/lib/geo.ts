@@ -54,8 +54,10 @@ export async function geolocateIp(ip: string): Promise<GeoResult> {
   }
 
   try {
+    // ip-api.com free tier only works over HTTP (403 on HTTPS).
+    // Use http:// explicitly — Vercel edge/serverless allows outbound HTTP.
     const res = await fetch(
-      `https://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,regionName,city,lat,lon`,
+      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,regionName,city,lat,lon`,
       { signal: AbortSignal.timeout(3000) }
     );
 
