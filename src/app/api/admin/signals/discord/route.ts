@@ -21,22 +21,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { pair, direction, entry, sl, tp1, tp2, tp3, risk } = body;
 
-    if (!pair || !direction || !sl || !tp1) {
-      return errorResponse('pair, direction, sl, and tp1 are required', 400);
+    if (!pair || !direction || !sl) {
+      return errorResponse('pair, direction, and sl are required', 400);
     }
 
     const parsedSl = parseFloat(sl);
-    const parsedTp1 = parseFloat(tp1);
     const parsedEntry = entry ? parseFloat(entry) : 0;
+    const parsedTp1 = tp1 ? parseFloat(tp1) : 0;
     const parsedTp2 = tp2 ? parseFloat(tp2) : null;
     const parsedTp3 = tp3 ? parseFloat(tp3) : null;
     const parsedRisk = risk ? parseFloat(risk) : 0;
 
-    if (isNaN(parsedSl) || isNaN(parsedTp1) || (entry && isNaN(parsedEntry))) {
-      return errorResponse('sl, tp1, and entry must be valid numbers', 400);
+    if (isNaN(parsedSl) || (entry && isNaN(parsedEntry))) {
+      return errorResponse('sl and entry must be valid numbers', 400);
     }
-    if ((parsedTp2 !== null && isNaN(parsedTp2)) || (parsedTp3 !== null && isNaN(parsedTp3))) {
-      return errorResponse('tp2 and tp3 must be valid numbers', 400);
+    if ((tp1 && isNaN(parsedTp1)) || (parsedTp2 !== null && isNaN(parsedTp2)) || (parsedTp3 !== null && isNaN(parsedTp3))) {
+      return errorResponse('tp values must be valid numbers', 400);
     }
 
     const { senderId, senderNickname } = await resolveSignalSender(session.user.id);
