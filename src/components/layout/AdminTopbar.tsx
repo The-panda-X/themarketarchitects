@@ -34,19 +34,19 @@ import Badge from '@/components/ui/Badge';
 import Dropdown from '@/components/ui/Dropdown';
 import NotificationBell from '@/components/layout/NotificationBell';
 
-const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin'; badgeKey?: string }[] = [
-  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders' },
-  { label: 'Challenges', href: '/admin/challenges', icon: Target },
-  { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'admin' },
-  { label: 'Chat', href: '/admin/chat', icon: MessageCircle },
-  { label: 'Tickets', href: '/admin/tickets', icon: TicketCheck },
-  { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
-  { label: 'Referrals', href: '/admin/referrals', icon: Users },
-  { label: 'Notifications', href: '/admin/notifications', icon: Bell },
+const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin' | 'moderator' | 'trader'; badgeKey?: string }[] = [
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: 'moderator' },
+  { label: 'Users', href: '/admin/users', icon: Users, minRole: 'moderator' },
+  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders', minRole: 'moderator' },
+  { label: 'Challenges', href: '/admin/challenges', icon: Target, minRole: 'moderator' },
+  { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'trader' },
+  { label: 'Chat', href: '/admin/chat', icon: MessageCircle, minRole: 'moderator' },
+  { label: 'Tickets', href: '/admin/tickets', icon: TicketCheck, minRole: 'moderator' },
+  { label: 'Payouts', href: '/admin/payouts', icon: Banknote, minRole: 'moderator' },
+  { label: 'Referrals', href: '/admin/referrals', icon: Users, minRole: 'moderator' },
+  { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: 'moderator' },
   { label: 'Services', href: '/admin/services', icon: Layers, minRole: 'admin' },
-  { label: 'Blog', href: '/admin/blog', icon: FileText },
+  { label: 'Blog', href: '/admin/blog', icon: FileText, minRole: 'moderator' },
   { label: 'Home Page', href: '/admin/home-page', icon: Home, minRole: 'admin' },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag, minRole: 'admin' },
   { label: 'Logs', href: '/admin/logs', icon: ScrollText, minRole: 'admin' },
@@ -61,18 +61,20 @@ function getBreadcrumb(pathname: string): string[] {
 export default function AdminTopbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { user, isHeadAdmin, isAdmin, canViewSensitive } = useAuth();
+  const { user, isHeadAdmin, isAdmin, isTrader, canViewSensitive } = useAuth();
   const breadcrumb = getBreadcrumb(pathname);
 
-  const badgeLabel = isHeadAdmin ? 'Head Admin' : isAdmin ? 'Admin' : 'Moderator';
+  const badgeLabel = isHeadAdmin ? 'Head Admin' : isAdmin ? 'Admin' : isTrader ? 'Trader' : 'Moderator';
   const visibleMobileItems = mobileAdminItems.filter((item) => {
     if (item.minRole === 'admin' && !canViewSensitive) return false;
+    if (item.minRole === 'moderator' && isTrader) return false;
     return true;
   });
 
   const [pendingOrders, setPendingOrders] = useState(0);
 
   useEffect(() => {
+    if (isTrader) return;
     let mounted = true;
     async function fetchPendingCount() {
       try {
@@ -86,7 +88,7 @@ export default function AdminTopbar() {
     fetchPendingCount();
     const interval = setInterval(fetchPendingCount, 30_000);
     return () => { mounted = false; clearInterval(interval); };
-  }, []);
+  }, [isTrader]);
 
   useEffect(() => {
     if (pathname.startsWith('/admin/orders')) setPendingOrders(0);
@@ -129,7 +131,7 @@ export default function AdminTopbar() {
 
           {/* Right */}
           <div className="flex items-center gap-2">
-            <NotificationBell notificationsHref="/admin/notifications" />
+            {!isTrader && <NotificationBell notificationsHref="/admin/notifications" />}
 
             <Dropdown
               trigger={
@@ -138,11 +140,11 @@ export default function AdminTopbar() {
                 </div>
               }
               items={[
-                {
+                ...(!isTrader ? [{
                   label: 'Admin Settings',
                   icon: <Settings className="h-4 w-4" />,
                   onClick: () => (window.location.href = '/admin/settings'),
-                },
+                }] : []),
                 {
                   label: 'Client Dashboard',
                   icon: <LayoutDashboard className="h-4 w-4" />,

@@ -71,8 +71,9 @@ export default function AdminSidebar() {
     return true;
   });
 
-  // Fetch pending order count and poll every 30s
+  // Fetch pending order count and poll every 30s (skip for traders)
   useEffect(() => {
+    if (isTrader) return;
     let mounted = true;
 
     async function fetchPendingCount() {
@@ -90,7 +91,7 @@ export default function AdminSidebar() {
     fetchPendingCount();
     const interval = setInterval(fetchPendingCount, 30_000);
     return () => { mounted = false; clearInterval(interval); };
-  }, []);
+  }, [isTrader]);
 
   // Clear badge when admin visits the orders page
   useEffect(() => {
