@@ -42,7 +42,7 @@ export default function NotificationsPage() {
 
   const handleMarkAllRead = async () => {
     try {
-      await fetch('/api/dashboard/notifications/read-all', { method: 'POST' });
+      await fetch('/api/dashboard/notifications/mark-all-read', { method: 'POST' });
       markAllAsRead();
       addToast('All notifications marked as read.', 'success');
     } catch {
@@ -52,7 +52,11 @@ export default function NotificationsPage() {
 
   const handleMarkRead = async (id: string) => {
     try {
-      await fetch(`/api/dashboard/notifications/${id}/read`, { method: 'POST' });
+      await fetch('/api/dashboard/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
       markAsRead(id);
     } catch {
       // silent
@@ -119,12 +123,4 @@ export default function NotificationsPage() {
                     <p className="text-xs text-text-tertiary mt-0.5">{notification.message}</p>
                   </div>
                   <p className="text-xs text-text-tertiary shrink-0">{formatRelativeTime(notification.createdAt)}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+             

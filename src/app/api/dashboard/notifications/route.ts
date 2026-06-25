@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 ﻿import prisma from '@/lib/prisma';
-import { requireAuth, handleApiError, successResponse } from '@/lib/api-helpers';
+import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 
 export async function GET() {
   try {
@@ -14,6 +14,4 @@ export async function GET() {
 
     return successResponse(notifications);
   } catch (err) {
-    return handleApiError(err);
-  }
-}
+    return handleApiErr
