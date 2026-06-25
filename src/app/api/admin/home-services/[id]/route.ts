@@ -2,12 +2,12 @@ export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireAdmin, requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 
 /** PATCH – update a home service */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireHeadAdmin();
+    await requireAdmin();
     const { id } = params;
     const body = await req.json();
 
@@ -41,6 +41,4 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     await prisma.homeService.delete({ where: { id } });
     return successResponse({ deleted: true });
   } catch (err) {
-    return handleApiError(err);
-  }
-}
+    return handleApiError(er

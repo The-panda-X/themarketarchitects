@@ -2,12 +2,12 @@ export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireHeadAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireModerator, requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 
 /** GET – list all home services (including inactive) */
 export async function GET() {
   try {
-    await requireHeadAdmin();
+    await requireModerator();
     const services = await prisma.homeService.findMany({
       orderBy: { sortOrder: 'asc' },
     });
@@ -20,7 +20,7 @@ export async function GET() {
 /** POST – create a new home service */
 export async function POST(req: NextRequest) {
   try {
-    await requireHeadAdmin();
+    await requireAdmin();
     const body = await req.json();
 
     const { title, description, icon, features, priceLabel, linkHref, linkText, sortOrder, isActive } = body;
@@ -45,6 +45,4 @@ export async function POST(req: NextRequest) {
 
     return successResponse(service, 201);
   } catch (err) {
-    return handleApiError(err);
-  }
-}
+    return handleApiError(er

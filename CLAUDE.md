@@ -18,6 +18,12 @@ USER → MODERATOR → ADMIN → HEAD_ADMIN
 - `requireAdmin()` = ADMIN, HEAD_ADMIN (sensitive data: credentials, payments).
 - `requireHeadAdmin()` = HEAD_ADMIN only (destructive: deletes, message edits).
 - Role helpers and constants are in `src/lib/api-helpers.ts`.
+- **Privilege mapping for admin API routes:**
+  - READ (list/get data) → `requireModerator()` minimum
+  - WRITE (create/update) → `requireAdmin()` for sensitive, `requireModerator()` for basic ops (chat, tickets)
+  - DELETE (any record) → `requireHeadAdmin()` always
+  - Credentials/payments → `requireAdmin()`
+  - Message edits → `requireHeadAdmin()`
 
 ### API Pattern
 - All routes use helpers from `src/lib/api-helpers.ts`: `successResponse()`, `errorResponse()`, `requireAuth()`, `requireModerator()`, `requireAdmin()`, `requireHeadAdmin()`, `handleApiError()`, `parsePagination()`.
@@ -88,7 +94,7 @@ text-primary: #ffffff    text-secondary: #a0a0a0    text-tertiary: #666666
 
 ## Database Models
 
-### Enums
+### Enums (8)
 ```
 Role: USER, MODERATOR, ADMIN, HEAD_ADMIN
 ChallengeStatus: PENDING, IN_PROGRESS, PHASE_1, PHASE_2, PASSED, FAILED, FUNDED
@@ -138,14 +144,4 @@ PayoutStatus: PENDING, PAID, REJECTED
 | `rate-limit.ts` | Rate limiting |
 | `geo.ts` | Geolocation from IP |
 
-## Stores (Zustand) — src/store/
-- `cartStore.ts` — purchase flow state
-- `notificationStore.ts` — notification state
-
-Note: there is NO `authStore.ts` — auth state comes from NextAuth's `useSession()`.
-
-## Hooks — src/hooks/
-`useAuth`, `useChatUnread`, `useCountUp`, `useDebounce`, `useLastPanel`, `useMediaQuery`, `useScrollAnimation`, `useToast`
-
-## Path Alias
-`@/*` → `./src/*`
+## Stores (Zustand) — src/
