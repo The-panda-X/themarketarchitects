@@ -46,6 +46,12 @@ firebase-adminsdk*.json
 # Contains local tool permissions, session memory — never public
 .claude/
 
+# ─── MT5 EA (runs separately on client MT5 terminals) ───────────────────────
+Signal Executor v6 EA/
+
+# ─── Generated diagrams ─────────────────────────────────────────────────────
+architecture-diagram.*
+
 # ─── Prisma ──────────────────────────────────────────────────────────────────
 prisma/migrations/
 
@@ -73,19 +79,3 @@ next-env.d.ts
 ._*
 .Spotlight-V100
 .Trashes
-Thumbs.db
-desktop.ini
-ehthumbs.db
-
-# ─── IDE ─────────────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-*.swp
-*.swo
-*.suo
-*.user
-
-.vercel
-
-/public/uploads/proofs/*
-!/public/uploads/proofs/.gitkeep
