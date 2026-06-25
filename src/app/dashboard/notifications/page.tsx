@@ -123,4 +123,12 @@ export default function NotificationsPage() {
                     <p className="text-xs text-text-tertiary mt-0.5">{notification.message}</p>
                   </div>
                   <p className="text-xs text-text-tertiary shrink-0">{formatRelativeTime(notification.createdAt)}</p>
-             
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -45,4 +45,6 @@ export async function POST(req: NextRequest) {
 
     return successResponse(service, 201);
   } catch (err) {
-    return handleApiError(er
+    return handleApiError(err);
+  }
+}

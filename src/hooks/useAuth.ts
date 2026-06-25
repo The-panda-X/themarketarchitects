@@ -11,7 +11,7 @@ interface AuthUser {
   image: string | null;
 }
 
-const ADMIN_ROLES: string[] = ['HEAD_ADMIN', 'ADMIN', 'MODERATOR'];
+const ADMIN_ROLES: string[] = ['HEAD_ADMIN', 'ADMIN', 'MODERATOR', 'TRADER'];
 
 export default function useAuth() {
   const { data: session, status } = useSession();
@@ -27,6 +27,7 @@ export default function useAuth() {
     isHeadAdmin: role === 'HEAD_ADMIN',
     isAdmin: role === 'ADMIN' || role === 'HEAD_ADMIN',
     isModerator: role === 'MODERATOR',
+    isTrader: role === 'TRADER',
     isStaff: ADMIN_ROLES.includes(role),
     canDelete: role === 'HEAD_ADMIN',
     canViewSensitive: role === 'HEAD_ADMIN' || role === 'ADMIN',

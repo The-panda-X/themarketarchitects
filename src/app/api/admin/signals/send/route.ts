@@ -9,14 +9,23 @@ export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireTrader, handleApiError, successResponse, errorResponse, getSessionRole, isTraderRole } from '@/lib/api-helpers';
 import { resolveSignalSender } from '@/lib/signal-sender';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireAdmin();
+    const session = await requireTrader();
     const body = await req.json();
     const { pair, direction, entry, sl, tp1, tp2, tp3, risk } = body;
+
+    // Traders can only override risk if explicitly allowed
+    const role = getSessionRole(session as { user: { role?: string } });
+    if (risk && isTraderRole(role)) {
+      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { canOverrideRisk: true } });
+      if (!user?.canOverrideRisk) {
+        return errorResponse('You do not have permission to override risk', 403);
+      }
+    }
 
     if (!pair || !direction || !sl) {
       return errorResponse('pair, direction, and sl are required', 400);

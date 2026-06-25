@@ -8,11 +8,11 @@ export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, requireHeadAdmin, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
+import { requireTrader, requireHeadAdmin, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireTrader();
     const { searchParams } = req.nextUrl;
     const { page, limit, skip } = parsePagination(searchParams);
     const status = searchParams.get('status'); // optional filter
@@ -53,4 +53,6 @@ export async function DELETE(req: NextRequest) {
     await prisma.signal.delete({ where: { id } });
     return successResponse({ deleted: true });
   } catch (err) {
-    return handl
+    return handleApiError(err);
+  }
+}

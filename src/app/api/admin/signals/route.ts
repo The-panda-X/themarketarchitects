@@ -1,12 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, requireHeadAdmin, handleApiError, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers';
+import { requireTrader, requireHeadAdmin, handleApiError, successResponse, errorResponse, parsePagination, getSessionRole, isTraderRole } from '@/lib/api-helpers';
 import { resolveSignalSender } from '@/lib/signal-sender';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireTrader();
     const { searchParams } = req.nextUrl;
     const { page, limit, skip } = parsePagination(searchParams);
 
@@ -42,9 +42,18 @@ export async function GET(req: NextRequest) {
 // Manual signal from admin panel
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireAdmin();
+    const session = await requireTrader();
     const body = await req.json();
     const { pair, direction, entry, sl, tp1, tp2, tp3, riskOverride } = body;
+
+    // Traders can only override risk if explicitly allowed
+    const role = getSessionRole(session as { user: { role?: string } });
+    if (riskOverride && isTraderRole(role)) {
+      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { canOverrideRisk: true } });
+      if (!user?.canOverrideRisk) {
+        return errorResponse('You do not have permission to override risk', 403);
+      }
+    }
 
     const { senderId, senderNickname } = await resolveSignalSender(session.user.id);
 

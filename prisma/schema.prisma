@@ -10,6 +10,7 @@ datasource db {
 
 enum Role {
   USER
+  TRADER
   MODERATOR
   ADMIN
   HEAD_ADMIN
@@ -92,6 +93,9 @@ model User {
   // Signal Hub: nickname/tag shown in Discord when this admin sends a signal.
   // If null, falls back to staffNickname.
   signalNickname   String?
+
+  // Per-trader risk override permission (only relevant for TRADER role)
+  canOverrideRisk  Boolean   @default(false)
 
   // Location tracking (updated on each login)
   lastLoginIp      String?

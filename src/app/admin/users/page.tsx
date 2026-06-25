@@ -22,7 +22,7 @@ interface UserRow {
   email: string;
   name: string | null;
   avatar: string | null;
-  role: 'USER' | 'MODERATOR' | 'ADMIN' | 'HEAD_ADMIN';
+  role: 'USER' | 'TRADER' | 'MODERATOR' | 'ADMIN' | 'HEAD_ADMIN';
   emailVerified: string | null;
   lastLoginCountry: string | null;
   createdAt: string;
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'HEAD_ADMIN' ? 'purple' : user.role === 'ADMIN' ? 'gold' : user.role === 'MODERATOR' ? 'blue' : 'default'} size="sm">
+                        <Badge variant={user.role === 'HEAD_ADMIN' ? 'purple' : user.role === 'ADMIN' ? 'gold' : user.role === 'MODERATOR' ? 'blue' : user.role === 'TRADER' ? 'green' : 'default'} size="sm">
                           {user.role === 'HEAD_ADMIN' ? 'HEAD ADMIN' : user.role}
                         </Badge>
                       </TableCell>
@@ -185,7 +185,7 @@ export default function AdminUsersPage() {
                               <MessageCircle className="h-4 w-4" />
                             </Link>
                           )}
-                          {canDelete && user.role !== 'ADMIN' && user.role !== 'HEAD_ADMIN' && user.role !== 'MODERATOR' && (
+                          {canDelete && user.role !== 'ADMIN' && user.role !== 'HEAD_ADMIN' && user.role !== 'MODERATOR' && user.role !== 'TRADER' && (
                             <button
                               onClick={(e) => { e.stopPropagation(); openDeleteModal(user.id, user.email); }}
                               disabled={deleting === user.id}

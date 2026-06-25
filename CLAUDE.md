@@ -9,16 +9,22 @@ Next.js 14 SaaS platform for prop firm challenge passing, funded account managem
 - **Stop the dev server before `npx prisma generate`** — it locks `query_engine-windows.dll.node` on Windows.
 - Prisma config lives in `prisma.config.ts` (project root).
 
-### Role System (4 tiers)
+### Role System (5 tiers)
 ```
-USER → MODERATOR → ADMIN → HEAD_ADMIN
+USER → TRADER → MODERATOR → ADMIN → HEAD_ADMIN
 ```
-- Middleware allows MODERATOR+ to access `/admin/*`.
+- Middleware allows TRADER+ to access `/admin/*`, but TRADER is restricted to `/admin/signals` only.
+- `requireTrader()` = TRADER, MODERATOR, ADMIN, HEAD_ADMIN (signal sending).
 - `requireModerator()` = MODERATOR, ADMIN, HEAD_ADMIN (admin panel access).
 - `requireAdmin()` = ADMIN, HEAD_ADMIN (sensitive data: credentials, payments).
 - `requireHeadAdmin()` = HEAD_ADMIN only (destructive: deletes, message edits).
 - Role helpers and constants are in `src/lib/api-helpers.ts`.
+- **TRADER role specifics:**
+  - Can only access Signal Hub (`/admin/signals`).
+  - `User.canOverrideRisk` (Boolean, default false) controls whether a trader can override the risk % when sending signals. Admins toggle this per-trader in the user detail page.
+  - Middleware redirects TRADERs away from all other `/admin/*` pages.
 - **Privilege mapping for admin API routes:**
+  - Signal sending → `requireTrader()` minimum
   - READ (list/get data) → `requireModerator()` minimum
   - WRITE (create/update) → `requireAdmin()` for sensitive, `requireModerator()` for basic ops (chat, tickets)
   - DELETE (any record) → `requireHeadAdmin()` always
@@ -96,7 +102,7 @@ text-primary: #ffffff    text-secondary: #a0a0a0    text-tertiary: #666666
 
 ### Enums (8)
 ```
-Role: USER, MODERATOR, ADMIN, HEAD_ADMIN
+Role: USER, TRADER, MODERATOR, ADMIN, HEAD_ADMIN
 ChallengeStatus: PENDING, IN_PROGRESS, PHASE_1, PHASE_2, PASSED, FAILED, FUNDED
 OrderStatus: PENDING_PAYMENT, PAID, IN_PROGRESS, COMPLETED, REFUNDED, CANCELLED
 PaymentMethod: STRIPE, PAYPAL, CRYPTO
@@ -115,7 +121,7 @@ PayoutStatus: PENDING, PAID, REJECTED
 **Admin**: Notification, Coupon, Referral, AdminLog, SiteStats
 
 ### Key Model Notes
-- `User` has: staffNickname, signalNickname, referralBalance, location tracking fields, otpAttempts/otpLockedUntil.
+- `User` has: staffNickname, signalNickname, canOverrideRisk, referralBalance, location tracking fields, otpAttempts/otpLockedUntil.
 - `Challenge` has: balance, equity, openProfit, totalTrades, openTrades, riskPct, dailyDDLimit, totalDDLimit, dailyCapPct, allowedPairs, isPaused, eaToken, lastReportedAt.
 - `ServicePlan` has: sizePricing (JSON for per-size pricing).
 - `SupportTicket.responses` is deprecated — use `TicketReply` relation instead.
@@ -144,4 +150,14 @@ PayoutStatus: PENDING, PAID, REJECTED
 | `rate-limit.ts` | Rate limiting |
 | `geo.ts` | Geolocation from IP |
 
-## Stores (Zustand) — src/
+## Stores (Zustand) — src/store/
+- `cartStore.ts` — purchase flow state
+- `notificationStore.ts` — notification state
+
+Note: there is NO `authStore.ts` — auth state comes from NextAuth's `useSession()`.
+
+## Hooks — src/hooks/
+`useAuth`, `useChatUnread`, `useCountUp`, `useDebounce`, `useLastPanel`, `useMediaQuery`, `useScrollAnimation`, `useToast`
+
+## Path Alias
+`@/*` → `./src/*`

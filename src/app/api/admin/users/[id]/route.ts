@@ -43,15 +43,16 @@ export async function PATCH(
   try {
     const adminSession = await requireAdmin();
     const body = await req.json();
-    const { role, name } = body;
+    const { role, name, canOverrideRisk } = body;
     const viewerRole = getSessionRole(adminSession as { user: { role?: string } });
 
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
+    if (typeof canOverrideRisk === 'boolean') updateData.canOverrideRisk = canOverrideRisk;
 
     // Role assignment restrictions
     if (role) {
-      const validRoles = ['USER', 'MODERATOR', 'ADMIN', 'HEAD_ADMIN'];
+      const validRoles = ['USER', 'TRADER', 'MODERATOR', 'ADMIN', 'HEAD_ADMIN'];
       if (!validRoles.includes(role)) {
         return errorResponse('Invalid role', 400);
       }

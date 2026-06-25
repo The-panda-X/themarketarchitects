@@ -72,6 +72,7 @@ export default function AdminSignalsPage() {
   const [editingNick, setEditingNick] = useState(false);
   const [nickDraft, setNickDraft]     = useState('');
   const [savingNick, setSavingNick]   = useState(false);
+  const [canOverrideRisk, setCanOverrideRisk] = useState(true);
 
   const fetchNickname = useCallback(async () => {
     try {
@@ -80,6 +81,7 @@ export default function AdminSignalsPage() {
         const d = await res.json();
         setNickname(d.data?.signalNickname ?? null);
         setDefaultDisplay(d.data?.defaultDisplay ?? 'Admin');
+        setCanOverrideRisk(d.data?.canOverrideRisk ?? true);
       }
     } catch { /* silent */ }
   }, []);
@@ -432,10 +434,12 @@ export default function AdminSignalsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 [&_label]:min-h-[2.5rem] [&_label]:flex [&_label]:items-end">
+          <div className={`grid gap-3 [&_label]:min-h-[2.5rem] [&_label]:flex [&_label]:items-end ${canOverrideRisk ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <Input label="Entry Price (0 = market)" type="number" placeholder="e.g. 2350" value={form.entry} onChange={e => setForm(f => ({...f, entry: e.target.value}))} />
             <Input label="Stop Loss *" type="number" placeholder="e.g. 2340" value={form.sl} onChange={e => setForm(f => ({...f, sl: e.target.value}))} />
-            <Input label="Risk % Override" type="number" placeholder="e.g. 1.5" value={form.risk} onChange={e => setForm(f => ({...f, risk: e.target.value}))} />
+            {canOverrideRisk && (
+              <Input label="Risk % Override" type="number" placeholder="e.g. 1.5" value={form.risk} onChange={e => setForm(f => ({...f, risk: e.target.value}))} />
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-3">

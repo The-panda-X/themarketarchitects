@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import type { ApiResponse } from '@/types';
 
 /** Roles that can access the admin panel */
-const ADMIN_ROLES = ['HEAD_ADMIN', 'ADMIN', 'MODERATOR'];
+const ADMIN_ROLES = ['HEAD_ADMIN', 'ADMIN', 'MODERATOR', 'TRADER'];
 
 /** Roles that can perform destructive actions (delete) */
 const DELETE_ROLES = ['HEAD_ADMIN'];
@@ -28,6 +28,19 @@ export async function requireAuth() {
   const session = await getAuthSession();
   if (!session?.user) {
     throw new AuthError('Unauthorized', 401);
+  }
+  return session;
+}
+
+/** Roles that can send signals (TRADER+) */
+const SIGNAL_ROLES = ['HEAD_ADMIN', 'ADMIN', 'MODERATOR', 'TRADER'];
+
+/** Requires TRADER, MODERATOR, ADMIN, or HEAD_ADMIN — for signal sending */
+export async function requireTrader() {
+  const session = await requireAuth();
+  const role = (session.user as { role?: string }).role;
+  if (!role || !SIGNAL_ROLES.includes(role)) {
+    throw new AuthError('Forbidden', 403);
   }
   return session;
 }
@@ -75,6 +88,11 @@ export function isAdminRole(role: string): boolean {
 /** Check if role is HEAD_ADMIN */
 export function isHeadAdmin(role: string): boolean {
   return role === 'HEAD_ADMIN';
+}
+
+/** Check if role is TRADER (signal-only access) */
+export function isTraderRole(role: string): boolean {
+  return role === 'TRADER';
 }
 
 export class AuthError extends Error {

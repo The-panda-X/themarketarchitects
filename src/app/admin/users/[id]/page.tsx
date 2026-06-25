@@ -30,6 +30,7 @@ interface UserDetail {
   lastLoginLat: number | null;
   lastLoginLon: number | null;
   lastLoginAt: string | null;
+  canOverrideRisk: boolean;
   createdAt: string;
   orders: Array<{ id: string; planName: string; status: string; totalAmount: number; createdAt: string }>;
   challenges: Array<{ id: string; firmName: string; accountSize: string; status: string; createdAt: string }>;
@@ -44,12 +45,17 @@ export default function AdminUserDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [newRole, setNewRole] = useState('USER');
+  const [riskOverride, setRiskOverride] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/users/${params.id}`)
       .then((r) => r.json())
-      .then((d) => { setUser(d.data); setNewRole(d.data?.role ?? 'USER'); })
+      .then((d) => {
+        setUser(d.data);
+        setNewRole(d.data?.role ?? 'USER');
+        setRiskOverride(d.data?.canOverrideRisk ?? false);
+      })
       .finally(() => setLoading(false));
   }, [params.id]);
 
@@ -59,7 +65,7 @@ export default function AdminUserDetailPage() {
       const res = await fetch(`/api/admin/users/${params.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ role: newRole, canOverrideRisk: newRole === 'TRADER' ? riskOverride : undefined }),
       });
       if (res.ok) {
         const d = await res.json();
@@ -120,7 +126,7 @@ export default function AdminUserDetailPage() {
             <p className="font-heading font-semibold text-lg">{user.name ?? 'No name'}</p>
             <p className="text-sm text-text-tertiary">{user.email}</p>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={user.role === 'HEAD_ADMIN' ? 'purple' : user.role === 'ADMIN' ? 'gold' : user.role === 'MODERATOR' ? 'blue' : 'default'} size="sm">
+              <Badge variant={user.role === 'HEAD_ADMIN' ? 'purple' : user.role === 'ADMIN' ? 'gold' : user.role === 'MODERATOR' ? 'blue' : user.role === 'TRADER' ? 'green' : 'default'} size="sm">
                 {user.role === 'HEAD_ADMIN' ? 'HEAD ADMIN' : user.role}
               </Badge>
               {user.emailVerified ? (
@@ -246,10 +252,25 @@ export default function AdminUserDetailPage() {
         <div className="space-y-4">
           <Select label="Role" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
             <option value="USER">User</option>
+            <option value="TRADER">Trader</option>
             <option value="MODERATOR">Moderator</option>
             {isHeadAdmin && <option value="ADMIN">Admin</option>}
             {isHeadAdmin && <option value="HEAD_ADMIN">Head Admin</option>}
           </Select>
+          {newRole === 'TRADER' && (
+            <label className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={riskOverride}
+                onChange={(e) => setRiskOverride(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-accent-primary"
+              />
+              <div>
+                <p className="text-sm font-medium text-text-primary">Allow Risk Override</p>
+                <p className="text-xs text-text-tertiary">Trader can override the default risk % when sending signals</p>
+              </div>
+            </label>
+          )}
           <div className="flex gap-3">
             <Button variant="primary" loading={saving} onClick={handleRoleUpdate} fullWidth>Save</Button>
             <Button variant="ghost" onClick={() => setShowRoleModal(false)}>Cancel</Button>

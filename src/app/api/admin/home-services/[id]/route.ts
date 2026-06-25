@@ -41,4 +41,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     await prisma.homeService.delete({ where: { id } });
     return successResponse({ deleted: true });
   } catch (err) {
-    return handleApiError(er
+    return handleApiError(err);
+  }
+}

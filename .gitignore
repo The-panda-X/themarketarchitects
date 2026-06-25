@@ -79,3 +79,19 @@ next-env.d.ts
 ._*
 .Spotlight-V100
 .Trashes
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.user
+
+.vercel
+
+/public/uploads/proofs/*
+!/public/uploads/proofs/.gitkeep

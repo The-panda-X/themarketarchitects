@@ -33,20 +33,23 @@ import Avatar from '@/components/ui/Avatar';
 import { setLastPanel } from '@/hooks/useLastPanel';
 
 /** Navigation items with optional minimum role requirement.
- *  'admin' = ADMIN or HEAD_ADMIN only. Omit = all staff. */
-const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin'; badgeKey?: string }[] = [
-  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders' },
-  { label: 'Challenges', href: '/admin/challenges', icon: Target },
-  { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'admin' },
-  { label: 'Chat', href: '/admin/chat', icon: MessageCircle },
-  { label: 'Tickets', href: '/admin/tickets', icon: TicketCheck },
-  { label: 'Payouts', href: '/admin/payouts', icon: Banknote },
-  { label: 'Referrals', href: '/admin/referrals', icon: Users },
-  { label: 'Notifications', href: '/admin/notifications', icon: Bell },
+ *  'admin' = ADMIN or HEAD_ADMIN only.
+ *  'moderator' = MODERATOR+ (hides from TRADER).
+ *  'trader' = TRADER+ (signal hub).
+ *  Omit = all staff including TRADER. */
+const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard; minRole?: 'admin' | 'moderator' | 'trader'; badgeKey?: string }[] = [
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: 'moderator' },
+  { label: 'Users', href: '/admin/users', icon: Users, minRole: 'moderator' },
+  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders', minRole: 'moderator' },
+  { label: 'Challenges', href: '/admin/challenges', icon: Target, minRole: 'moderator' },
+  { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'trader' },
+  { label: 'Chat', href: '/admin/chat', icon: MessageCircle, minRole: 'moderator' },
+  { label: 'Tickets', href: '/admin/tickets', icon: TicketCheck, minRole: 'moderator' },
+  { label: 'Payouts', href: '/admin/payouts', icon: Banknote, minRole: 'moderator' },
+  { label: 'Referrals', href: '/admin/referrals', icon: Users, minRole: 'moderator' },
+  { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: 'moderator' },
   { label: 'Services', href: '/admin/services', icon: Layers, minRole: 'admin' },
-  { label: 'Blog', href: '/admin/blog', icon: FileText },
+  { label: 'Blog', href: '/admin/blog', icon: FileText, minRole: 'moderator' },
   { label: 'Home Page', href: '/admin/home-page', icon: Home, minRole: 'admin' },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag, minRole: 'admin' },
   { label: 'Activity Logs', href: '/admin/logs', icon: ScrollText, minRole: 'admin' },
@@ -56,14 +59,15 @@ const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard
 export default function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user, isHeadAdmin, isAdmin, canViewSensitive } = useAuth();
+  const { user, isHeadAdmin, isAdmin, isTrader, canViewSensitive } = useAuth();
   const [pendingOrders, setPendingOrders] = useState(0);
 
-  const roleLabel = isHeadAdmin ? 'Head Administrator' : isAdmin ? 'Administrator' : 'Moderator';
+  const roleLabel = isHeadAdmin ? 'Head Administrator' : isAdmin ? 'Administrator' : isTrader ? 'Trader' : 'Moderator';
 
   // Filter nav items based on role
   const visibleNavItems = adminNavItems.filter((item) => {
     if (item.minRole === 'admin' && !canViewSensitive) return false;
+    if (item.minRole === 'moderator' && isTrader) return false;
     return true;
   });
 

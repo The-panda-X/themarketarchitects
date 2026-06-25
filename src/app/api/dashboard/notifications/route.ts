@@ -14,4 +14,26 @@ export async function GET() {
 
     return successResponse(notifications);
   } catch (err) {
-    return handleApiErr
+    return handleApiError(err);
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const session = await requireAuth();
+    const { id } = await req.json();
+
+    if (!id || typeof id !== 'string') {
+      return errorResponse('Notification id is required', 400);
+    }
+
+    await prisma.notification.updateMany({
+      where: { id, userId: session.user.id },
+      data: { read: true },
+    });
+
+    return successResponse({ success: true });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}

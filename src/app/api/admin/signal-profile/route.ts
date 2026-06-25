@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { requireAdmin, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { requireTrader, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 
 const nicknameSchema = z.object({
   signalNickname: z
@@ -17,14 +17,16 @@ const nicknameSchema = z.object({
 /** GET — fetch the current admin's signal nickname */
 export async function GET() {
   try {
-    const session = await requireAdmin();
+    const session = await requireTrader();
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { signalNickname: true, name: true, email: true },
+      select: { signalNickname: true, name: true, email: true, role: true, canOverrideRisk: true },
     });
+    const isTrader = user?.role === 'TRADER';
     return successResponse({
       signalNickname: user?.signalNickname ?? null,
       defaultDisplay: user?.name ?? user?.email ?? 'Admin',
+      canOverrideRisk: isTrader ? (user?.canOverrideRisk ?? false) : true,
     });
   } catch (err) {
     return handleApiError(err);
@@ -34,7 +36,7 @@ export async function GET() {
 /** PATCH — update the current admin's signal nickname */
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await requireAdmin();
+    const session = await requireTrader();
     const body = await req.json();
     const parsed = nicknameSchema.safeParse(body);
     if (!parsed.success) {
