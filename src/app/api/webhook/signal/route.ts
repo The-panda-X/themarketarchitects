@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     const {
       pair, direction, entry, sl, tp1, tp2, tp3, riskPct,
       source = 'discord', rawMessage,
+      senderId, senderNickname, tpMode,
       deliveries, // array of { challengeId, status, skipReason }
     } = body;
 
@@ -38,6 +39,9 @@ export async function POST(req: NextRequest) {
         riskPct:     riskPct ? parseFloat(riskPct) : null,
         source,
         rawMessage:  rawMessage ?? null,
+        senderId:    senderId ?? null,
+        senderNickname: senderNickname ?? null,
+        tpMode:      tpMode ?? 'manual',
         totalSent:   sent,
         totalSkipped: skipped,
         totalFailed: failed,

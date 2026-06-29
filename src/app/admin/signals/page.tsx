@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Send, Radio, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, Trash2, Loader2, MessageSquare, AtSign, Save, Pencil, X, Users, Filter } from 'lucide-react';
+import { Send, Radio, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, Trash2, Loader2, MessageSquare, AtSign, Save, Pencil, X, Users, Filter, Target, TrendingUp, TrendingDown, Clock, Crosshair } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -10,7 +10,7 @@ import Select from '@/components/ui/Select';
 import Skeleton from '@/components/ui/Skeleton';
 import Modal from '@/components/ui/Modal';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableEmpty, TablePagination } from '@/components/ui/Table';
-import { formatRelativeTime } from '@/lib/utils';
+import { formatRelativeTime, formatDate } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
 import useToast from '@/hooks/useToast';
 
@@ -42,6 +42,16 @@ interface SignalLog {
   senderNickname: string | null;
   sentAt: string;
   deliveries: Delivery[];
+  // Result tracking
+  result: string | null;
+  tp1Hit: boolean;
+  tp2Hit: boolean;
+  tp3Hit: boolean;
+  slHit: boolean;
+  pnl: number | null;
+  closedAt: string | null;
+  tpMode: string;
+  resultNote: string | null;
 }
 
 interface TraderStat {
@@ -50,8 +60,20 @@ interface TraderStat {
   totalSignals: number;
 }
 
+interface ResultCount {
+  result: string | null;
+  count: number;
+}
+
+const RESULT_BADGE: Record<string, { variant: 'green' | 'red' | 'yellow' | 'default'; label: string }> = {
+  win:       { variant: 'green',   label: 'Win' },
+  loss:      { variant: 'red',     label: 'Loss' },
+  breakeven: { variant: 'yellow',  label: 'B/E' },
+};
+
 export default function AdminSignalsPage() {
-  const { canDelete, isTrader } = useAuth();
+  const { canDelete, isTrader, isAdmin, isHeadAdmin } = useAuth();
+  const canEditResults = isAdmin || isHeadAdmin;
   const { addToast } = useToast();
 
   /* ── Signal Log state ───────────────────────────────────────────── */
@@ -67,7 +89,17 @@ export default function AdminSignalsPage() {
 
   /* ── Trader stats & filter ─────────────────────────────────────── */
   const [traderStats, setTraderStats] = useState<TraderStat[]>([]);
+  const [resultCounts, setResultCounts] = useState<ResultCount[]>([]);
   const [senderFilter, setSenderFilter] = useState<string | null>(null);
+
+  /* ── Result update state ───────────────────────────────────────── */
+  const [resultTarget, setResultTarget] = useState<SignalLog | null>(null);
+  const [resultForm, setResultForm] = useState({
+    result: '' as string,
+    tp1Hit: false, tp2Hit: false, tp3Hit: false, slHit: false,
+    pnl: '', closedAt: '', resultNote: '',
+  });
+  const [savingResult, setSavingResult] = useState(false);
 
   /* ── Send Signal state ──────────────────────────────────────────── */
   const [modalOpen, setModalOpen] = useState(false);
@@ -134,6 +166,7 @@ export default function AdminSignalsPage() {
         setTotalPages(d.data.totalPages ?? 1);
         setTotal(d.data.total ?? 0);
         setTraderStats(d.data.traderStats ?? []);
+        setResultCounts(d.data.resultCounts ?? []);
       }
     } finally {
       setLoading(false);
@@ -193,6 +226,61 @@ export default function AdminSignalsPage() {
     finally { setDeleting(false); }
   };
 
+  /* ── Update Signal Result ──────────────────────────────────────── */
+  const openResultModal = (sig: SignalLog) => {
+    setResultTarget(sig);
+    setResultForm({
+      result: sig.result ?? '',
+      tp1Hit: sig.tp1Hit ?? false,
+      tp2Hit: sig.tp2Hit ?? false,
+      tp3Hit: sig.tp3Hit ?? false,
+      slHit: sig.slHit ?? false,
+      pnl: sig.pnl != null ? String(sig.pnl) : '',
+      closedAt: sig.closedAt ? sig.closedAt.slice(0, 16) : '',
+      resultNote: sig.resultNote ?? '',
+    });
+  };
+
+  const handleSaveResult = async () => {
+    if (!resultTarget) return;
+    setSavingResult(true);
+    try {
+      const res = await fetch('/api/admin/signals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: resultTarget.id,
+          result: resultForm.result || null,
+          tp1Hit: resultForm.tp1Hit,
+          tp2Hit: resultForm.tp2Hit,
+          tp3Hit: resultForm.tp3Hit,
+          slHit: resultForm.slHit,
+          pnl: resultForm.pnl || null,
+          closedAt: resultForm.closedAt || null,
+          resultNote: resultForm.resultNote || null,
+        }),
+      });
+      if (res.ok) {
+        addToast('Signal result updated', 'success');
+        setResultTarget(null);
+        fetchSignals();
+      } else {
+        const d = await res.json();
+        addToast(d.error ?? 'Failed to update', 'error');
+      }
+    } finally {
+      setSavingResult(false);
+    }
+  };
+
+  /* ── Helpers ────────────────────────────────────────────────────── */
+  const tpsHitCount = (sig: SignalLog) => [sig.tp1Hit, sig.tp2Hit, sig.tp3Hit].filter(Boolean).length;
+  const tpsTotal    = (sig: SignalLog) => [sig.tp1, sig.tp2, sig.tp3].filter(Boolean).length;
+  const wins  = resultCounts.find(r => r.result === 'win')?.count ?? 0;
+  const losses = resultCounts.find(r => r.result === 'loss')?.count ?? 0;
+  const colSpanAdmin = canDelete ? 12 : 11;
+  const colSpanTrader = 9;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -201,7 +289,9 @@ export default function AdminSignalsPage() {
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
             <Radio className="h-6 w-6 text-accent-primary" /> Signal Hub
           </h1>
-          <p className="text-text-secondary mt-1">Send signals to Discord for instant EA execution</p>
+          <p className="text-text-secondary mt-1">
+            {isTrader ? 'Your signal history and trade results' : 'Send signals to Discord for instant EA execution'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {canDelete && total > 0 && (
@@ -275,44 +365,78 @@ export default function AdminSignalsPage() {
       </GlassCard>
 
       {/* Stats */}
-      <div className={`grid gap-4 ${isTrader ? 'grid-cols-2' : 'grid-cols-3'}`}>
+      <div className={`grid gap-4 ${isTrader ? 'grid-cols-4' : 'grid-cols-3'}`}>
         <GlassCard padding="md">
           <div className="flex items-center gap-3">
             <Radio className="h-5 w-5 text-accent-primary" />
             <div>
               <p className="text-2xl font-bold font-mono">{total}</p>
-              <p className="text-xs text-text-tertiary">{senderFilter ? 'Filtered Signals' : 'Total Signals'}</p>
+              <p className="text-xs text-text-tertiary">{isTrader ? 'My Signals' : senderFilter ? 'Filtered Signals' : 'Total Signals'}</p>
             </div>
           </div>
         </GlassCard>
-        <GlassCard padding="md">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-success" />
-            <div>
-              <p className="text-2xl font-bold font-mono">
-                {signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).length}
-              </p>
-              <p className="text-xs text-text-tertiary">Signals This Week</p>
-            </div>
-          </div>
-        </GlassCard>
-        {!isTrader && (
-          <GlassCard padding="md">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              <div>
-                <p className="text-2xl font-bold font-mono">
-                  {signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).reduce((a,s) => a + s.totalSkipped, 0)}
-                </p>
-                <p className="text-xs text-text-tertiary">Skipped This Week</p>
+        {isTrader ? (
+          <>
+            <GlassCard padding="md">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="h-5 w-5 text-success" />
+                <div>
+                  <p className="text-2xl font-bold font-mono text-success">{wins}</p>
+                  <p className="text-xs text-text-tertiary">Wins</p>
+                </div>
               </div>
-            </div>
-          </GlassCard>
+            </GlassCard>
+            <GlassCard padding="md">
+              <div className="flex items-center gap-3">
+                <TrendingDown className="h-5 w-5 text-danger" />
+                <div>
+                  <p className="text-2xl font-bold font-mono text-danger">{losses}</p>
+                  <p className="text-xs text-text-tertiary">Losses</p>
+                </div>
+              </div>
+            </GlassCard>
+            <GlassCard padding="md">
+              <div className="flex items-center gap-3">
+                <Target className="h-5 w-5 text-accent-gold" />
+                <div>
+                  <p className="text-2xl font-bold font-mono">
+                    {wins + losses > 0 ? `${((wins / (wins + losses)) * 100).toFixed(0)}%` : '—'}
+                  </p>
+                  <p className="text-xs text-text-tertiary">Win Rate</p>
+                </div>
+              </div>
+            </GlassCard>
+          </>
+        ) : (
+          <>
+            <GlassCard padding="md">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-success" />
+                <div>
+                  <p className="text-2xl font-bold font-mono">
+                    {signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).length}
+                  </p>
+                  <p className="text-xs text-text-tertiary">Signals This Week</p>
+                </div>
+              </div>
+            </GlassCard>
+            <GlassCard padding="md">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                <div>
+                  <p className="text-2xl font-bold font-mono">
+                    {signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).reduce((a,s) => a + s.totalSkipped, 0)}
+                  </p>
+                  <p className="text-xs text-text-tertiary">Skipped This Week</p>
+                </div>
+              </div>
+            </GlassCard>
+          </>
         )}
       </div>
 
-      {/* Per-Trader Breakdown */}
-      {traderStats.length > 0 && (
+      {/* Per-Trader Breakdown — admin only */}
+      {!isTrader && traderStats.length > 0 && (
         <GlassCard padding="md">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider flex items-center gap-2">
@@ -369,22 +493,26 @@ export default function AdminSignalsPage() {
                   <TableHead>Entry / SL</TableHead>
                   <TableHead>Risk %</TableHead>
                   <TableHead>TPs</TableHead>
-                  <TableHead>Sent By</TableHead>
-                  <TableHead>Source</TableHead>
+                  {!isTrader && <TableHead>Sent By</TableHead>}
+                  <TableHead>Result</TableHead>
+                  <TableHead>TP Hits</TableHead>
+                  {!isTrader && <TableHead>Source</TableHead>}
                   {!isTrader && <TableHead align="center">Sent</TableHead>}
-                  {!isTrader && <TableHead align="center">Skipped</TableHead>}
-                  {!isTrader && <TableHead align="center">Details</TableHead>}
+                  <TableHead align="center">Details</TableHead>
                   {canDelete && <TableHead align="center">Delete</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {signals.length === 0 ? (
-                  <TableEmpty colSpan={isTrader ? 7 : (canDelete ? 11 : 10)} message="No signals yet. Click 'Send Signal' to post a trade to Discord." />
+                  <TableEmpty colSpan={isTrader ? colSpanTrader : colSpanAdmin} message="No signals yet. Click 'Send Signal' to post a trade to Discord." />
                 ) : signals.map(sig => (
                   <>
-                    <TableRow key={sig.id} onClick={!isTrader ? () => setExpandedId(expandedId === sig.id ? null : sig.id) : undefined}>
+                    <TableRow key={sig.id} onClick={() => setExpandedId(expandedId === sig.id ? null : sig.id)}>
                       <TableCell>
-                        <span className="text-xs text-text-tertiary">{formatRelativeTime(sig.sentAt)}</span>
+                        <div>
+                          <span className="text-xs text-text-tertiary">{formatRelativeTime(sig.sentAt)}</span>
+                          <p className="text-[10px] text-text-tertiary/60 font-mono">{formatDate(sig.sentAt)}</p>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -403,41 +531,80 @@ export default function AdminSignalsPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <p className="text-xs font-mono text-text-tertiary">
-                          {[sig.tp1, sig.tp2, sig.tp3].filter(Boolean).join(' · ') || '—'}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-mono text-text-tertiary">
+                            {[sig.tp1, sig.tp2, sig.tp3].filter(Boolean).join(' · ') || '—'}
+                          </p>
+                          <Badge variant={sig.tpMode === 'auto' ? 'blue' : 'default'} size="sm">
+                            {sig.tpMode === 'auto' ? 'Auto' : 'Manual'}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      {!isTrader && (
+                        <TableCell>
+                          {sig.senderNickname ? (
+                            <Badge variant="blue" size="sm">
+                              <span className="font-mono">@{sig.senderNickname}</span>
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-text-tertiary">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        {sig.result ? (
+                          <Badge variant={RESULT_BADGE[sig.result]?.variant ?? 'default'} size="sm">
+                            {RESULT_BADGE[sig.result]?.label ?? sig.result}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-text-tertiary flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> Pending
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {sig.senderNickname ? (
-                          <Badge variant="blue" size="sm">
-                            <span className="font-mono">@{sig.senderNickname}</span>
-                          </Badge>
+                        {tpsTotal(sig) > 0 ? (
+                          <div className="flex items-center gap-1">
+                            {sig.tp1 != null && (
+                              <span className={`text-[10px] font-mono font-bold px-1 py-0.5 rounded ${sig.tp1Hit ? 'bg-success/20 text-success' : 'bg-white/[0.04] text-text-tertiary'}`}>
+                                TP1
+                              </span>
+                            )}
+                            {sig.tp2 != null && (
+                              <span className={`text-[10px] font-mono font-bold px-1 py-0.5 rounded ${sig.tp2Hit ? 'bg-success/20 text-success' : 'bg-white/[0.04] text-text-tertiary'}`}>
+                                TP2
+                              </span>
+                            )}
+                            {sig.tp3 != null && (
+                              <span className={`text-[10px] font-mono font-bold px-1 py-0.5 rounded ${sig.tp3Hit ? 'bg-success/20 text-success' : 'bg-white/[0.04] text-text-tertiary'}`}>
+                                TP3
+                              </span>
+                            )}
+                            {sig.slHit && (
+                              <span className="text-[10px] font-mono font-bold px-1 py-0.5 rounded bg-danger/20 text-danger">SL</span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-xs text-text-tertiary">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={sig.source === 'admin' ? 'gold' : sig.source === 'discord_webhook' ? 'purple' : 'default'} size="sm">
-                          {sig.source === 'admin' ? 'Admin' : sig.source === 'discord_webhook' ? 'Website' : 'Discord'}
-                        </Badge>
-                      </TableCell>
+                      {!isTrader && (
+                        <TableCell>
+                          <Badge variant={sig.source === 'admin' ? 'gold' : sig.source === 'discord_webhook' ? 'purple' : 'default'} size="sm">
+                            {sig.source === 'admin' ? 'Admin' : sig.source === 'discord_webhook' ? 'Website' : 'Discord'}
+                          </Badge>
+                        </TableCell>
+                      )}
                       {!isTrader && (
                         <TableCell align="center">
                           <span className="text-success font-mono font-bold">{sig.totalSent}</span>
                         </TableCell>
                       )}
-                      {!isTrader && (
-                        <TableCell align="center">
-                          <span className="text-warning font-mono">{sig.totalSkipped}</span>
-                        </TableCell>
-                      )}
-                      {!isTrader && (
-                        <TableCell align="center">
-                          <button className="text-text-tertiary hover:text-text-primary transition-colors">
-                            {expandedId === sig.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </button>
-                        </TableCell>
-                      )}
+                      <TableCell align="center">
+                        <button className="text-text-tertiary hover:text-text-primary transition-colors">
+                          {expandedId === sig.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                      </TableCell>
                       {canDelete && (
                         <TableCell align="center">
                           <button
@@ -450,33 +617,89 @@ export default function AdminSignalsPage() {
                       )}
                     </TableRow>
 
-                    {/* Expanded delivery details — admin/moderator only */}
-                    {!isTrader && expandedId === sig.id && sig.deliveries?.length > 0 && (
+                    {/* Expanded details */}
+                    {expandedId === sig.id && (
                       <tr key={`${sig.id}-expanded`}>
-                        <td colSpan={canDelete ? 11 : 10} className="px-4 pb-3">
-                          <div className="bg-white/[0.03] rounded-xl p-4 space-y-2">
-                            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-                              Delivery Report — {sig.deliveries.length} accounts
-                            </p>
-                            <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
-                              {sig.deliveries.map(d => (
-                                <div key={d.id} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-white/[0.03]">
-                                  <div className="flex items-center gap-2">
-                                    {d.status === 'sent'
-                                      ? <CheckCircle className="h-3.5 w-3.5 text-success flex-shrink-0" />
-                                      : d.status === 'failed'
-                                      ? <XCircle className="h-3.5 w-3.5 text-danger flex-shrink-0" />
-                                      : <AlertTriangle className="h-3.5 w-3.5 text-warning flex-shrink-0" />
-                                    }
-                                    <span className="text-text-primary font-medium">{d.challenge.user.name ?? d.challenge.user.email}</span>
-                                    <span className="text-text-tertiary">· {d.challenge.firmName} {d.challenge.accountSize}</span>
-                                  </div>
-                                  {d.skipReason && (
-                                    <span className="text-text-tertiary italic">{d.skipReason}</span>
+                        <td colSpan={isTrader ? colSpanTrader : colSpanAdmin} className="px-4 pb-3">
+                          <div className="bg-white/[0.03] rounded-xl p-4 space-y-4">
+                            {/* Signal detail row — visible to everyone */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-text-tertiary mb-1">Date & Time</p>
+                                <p className="text-xs font-mono text-text-primary">{formatDate(sig.sentAt)}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-text-tertiary mb-1">TP Mode</p>
+                                <p className="text-xs text-text-primary">{sig.tpMode === 'auto' ? 'Auto (EA R:R)' : 'Manual Override'}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-text-tertiary mb-1">TPs Hit</p>
+                                <p className="text-xs font-mono text-text-primary">{tpsHitCount(sig)} / {tpsTotal(sig)}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-text-tertiary mb-1">Result</p>
+                                <div className="flex items-center gap-2">
+                                  {sig.result ? (
+                                    <Badge variant={RESULT_BADGE[sig.result]?.variant ?? 'default'} size="sm">
+                                      {RESULT_BADGE[sig.result]?.label ?? sig.result}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-xs text-text-tertiary">Pending</span>
+                                  )}
+                                  {sig.pnl != null && (
+                                    <span className={`font-mono text-xs font-bold ${sig.pnl >= 0 ? 'text-success' : 'text-danger'}`}>
+                                      {sig.pnl >= 0 ? '+' : ''}{sig.pnl.toFixed(2)}
+                                    </span>
                                   )}
                                 </div>
-                              ))}
+                              </div>
                             </div>
+
+                            {sig.resultNote && (
+                              <p className="text-xs text-text-secondary italic border-l-2 border-accent-primary/30 pl-3">{sig.resultNote}</p>
+                            )}
+
+                            {sig.closedAt && (
+                              <p className="text-[10px] text-text-tertiary">Closed: {formatDate(sig.closedAt)}</p>
+                            )}
+
+                            {/* Edit result button — admin only */}
+                            {canEditResults && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openResultModal(sig); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-accent-primary hover:bg-accent-primary/10 transition-colors"
+                              >
+                                <Pencil className="h-3.5 w-3.5" /> Update Result
+                              </button>
+                            )}
+
+                            {/* Delivery report — admin/moderator only */}
+                            {!isTrader && sig.deliveries?.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                                  Delivery Report — {sig.deliveries.length} accounts
+                                </p>
+                                <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+                                  {sig.deliveries.map(d => (
+                                    <div key={d.id} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-white/[0.03]">
+                                      <div className="flex items-center gap-2">
+                                        {d.status === 'sent'
+                                          ? <CheckCircle className="h-3.5 w-3.5 text-success flex-shrink-0" />
+                                          : d.status === 'failed'
+                                          ? <XCircle className="h-3.5 w-3.5 text-danger flex-shrink-0" />
+                                          : <AlertTriangle className="h-3.5 w-3.5 text-warning flex-shrink-0" />
+                                        }
+                                        <span className="text-text-primary font-medium">{d.challenge.user.name ?? d.challenge.user.email}</span>
+                                        <span className="text-text-tertiary">· {d.challenge.firmName} {d.challenge.accountSize}</span>
+                                      </div>
+                                      {d.skipReason && (
+                                        <span className="text-text-tertiary italic">{d.skipReason}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -540,6 +763,90 @@ export default function AdminSignalsPage() {
             Send Signal
           </Button>
         </div>
+      </Modal>
+
+      {/* ═══════════════════════════════════════════════════════════
+          UPDATE RESULT MODAL (Admin only)
+          ═══════════════════════════════════════════════════════════ */}
+      <Modal
+        isOpen={!!resultTarget}
+        onClose={() => setResultTarget(null)}
+        title="Update Signal Result"
+        description={resultTarget ? `${resultTarget.direction} ${resultTarget.pair} — ${formatDate(resultTarget.sentAt)}` : ''}
+        size="lg"
+      >
+        {resultTarget && (
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-xs text-text-tertiary mb-1.5 block font-medium uppercase tracking-wider">Result</label>
+              <Select value={resultForm.result} onChange={e => setResultForm(f => ({ ...f, result: e.target.value }))}>
+                <option value="">Pending</option>
+                <option value="win">Win</option>
+                <option value="loss">Loss</option>
+                <option value="breakeven">Breakeven</option>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-xs text-text-tertiary mb-2 block font-medium uppercase tracking-wider">TP / SL Hits</label>
+              <div className="flex flex-wrap gap-2">
+                {resultTarget.tp1 != null && (
+                  <button
+                    type="button"
+                    onClick={() => setResultForm(f => ({ ...f, tp1Hit: !f.tp1Hit }))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
+                      resultForm.tp1Hit ? 'bg-success/20 text-success border border-success/40' : 'bg-white/[0.04] text-text-tertiary border border-white/[0.06]'
+                    }`}
+                  >
+                    TP1 {resultForm.tp1Hit ? '✓' : ''}
+                  </button>
+                )}
+                {resultTarget.tp2 != null && (
+                  <button
+                    type="button"
+                    onClick={() => setResultForm(f => ({ ...f, tp2Hit: !f.tp2Hit }))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
+                      resultForm.tp2Hit ? 'bg-success/20 text-success border border-success/40' : 'bg-white/[0.04] text-text-tertiary border border-white/[0.06]'
+                    }`}
+                  >
+                    TP2 {resultForm.tp2Hit ? '✓' : ''}
+                  </button>
+                )}
+                {resultTarget.tp3 != null && (
+                  <button
+                    type="button"
+                    onClick={() => setResultForm(f => ({ ...f, tp3Hit: !f.tp3Hit }))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
+                      resultForm.tp3Hit ? 'bg-success/20 text-success border border-success/40' : 'bg-white/[0.04] text-text-tertiary border border-white/[0.06]'
+                    }`}
+                  >
+                    TP3 {resultForm.tp3Hit ? '✓' : ''}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setResultForm(f => ({ ...f, slHit: !f.slHit }))}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
+                    resultForm.slHit ? 'bg-danger/20 text-danger border border-danger/40' : 'bg-white/[0.04] text-text-tertiary border border-white/[0.06]'
+                  }`}
+                >
+                  SL {resultForm.slHit ? '✓' : ''}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="P&L ($)" type="number" placeholder="e.g. 150 or -50" value={resultForm.pnl} onChange={e => setResultForm(f => ({ ...f, pnl: e.target.value }))} />
+              <Input label="Closed At" type="datetime-local" value={resultForm.closedAt} onChange={e => setResultForm(f => ({ ...f, closedAt: e.target.value }))} />
+            </div>
+
+            <Input label="Note" placeholder="e.g. TP2 hit then reversed to SL" value={resultForm.resultNote} onChange={e => setResultForm(f => ({ ...f, resultNote: e.target.value }))} />
+
+            <Button variant="primary" fullWidth loading={savingResult} onClick={handleSaveResult} icon={<Save className="h-4 w-4" />}>
+              Save Result
+            </Button>
+          </div>
+        )}
       </Modal>
 
       {/* Delete single signal log */}

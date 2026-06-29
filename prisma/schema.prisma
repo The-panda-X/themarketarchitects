@@ -277,13 +277,25 @@ model SignalLog {
   totalSent    Int      @default(0)
   totalSkipped Int      @default(0)
   totalFailed  Int      @default(0)
-  senderId       String?                            // admin user id who sent this signal
-  senderNickname String?                            // snapshot of admin's signalNickname at send time
+  senderId       String?
+  senderNickname String?
   sentAt       DateTime @default(now())
+
+  // Trade result tracking
+  result       String?                              // win | loss | breakeven | null (pending)
+  tp1Hit       Boolean  @default(false)
+  tp2Hit       Boolean  @default(false)
+  tp3Hit       Boolean  @default(false)
+  slHit        Boolean  @default(false)
+  pnl          Float?                               // profit/loss in dollars
+  closedAt     DateTime?
+  tpMode       String   @default("manual")          // manual | auto (EA R:R calculated)
+  resultNote   String?
 
   deliveries SignalDelivery[]
 
   @@index([sentAt])
+  @@index([senderId])
 }
 
 model SignalDelivery {
