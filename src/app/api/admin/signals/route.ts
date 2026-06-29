@@ -14,9 +14,24 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, unknown> = {};
 
-    // Traders can only see their own signals
+    // Traders can only see their own signals (match by senderId or senderNickname
+    // since older signals from DiscordBridge may only have the nickname, not the ID)
     if (trader) {
-      where.senderId = session.user.id;
+      const profile = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { signalNickname: true, staffNickname: true, name: true, email: true },
+      });
+      const possibleNames = [
+        profile?.signalNickname,
+        profile?.staffNickname,
+        profile?.name,
+        profile?.email?.split('@')[0],
+      ].filter(Boolean) as string[];
+
+      where.OR = [
+        { senderId: session.user.id },
+        ...(possibleNames.length > 0 ? [{ senderNickname: { in: possibleNames } }] : []),
+      ];
     } else {
       const senderFilter = searchParams.get('sender');
       if (senderFilter) where.senderId = senderFilter;
