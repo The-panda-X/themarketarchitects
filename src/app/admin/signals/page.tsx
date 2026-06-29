@@ -279,7 +279,7 @@ export default function AdminSignalsPage() {
   const wins  = resultCounts.find(r => r.result === 'win')?.count ?? 0;
   const losses = resultCounts.find(r => r.result === 'loss')?.count ?? 0;
   const colSpanAdmin = canDelete ? 12 : 11;
-  const colSpanTrader = 9;
+  const colSpanTrader = 10;
 
   return (
     <div className="space-y-6">
@@ -493,7 +493,7 @@ export default function AdminSignalsPage() {
                   <TableHead>Entry / SL</TableHead>
                   <TableHead>Risk %</TableHead>
                   <TableHead>TPs</TableHead>
-                  {!isTrader && <TableHead>Sent By</TableHead>}
+                  <TableHead>Sent By</TableHead>
                   <TableHead>Result</TableHead>
                   <TableHead>TP Hits</TableHead>
                   {!isTrader && <TableHead>Source</TableHead>}
@@ -540,17 +540,17 @@ export default function AdminSignalsPage() {
                           </Badge>
                         </div>
                       </TableCell>
-                      {!isTrader && (
-                        <TableCell>
-                          {sig.senderNickname ? (
-                            <Badge variant="blue" size="sm">
-                              <span className="font-mono">@{sig.senderNickname}</span>
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-text-tertiary">—</span>
-                          )}
-                        </TableCell>
-                      )}
+                      <TableCell>
+                        {sig.senderNickname ? (
+                          <Badge variant="blue" size="sm">
+                            <span className="font-mono">@{sig.senderNickname}</span>
+                          </Badge>
+                        ) : (
+                          <Badge variant="default" size="sm">
+                            <span className="font-mono">{sig.source ?? '—'}</span>
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {sig.result ? (
                           <Badge variant={RESULT_BADGE[sig.result]?.variant ?? 'default'} size="sm">

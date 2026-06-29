@@ -14,25 +14,9 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, unknown> = {};
 
-    // Traders can only see their own signals (match by senderId or senderNickname
-    // since older signals from DiscordBridge may only have the nickname, not the ID)
-    if (trader) {
-      const profile = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { signalNickname: true, staffNickname: true, name: true, email: true },
-      });
-      const possibleNames = [
-        profile?.signalNickname,
-        profile?.staffNickname,
-        profile?.name,
-        profile?.email?.split('@')[0],
-      ].filter(Boolean) as string[];
-
-      where.OR = [
-        { senderId: session.user.id },
-        ...(possibleNames.length > 0 ? [{ senderNickname: { in: possibleNames } }] : []),
-      ];
-    } else {
+    // Traders see all signals (account details are stripped below).
+    // Once DiscordBridge passes senderId, we can filter per-trader.
+    if (!trader) {
       const senderFilter = searchParams.get('sender');
       if (senderFilter) where.senderId = senderFilter;
     }
@@ -77,12 +61,12 @@ export async function GET(req: NextRequest) {
       }));
     }
 
-    // Per-trader result breakdown for the stats cards
+    // Result breakdown for the stats cards (traders see overall stats)
     const resultCounts = trader
       ? await prisma.signalLog.groupBy({
           by: ['result'],
           _count: { id: true },
-          where: { senderId: session.user.id, result: { not: null } },
+          where: { result: { not: null } },
         })
       : [];
 
