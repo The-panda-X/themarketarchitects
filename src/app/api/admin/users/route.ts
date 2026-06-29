@@ -35,36 +35,57 @@ export async function GET(req: NextRequest) {
     };
 
     const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          avatar: true,
-          role: true,
-          emailVerified: true,
-          referralCode: true,
-          lastLoginCountry: true,
-          lastLoginCity: true,
-          lastLoginRegion: true,
-          lastLoginAt: true,
-          ...(viewerIsHeadAdmin && {
-            lastLoginIp: true,
-            lastLoginLat: true,
-            lastLoginLon: true,
-          }),
-          createdAt: true,
-          _count: { select: { orders: true, challenges: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
+      prisma.$queryRaw`
+        SELECT u.id, u.email, u.name, u.avatar, u.role,
+               u."emailVerified", u."referralCode",
+               u."lastLoginCountry", u."lastLoginCity", u."lastLoginRegion",
+               u."lastLoginAt",
+               ${viewerIsHeadAdmin} AS "showSensitive",
+               u."lastLoginIp", u."lastLoginLat", u."lastLoginLon",
+               u."createdAt",
+               (SELECT COUNT(*)::int FROM "Order" WHERE "userId" = u.id) AS "orderCount",
+               (SELECT COUNT(*)::int FROM "Challenge" WHERE "userId" = u.id) AS "challengeCount"
+        FROM "User" u
+        WHERE (${!search} OR u.email ILIKE ${'%' + search + '%'} OR u.name ILIKE ${'%' + search + '%'})
+          AND (${!role} OR u.role = ${role})
+          AND (${viewerIsHeadAdmin} OR u.role != 'HEAD_ADMIN')
+        ORDER BY
+          CASE u.role
+            WHEN 'HEAD_ADMIN' THEN 0
+            WHEN 'ADMIN'      THEN 1
+            WHEN 'MODERATOR'  THEN 2
+            WHEN 'TRADER'     THEN 3
+            ELSE 4
+          END,
+          u."createdAt" DESC
+        LIMIT ${limit} OFFSET ${skip}
+      ` as unknown as Array<Record<string, unknown>>,
       prisma.user.count({ where }),
     ]);
 
-    return successResponse({ data: users, total, page, limit, totalPages: Math.ceil(total / limit) });
+    // Reshape raw rows to match the expected frontend format
+    const shaped = (users as Array<Record<string, unknown>>).map(u => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      avatar: u.avatar,
+      role: u.role,
+      emailVerified: u.emailVerified,
+      referralCode: u.referralCode,
+      lastLoginCountry: u.lastLoginCountry,
+      lastLoginCity: u.lastLoginCity,
+      lastLoginRegion: u.lastLoginRegion,
+      lastLoginAt: u.lastLoginAt,
+      ...(viewerIsHeadAdmin && {
+        lastLoginIp: u.lastLoginIp,
+        lastLoginLat: u.lastLoginLat,
+        lastLoginLon: u.lastLoginLon,
+      }),
+      createdAt: u.createdAt,
+      _count: { orders: u.orderCount ?? 0, challenges: u.challengeCount ?? 0 },
+    }));
+
+    return successResponse({ data: shaped, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     return handleApiError(err);
   }
