@@ -176,8 +176,8 @@ export default function ChallengeDetailPage() {
         <GlassCard padding="lg">
           <h3 className="text-sm font-semibold text-text-secondary mb-3">Drawdown Used</h3>
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="font-mono text-danger">{formatCurrency(challenge.currentDrawdown)}</span>
-            <span className="text-text-tertiary font-mono">Max: {formatCurrency(challenge.maxDrawdown ?? 0)}</span>
+            <span className="font-mono text-danger">{challenge.currentDrawdown.toFixed(2)}%</span>
+            <span className="text-text-tertiary font-mono">Max: {(challenge.maxDrawdown ?? 0).toFixed(1)}%</span>
           </div>
           <ProgressBar value={drawdownUsed} color={drawdownUsed > 75 ? 'red' : drawdownUsed > 50 ? 'gold' : 'green'} size="md" />
           <p className="text-xs text-text-tertiary mt-2">{drawdownUsed.toFixed(1)}% used</p>

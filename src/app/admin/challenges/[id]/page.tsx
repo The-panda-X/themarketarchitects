@@ -71,6 +71,7 @@ export default function AdminChallengeDetailPage() {
     currentDrawdown: 0,
     targetProfit: 0,
     maxDrawdown: 0,
+    startBalance: 0,
     daysTraded: 0,
     winRate: 0,
     adminNotes: '',
@@ -98,6 +99,7 @@ export default function AdminChallengeDetailPage() {
             currentDrawdown: d.data.currentDrawdown,
             targetProfit: d.data.targetProfit ?? 0,
             maxDrawdown: d.data.maxDrawdown ?? 0,
+            startBalance: d.data.startBalance ?? 0,
             daysTraded: d.data.daysTraded,
             winRate: d.data.winRate,
             adminNotes: d.data.adminNotes ?? '',
@@ -191,6 +193,7 @@ export default function AdminChallengeDetailPage() {
           ...form,
           targetProfit: form.targetProfit || null,
           maxDrawdown: form.maxDrawdown || null,
+          startBalance: form.startBalance || null,
           startDate: form.startDate || null,
           endDate: form.endDate || null,
         }),
@@ -395,6 +398,12 @@ export default function AdminChallengeDetailPage() {
               onChange={(e) => setForm({ ...form, currentProfit: parseFloat(e.target.value) || 0 })}
             />
           </div>
+          <Input
+            label="Start Balance ($)"
+            type="number"
+            value={form.startBalance}
+            onChange={(e) => setForm({ ...form, startBalance: parseFloat(e.target.value) || 0 })}
+          />
           <Input
             label="Target Profit ($)"
             type="number"

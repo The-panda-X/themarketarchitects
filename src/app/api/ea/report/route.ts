@@ -64,33 +64,57 @@ export async function POST(req: NextRequest) {
       lastReportedAt: new Date(),
     };
 
-    if (body.currentProfit   !== undefined) updateData.currentProfit   = body.currentProfit;
-    if (body.currentDrawdown !== undefined) updateData.currentDrawdown = body.currentDrawdown;
-    if (body.winRate         !== undefined) updateData.winRate         = body.winRate;
-    if (body.daysTraded      !== undefined) updateData.daysTraded      = body.daysTraded;
     if (body.balance         !== undefined) updateData.balance         = body.balance;
     if (body.equity          !== undefined) updateData.equity          = body.equity;
     if (body.openProfit      !== undefined) updateData.openProfit      = body.openProfit;
+    if (body.winRate         !== undefined) updateData.winRate         = body.winRate;
+    if (body.daysTraded      !== undefined) updateData.daysTraded      = body.daysTraded;
     if (body.totalTrades     !== undefined) updateData.totalTrades     = body.totalTrades;
     if (body.winCount        !== undefined) updateData.winCount        = body.winCount;
     if (body.openTrades      !== undefined) updateData.openTrades      = body.openTrades;
 
+    // Auto-set startBalance on first report if not already set
+    if (challenge.startBalance == null && body.balance !== undefined) {
+      updateData.startBalance = body.balance;
+    }
+
+    // Calculate profit and drawdown server-side from the known start balance.
+    // This is more reliable than the EA's calculation because startBalance
+    // persists across EA restarts and terminal reboots.
+    const startBal = (challenge.startBalance as number | null) ?? body.balance;
+    if (startBal && startBal > 0) {
+      if (body.balance !== undefined) {
+        updateData.currentProfit = body.balance - startBal;
+      }
+      if (body.equity !== undefined) {
+        updateData.currentDrawdown = Math.max(0, (startBal - body.equity) / startBal * 100);
+      }
+    } else {
+      // Fallback to EA-reported values if no start balance available
+      if (body.currentProfit   !== undefined) updateData.currentProfit   = body.currentProfit;
+      if (body.currentDrawdown !== undefined) updateData.currentDrawdown = body.currentDrawdown;
+    }
+
     // ── Auto-status logic ─────────────────────────────────────────────
+    // Use server-calculated values (more reliable) with EA values as fallback
+    const effectiveDrawdown = (updateData.currentDrawdown as number | undefined) ?? body.currentDrawdown;
+    const effectiveProfit   = (updateData.currentProfit as number | undefined) ?? body.currentProfit;
+
     let newStatus:        string | null = null;
     let notificationMsg:  string | null = null;
     let notificationType: string        = 'success';
 
     // AUTO-FAIL: drawdown hit the limit
     if (
-      body.currentDrawdown !== undefined &&
+      effectiveDrawdown !== undefined &&
       challenge.maxDrawdown !== null &&
-      body.currentDrawdown >= challenge.maxDrawdown
+      effectiveDrawdown >= challenge.maxDrawdown
     ) {
       newStatus             = 'FAILED';
       updateData.status     = 'FAILED';
       notificationMsg       =
         `Your challenge has been failed automatically. ` +
-        `Drawdown reached ${body.currentDrawdown.toFixed(2)}% ` +
+        `Drawdown reached ${effectiveDrawdown.toFixed(2)}% ` +
         `(max allowed: ${challenge.maxDrawdown.toFixed(1)}%).`;
       notificationType = 'warning';
     }
@@ -98,9 +122,9 @@ export async function POST(req: NextRequest) {
     // AUTO-ADVANCE/PASS: profit target reached (skip if already auto-failed above)
     if (
       !newStatus &&
-      body.currentProfit !== undefined &&
+      effectiveProfit !== undefined &&
       challenge.targetProfit !== null &&
-      body.currentProfit >= challenge.targetProfit
+      effectiveProfit >= challenge.targetProfit
     ) {
       if (challenge.currentPhase === 1) {
         newStatus             = 'PHASE_2';
@@ -108,14 +132,14 @@ export async function POST(req: NextRequest) {
         updateData.currentPhase = 2;
         notificationMsg       =
           `Phase 1 target reached! ` +
-          `You made $${body.currentProfit.toFixed(0)} profit (target: $${challenge.targetProfit.toFixed(0)}). ` +
+          `You made $${effectiveProfit.toFixed(0)} profit (target: $${challenge.targetProfit.toFixed(0)}). ` +
           `Phase 2 is now active.`;
       } else {
         newStatus             = 'PASSED';
         updateData.status     = 'PASSED';
         notificationMsg       =
           `Congratulations! You have passed the challenge. ` +
-          `Final profit: $${body.currentProfit.toFixed(0)}.`;
+          `Final profit: $${effectiveProfit.toFixed(0)}.`;
       }
     }
 
@@ -139,17 +163,17 @@ export async function POST(req: NextRequest) {
     }
 
     return successResponse({
-      challengeId: challenge.id,
-      updated:     true,
+      challengeId:  challenge.id,
+      updated:      true,
       newStatus,
-      // Returned to EA so it can display account info on the dashboard
-      clientName:  challenge.user.name  ?? '',
-      clientEmail: challenge.user.email,
-      firmName:    challenge.firmName,
-      accountSize: challenge.accountSize,
+      startBalance: (updateData.startBalance as number) ?? challenge.startBalance ?? null,
+      clientName:   challenge.user.name  ?? '',
+      clientEmail:  challenge.user.email,
+      firmName:     challenge.firmName,
+      accountSize:  challenge.accountSize,
       metrics: {
-        profit:   body.currentProfit,
-        drawdown: body.currentDrawdown,
+        profit:   updateData.currentProfit   ?? body.currentProfit,
+        drawdown: updateData.currentDrawdown ?? body.currentDrawdown,
         winRate:  body.winRate,
         days:     body.daysTraded,
       },

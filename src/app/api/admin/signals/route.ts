@@ -6,16 +6,23 @@ import { resolveSignalSender } from '@/lib/signal-sender';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireTrader();
+    const session = await requireTrader();
+    const role = getSessionRole(session as { user: { role?: string } });
+    const trader = isTraderRole(role);
     const { searchParams } = req.nextUrl;
     const { page, limit, skip } = parsePagination(searchParams);
 
+    const where: Record<string, unknown> = {};
+    const senderFilter = searchParams.get('sender');
+    if (senderFilter) where.senderId = senderFilter;
+
     const [signals, total] = await Promise.all([
       prisma.signalLog.findMany({
+        where,
         orderBy: { sentAt: 'desc' },
         skip,
         take: limit,
-        include: {
+        include: trader ? undefined : {
           deliveries: {
             include: {
               challenge: {
@@ -30,10 +37,29 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-      prisma.signalLog.count(),
+      prisma.signalLog.count({ where }),
     ]);
 
-    return successResponse({ data: signals, total, page, limit, totalPages: Math.ceil(total / limit) });
+    // Per-trader signal counts for the stats section
+    const traderStats = await prisma.signalLog.groupBy({
+      by: ['senderId', 'senderNickname'],
+      _count: { id: true },
+      where: { senderId: { not: null } },
+      orderBy: { _count: { id: 'desc' } },
+    });
+
+    return successResponse({
+      data: trader ? signals.map(s => ({ ...s, deliveries: undefined })) : signals,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      traderStats: traderStats.map(t => ({
+        senderId: t.senderId,
+        senderNickname: t.senderNickname,
+        totalSignals: t._count.id,
+      })),
+    });
   } catch (err) {
     return handleApiError(err);
   }

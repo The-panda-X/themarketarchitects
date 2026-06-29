@@ -203,6 +203,7 @@ model Challenge {
   currentProfit   Float           @default(0)
   maxDrawdown     Float?
   currentDrawdown Float           @default(0)
+  startBalance    Float?                             // original account balance when challenge started
   daysTraded      Int             @default(0)
   winRate         Float           @default(0)
   balance         Float?                             // latest balance from EA

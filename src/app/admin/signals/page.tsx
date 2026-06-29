@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Send, Radio, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, Trash2, Loader2, MessageSquare, AtSign, Save, Pencil, X } from 'lucide-react';
+import { Send, Radio, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, Trash2, Loader2, MessageSquare, AtSign, Save, Pencil, X, Users, Filter } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -38,13 +38,20 @@ interface SignalLog {
   totalSent: number;
   totalSkipped: number;
   totalFailed: number;
+  senderId: string | null;
   senderNickname: string | null;
   sentAt: string;
   deliveries: Delivery[];
 }
 
+interface TraderStat {
+  senderId: string | null;
+  senderNickname: string | null;
+  totalSignals: number;
+}
+
 export default function AdminSignalsPage() {
-  const { canDelete } = useAuth();
+  const { canDelete, isTrader } = useAuth();
   const { addToast } = useToast();
 
   /* ── Signal Log state ───────────────────────────────────────────── */
@@ -57,6 +64,10 @@ export default function AdminSignalsPage() {
   const [deleteTarget, setDeleteTarget] = useState<SignalLog | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
   const [deleting, setDeleting]   = useState(false);
+
+  /* ── Trader stats & filter ─────────────────────────────────────── */
+  const [traderStats, setTraderStats] = useState<TraderStat[]>([]);
+  const [senderFilter, setSenderFilter] = useState<string | null>(null);
 
   /* ── Send Signal state ──────────────────────────────────────────── */
   const [modalOpen, setModalOpen] = useState(false);
@@ -114,17 +125,20 @@ export default function AdminSignalsPage() {
   const fetchSignals = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/signals?page=${page}&limit=20`);
+      const params = new URLSearchParams({ page: String(page), limit: '20' });
+      if (senderFilter) params.set('sender', senderFilter);
+      const res = await fetch(`/api/admin/signals?${params}`);
       if (res.ok) {
         const d = await res.json();
         setSignals(d.data.data ?? []);
         setTotalPages(d.data.totalPages ?? 1);
         setTotal(d.data.total ?? 0);
+        setTraderStats(d.data.traderStats ?? []);
       }
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, senderFilter]);
 
   useEffect(() => { fetchSignals(); }, [fetchSignals]);
 
@@ -261,27 +275,88 @@ export default function AdminSignalsPage() {
       </GlassCard>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Total Signals', value: total, icon: <Radio className="h-5 w-5 text-accent-primary" /> },
-          { label: 'Sent This Week', value: signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).reduce((a,s) => a + s.totalSent, 0), icon: <CheckCircle className="h-5 w-5 text-success" /> },
-          { label: 'Skipped This Week', value: signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).reduce((a,s) => a + s.totalSkipped, 0), icon: <AlertTriangle className="h-5 w-5 text-warning" /> },
-        ].map(stat => (
-          <GlassCard key={stat.label} padding="md">
+      <div className={`grid gap-4 ${isTrader ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        <GlassCard padding="md">
+          <div className="flex items-center gap-3">
+            <Radio className="h-5 w-5 text-accent-primary" />
+            <div>
+              <p className="text-2xl font-bold font-mono">{total}</p>
+              <p className="text-xs text-text-tertiary">{senderFilter ? 'Filtered Signals' : 'Total Signals'}</p>
+            </div>
+          </div>
+        </GlassCard>
+        <GlassCard padding="md">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-5 w-5 text-success" />
+            <div>
+              <p className="text-2xl font-bold font-mono">
+                {signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).length}
+              </p>
+              <p className="text-xs text-text-tertiary">Signals This Week</p>
+            </div>
+          </div>
+        </GlassCard>
+        {!isTrader && (
+          <GlassCard padding="md">
             <div className="flex items-center gap-3">
-              {stat.icon}
+              <AlertTriangle className="h-5 w-5 text-warning" />
               <div>
-                <p className="text-2xl font-bold font-mono">{stat.value}</p>
-                <p className="text-xs text-text-tertiary">{stat.label}</p>
+                <p className="text-2xl font-bold font-mono">
+                  {signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).reduce((a,s) => a + s.totalSkipped, 0)}
+                </p>
+                <p className="text-xs text-text-tertiary">Skipped This Week</p>
               </div>
             </div>
           </GlassCard>
-        ))}
+        )}
       </div>
+
+      {/* Per-Trader Breakdown */}
+      {traderStats.length > 0 && (
+        <GlassCard padding="md">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider flex items-center gap-2">
+              <Users className="h-4 w-4" /> Signals by Trader
+            </h2>
+            {senderFilter && (
+              <button
+                onClick={() => { setSenderFilter(null); setPage(1); }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs text-accent-primary hover:bg-accent-primary/10 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" /> Clear Filter
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {traderStats.map(t => (
+              <button
+                key={t.senderId ?? 'unknown'}
+                onClick={() => { setSenderFilter(senderFilter === t.senderId ? null : t.senderId); setPage(1); }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  senderFilter === t.senderId
+                    ? 'bg-accent-primary/20 border border-accent-primary/40 text-accent-primary'
+                    : 'bg-white/[0.04] border border-white/[0.06] text-text-secondary hover:text-text-primary hover:bg-white/[0.06]'
+                }`}
+              >
+                <span className="font-mono">@{t.senderNickname ?? 'unknown'}</span>
+                <span className="bg-white/[0.08] px-1.5 py-0.5 rounded-md font-mono font-bold text-text-primary">{t.totalSignals}</span>
+              </button>
+            ))}
+          </div>
+        </GlassCard>
+      )}
 
       {/* Signal History */}
       <GlassCard padding="md">
-        <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-4">Signal History</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Signal History</h2>
+          {senderFilter && (
+            <Badge variant="purple" size="sm">
+              <Filter className="h-3 w-3 mr-1 inline" />
+              Filtered by trader
+            </Badge>
+          )}
+        </div>
         {loading ? (
           <div className="space-y-3">{Array.from({length:6}).map((_,i) => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
         ) : (
@@ -296,18 +371,18 @@ export default function AdminSignalsPage() {
                   <TableHead>TPs</TableHead>
                   <TableHead>Sent By</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead align="center">Sent</TableHead>
-                  <TableHead align="center">Skipped</TableHead>
-                  <TableHead align="center">Details</TableHead>
+                  {!isTrader && <TableHead align="center">Sent</TableHead>}
+                  {!isTrader && <TableHead align="center">Skipped</TableHead>}
+                  {!isTrader && <TableHead align="center">Details</TableHead>}
                   {canDelete && <TableHead align="center">Delete</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {signals.length === 0 ? (
-                  <TableEmpty colSpan={canDelete ? 11 : 10} message="No signals yet. Click 'Send Signal' to post a trade to Discord." />
+                  <TableEmpty colSpan={isTrader ? 7 : (canDelete ? 11 : 10)} message="No signals yet. Click 'Send Signal' to post a trade to Discord." />
                 ) : signals.map(sig => (
                   <>
-                    <TableRow key={sig.id} onClick={() => setExpandedId(expandedId === sig.id ? null : sig.id)}>
+                    <TableRow key={sig.id} onClick={!isTrader ? () => setExpandedId(expandedId === sig.id ? null : sig.id) : undefined}>
                       <TableCell>
                         <span className="text-xs text-text-tertiary">{formatRelativeTime(sig.sentAt)}</span>
                       </TableCell>
@@ -334,7 +409,9 @@ export default function AdminSignalsPage() {
                       </TableCell>
                       <TableCell>
                         {sig.senderNickname ? (
-                          <span className="font-mono text-xs text-text-secondary">@{sig.senderNickname}</span>
+                          <Badge variant="blue" size="sm">
+                            <span className="font-mono">@{sig.senderNickname}</span>
+                          </Badge>
                         ) : (
                           <span className="text-xs text-text-tertiary">—</span>
                         )}
@@ -344,17 +421,23 @@ export default function AdminSignalsPage() {
                           {sig.source === 'admin' ? 'Admin' : sig.source === 'discord_webhook' ? 'Website' : 'Discord'}
                         </Badge>
                       </TableCell>
-                      <TableCell align="center">
-                        <span className="text-success font-mono font-bold">{sig.totalSent}</span>
-                      </TableCell>
-                      <TableCell align="center">
-                        <span className="text-warning font-mono">{sig.totalSkipped}</span>
-                      </TableCell>
-                      <TableCell align="center">
-                        <button className="text-text-tertiary hover:text-text-primary transition-colors">
-                          {expandedId === sig.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </button>
-                      </TableCell>
+                      {!isTrader && (
+                        <TableCell align="center">
+                          <span className="text-success font-mono font-bold">{sig.totalSent}</span>
+                        </TableCell>
+                      )}
+                      {!isTrader && (
+                        <TableCell align="center">
+                          <span className="text-warning font-mono">{sig.totalSkipped}</span>
+                        </TableCell>
+                      )}
+                      {!isTrader && (
+                        <TableCell align="center">
+                          <button className="text-text-tertiary hover:text-text-primary transition-colors">
+                            {expandedId === sig.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </button>
+                        </TableCell>
+                      )}
                       {canDelete && (
                         <TableCell align="center">
                           <button
@@ -367,8 +450,8 @@ export default function AdminSignalsPage() {
                       )}
                     </TableRow>
 
-                    {/* Expanded delivery details */}
-                    {expandedId === sig.id && sig.deliveries.length > 0 && (
+                    {/* Expanded delivery details — admin/moderator only */}
+                    {!isTrader && expandedId === sig.id && sig.deliveries?.length > 0 && (
                       <tr key={`${sig.id}-expanded`}>
                         <td colSpan={canDelete ? 11 : 10} className="px-4 pb-3">
                           <div className="bg-white/[0.03] rounded-xl p-4 space-y-2">

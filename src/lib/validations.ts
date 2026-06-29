@@ -176,6 +176,7 @@ export const updateChallengeSchema = z.object({
   adminNotes: z.string().optional().nullable(),
   targetProfit: z.number().optional().nullable(),
   maxDrawdown: z.number().optional().nullable(),
+  startBalance: z.number().optional().nullable(),
   // Signal Hub settings
   riskPct: z.number().min(0.01).max(100).optional(),
   dailyDDLimit: z.number().min(0).max(100).optional(),
