@@ -21,11 +21,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { pair, direction, entry, sl, tp1, tp2, tp3, risk } = body;
 
-    // Traders can only override risk if explicitly allowed
     const role = getSessionRole(session as { user: { role?: string } });
-    if (risk && isTraderRole(role)) {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { canOverrideRisk: true } });
-      if (!user?.canOverrideRisk) {
+    const isHA = role === 'HEAD_ADMIN';
+
+    // Check send permission — HEAD_ADMIN always allowed, others need canSendSignals
+    if (!isHA) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { canSendSignals: true, canOverrideRisk: true },
+      });
+      if (!user?.canSendSignals) {
+        return errorResponse('You do not have permission to send signals', 403);
+      }
+      if (risk && isTraderRole(role) && !user?.canOverrideRisk) {
         return errorResponse('You do not have permission to override risk', 403);
       }
     }

@@ -20,13 +20,15 @@ export async function GET() {
     const session = await requireTrader();
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { signalNickname: true, name: true, email: true, role: true, canOverrideRisk: true },
+      select: { signalNickname: true, name: true, email: true, role: true, canOverrideRisk: true, canSendSignals: true },
     });
+    const isHeadAdmin = user?.role === 'HEAD_ADMIN';
     const isTrader = user?.role === 'TRADER';
     return successResponse({
       signalNickname: user?.signalNickname ?? null,
       defaultDisplay: user?.name ?? user?.email ?? 'Admin',
       canOverrideRisk: isTrader ? (user?.canOverrideRisk ?? false) : true,
+      canSendSignals: isHeadAdmin ? true : (user?.canSendSignals ?? false),
     });
   } catch (err) {
     return handleApiError(err);

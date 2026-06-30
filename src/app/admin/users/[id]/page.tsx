@@ -31,6 +31,7 @@ interface UserDetail {
   lastLoginLon: number | null;
   lastLoginAt: string | null;
   canOverrideRisk: boolean;
+  canSendSignals: boolean;
   createdAt: string;
   orders: Array<{ id: string; planName: string; status: string; totalAmount: number; createdAt: string }>;
   challenges: Array<{ id: string; firmName: string; accountSize: string; status: string; createdAt: string }>;
@@ -46,6 +47,7 @@ export default function AdminUserDetailPage() {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [newRole, setNewRole] = useState('USER');
   const [riskOverride, setRiskOverride] = useState(false);
+  const [sendSignals, setSendSignals] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function AdminUserDetailPage() {
         setUser(d.data);
         setNewRole(d.data?.role ?? 'USER');
         setRiskOverride(d.data?.canOverrideRisk ?? false);
+        setSendSignals(d.data?.canSendSignals ?? false);
       })
       .finally(() => setLoading(false));
   }, [params.id]);
@@ -65,7 +68,11 @@ export default function AdminUserDetailPage() {
       const res = await fetch(`/api/admin/users/${params.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole, canOverrideRisk: newRole === 'TRADER' ? riskOverride : undefined }),
+        body: JSON.stringify({
+          role: newRole,
+          canOverrideRisk: newRole === 'TRADER' ? riskOverride : undefined,
+          canSendSignals: ['TRADER', 'MODERATOR', 'ADMIN'].includes(newRole) ? sendSignals : undefined,
+        }),
       });
       if (res.ok) {
         const d = await res.json();
@@ -257,6 +264,20 @@ export default function AdminUserDetailPage() {
             {isHeadAdmin && <option value="ADMIN">Admin</option>}
             {isHeadAdmin && <option value="HEAD_ADMIN">Head Admin</option>}
           </Select>
+          {['TRADER', 'MODERATOR', 'ADMIN'].includes(newRole) && (
+            <label className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendSignals}
+                onChange={(e) => setSendSignals(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-accent-primary"
+              />
+              <div>
+                <p className="text-sm font-medium text-text-primary">Allow Send Signals</p>
+                <p className="text-xs text-text-tertiary">User can send trade signals from the Signal Hub</p>
+              </div>
+            </label>
+          )}
           {newRole === 'TRADER' && (
             <label className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] cursor-pointer">
               <input

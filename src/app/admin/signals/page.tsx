@@ -116,6 +116,7 @@ export default function AdminSignalsPage() {
   const [nickDraft, setNickDraft]     = useState('');
   const [savingNick, setSavingNick]   = useState(false);
   const [canOverrideRisk, setCanOverrideRisk] = useState(true);
+  const [canSendSignals, setCanSendSignals] = useState(false);
 
   const fetchNickname = useCallback(async () => {
     try {
@@ -125,6 +126,7 @@ export default function AdminSignalsPage() {
         setNickname(d.data?.signalNickname ?? null);
         setDefaultDisplay(d.data?.defaultDisplay ?? 'Admin');
         setCanOverrideRisk(d.data?.canOverrideRisk ?? true);
+        setCanSendSignals(d.data?.canSendSignals ?? false);
       }
     } catch { /* silent */ }
   }, []);
@@ -303,9 +305,11 @@ export default function AdminSignalsPage() {
               Clear All
             </button>
           )}
-          <Button variant="primary" icon={<MessageSquare className="h-4 w-4" />} onClick={() => setModalOpen(true)}>
-            Send Signal
-          </Button>
+          {canSendSignals && (
+            <Button variant="primary" icon={<MessageSquare className="h-4 w-4" />} onClick={() => setModalOpen(true)}>
+              Send Signal
+            </Button>
+          )}
         </div>
       </div>
 

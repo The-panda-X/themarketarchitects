@@ -43,12 +43,13 @@ export async function PATCH(
   try {
     const adminSession = await requireAdmin();
     const body = await req.json();
-    const { role, name, canOverrideRisk } = body;
+    const { role, name, canOverrideRisk, canSendSignals } = body;
     const viewerRole = getSessionRole(adminSession as { user: { role?: string } });
 
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (typeof canOverrideRisk === 'boolean') updateData.canOverrideRisk = canOverrideRisk;
+    if (typeof canSendSignals === 'boolean') updateData.canSendSignals = canSendSignals;
 
     // Role assignment restrictions
     if (role) {
