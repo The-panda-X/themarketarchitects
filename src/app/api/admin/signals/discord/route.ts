@@ -85,11 +85,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.ok) {
+      console.error('[signals/discord] Discord delivery failed:', result.error);
       return errorResponse(`Discord delivery failed: ${result.error}`, 502);
     }
 
     return successResponse({ signalId: signal.id, status: 'executed', delivery: 'discord' }, 201);
   } catch (err) {
+    console.error('[signals/discord] Error:', err);
     return handleApiError(err);
   }
 }
