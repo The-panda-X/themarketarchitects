@@ -748,7 +748,7 @@ export default function AdminSignalsPage() {
             <Input label="Entry Price (0 = market)" type="number" placeholder="e.g. 2350" value={form.entry} onChange={e => setForm(f => ({...f, entry: e.target.value}))} />
             <Input label="Stop Loss *" type="number" placeholder="e.g. 2340" value={form.sl} onChange={e => setForm(f => ({...f, sl: e.target.value}))} />
             {canOverrideRisk && (
-              <Input label="Risk % Override" type="number" placeholder="e.g. 1.5" value={form.risk} onChange={e => setForm(f => ({...f, risk: e.target.value}))} />
+              <Input label="Risk % Override" type="number" step="0.01" min="0" placeholder="e.g. 0.5" value={form.risk} onChange={e => setForm(f => ({...f, risk: e.target.value}))} />
             )}
           </div>
 

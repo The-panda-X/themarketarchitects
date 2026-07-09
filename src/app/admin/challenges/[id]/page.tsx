@@ -502,26 +502,34 @@ export default function AdminChallengeDetailPage() {
           <Input
             label="Risk per Trade (%)"
             type="number"
+            step="0.01"
+            min="0.01"
             value={signalForm.riskPct}
-            onChange={e => setSignalForm(f => ({...f, riskPct: parseFloat(e.target.value) || 1}))}
+            onChange={e => setSignalForm(f => ({...f, riskPct: e.target.value === '' ? 0 : parseFloat(e.target.value)}))}
           />
           <Input
             label="Daily DD Limit (%)"
             type="number"
+            step="0.01"
+            min="0.01"
             value={signalForm.dailyDDLimit}
-            onChange={e => setSignalForm(f => ({...f, dailyDDLimit: parseFloat(e.target.value) || 3}))}
+            onChange={e => setSignalForm(f => ({...f, dailyDDLimit: e.target.value === '' ? 0 : parseFloat(e.target.value)}))}
           />
           <Input
             label="Total DD Limit (%)"
             type="number"
+            step="0.01"
+            min="0.01"
             value={signalForm.totalDDLimit}
-            onChange={e => setSignalForm(f => ({...f, totalDDLimit: parseFloat(e.target.value) || 7}))}
+            onChange={e => setSignalForm(f => ({...f, totalDDLimit: e.target.value === '' ? 0 : parseFloat(e.target.value)}))}
           />
           <Input
             label="Daily Profit Cap (%)"
             type="number"
+            step="0.01"
+            min="0.01"
             value={signalForm.dailyCapPct}
-            onChange={e => setSignalForm(f => ({...f, dailyCapPct: parseFloat(e.target.value) || 3}))}
+            onChange={e => setSignalForm(f => ({...f, dailyCapPct: e.target.value === '' ? 0 : parseFloat(e.target.value)}))}
           />
         </div>
         <div className="mt-4 space-y-4">
