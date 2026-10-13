@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import type { ApiResponse } from '@/types';
 
-/** Roles that can access the admin panel */
-const ADMIN_ROLES = ['HEAD_ADMIN', 'ADMIN', 'MODERATOR', 'TRADER'];
+/** Roles that can access the admin panel (MODERATOR+, not TRADER) */
+const ADMIN_ROLES = ['HEAD_ADMIN', 'ADMIN', 'MODERATOR'];
 
 /** Roles that can perform destructive actions (delete) */
 const DELETE_ROLES = ['HEAD_ADMIN'];

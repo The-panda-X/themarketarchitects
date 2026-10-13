@@ -19,14 +19,16 @@ export async function POST(req: NextRequest) {
 
     const isProfitSplit = !plan.price && !!plan.priceLabel;
 
-    // Determine price: check sizePricing for the selected accountSize, fallback to plan.price
     const norm = (s: string) => s.replace(/[$,\s]/g, '');
     let canonicalPrice = plan.price ?? 0;
     if (plan.sizePricing && Array.isArray(plan.sizePricing) && accountSize) {
       const sizeEntry = (plan.sizePricing as { size: string; price: number }[]).find(
         (sp) => sp.size === accountSize || norm(sp.size) === norm(accountSize)
       );
-      if (sizeEntry) canonicalPrice = sizeEntry.price;
+      if (!sizeEntry) return errorResponse('Invalid account size for this plan', 400);
+      canonicalPrice = sizeEntry.price;
+    } else if (plan.sizePricing && Array.isArray(plan.sizePricing) && (plan.sizePricing as unknown[]).length > 0 && !accountSize) {
+      return errorResponse('Account size is required for this plan', 400);
     }
 
     const user = await prisma.user.findUnique({
@@ -52,6 +54,11 @@ export async function POST(req: NextRequest) {
       else if (coupon.discountAmount) discountAmount = Math.min(coupon.discountAmount, canonicalPrice);
       finalPrice = Math.max(0, canonicalPrice - discountAmount);
       appliedCouponCode = coupon.code;
+
+      await prisma.coupon.update({
+        where: { id: coupon.id },
+        data: { usedCount: { increment: 1 } },
+      });
     }
 
     // ── Profit-split plans: no payment needed ──
@@ -118,14 +125,6 @@ export async function POST(req: NextRequest) {
         type: 'info',
         link: '/dashboard/payments',
       },
-    });
-
-    // Notify admins about new order
-    await notifyAdmins({
-      title: 'New Order Received',
-      message: `${user.name ?? user.email} placed a ${planName} order — $${finalPrice.toFixed(2)} (crypto). Awaiting payment proof.`,
-      type: 'payment',
-      link: `/admin/orders/${order.id}`,
     });
 
     return successResponse({

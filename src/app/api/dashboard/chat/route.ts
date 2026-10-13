@@ -27,10 +27,11 @@ export async function POST(req: NextRequest) {
 
     if (!message?.trim()) return errorResponse('Message is required', 400);
 
-    // Check if user already has an open conversation
     let conversation = await prisma.conversation.findFirst({
       where: { userId: session.user.id, isClosed: false },
     });
+
+    const isNew = !conversation;
 
     if (!conversation) {
       conversation = await prisma.conversation.create({
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
           userId: session.user.id,
           subject: subject || null,
           lastMessage: message.trim().slice(0, 200),
-          staffUnread: 1,
+          staffUnread: 0,
           lastAt: new Date(),
         },
       });
@@ -53,13 +54,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Update conversation metadata
     await prisma.conversation.update({
       where: { id: conversation.id },
       data: {
         lastMessage: message.trim().slice(0, 200),
         lastAt: new Date(),
-        staffUnread: { increment: conversation.id ? 1 : 0 },
+        staffUnread: { increment: 1 },
       },
     });
 

@@ -28,6 +28,7 @@ const typeIcon: Record<string, React.ReactNode> = {
   info:      <Info className="h-4 w-4 text-blue-400" />,
   success:   <CheckCircle className="h-4 w-4 text-success" />,
   warning:   <AlertTriangle className="h-4 w-4 text-accent-gold" />,
+  error:     <AlertTriangle className="h-4 w-4 text-red-500" />,
   payment:   <CreditCard className="h-4 w-4 text-accent-primary" />,
   challenge: <Target className="h-4 w-4 text-accent-primary" />,
 };
@@ -125,7 +126,7 @@ export default function NotificationBell({
           <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-transparent" />
         )}
         {!fetched && (
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent-primary" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-transparent" />
         )}
       </button>
 

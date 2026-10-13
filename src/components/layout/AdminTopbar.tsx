@@ -40,7 +40,7 @@ const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashbo
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders', minRole: 'moderator' },
   { label: 'Challenges', href: '/admin/challenges', icon: Target, minRole: 'moderator' },
   { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'trader' },
-  { label: 'Chat', href: '/admin/chat', icon: MessageCircle, minRole: 'moderator' },
+  { label: 'Chat', href: '/admin/chat', icon: MessageCircle, badgeKey: 'chat', minRole: 'moderator' },
   { label: 'Tickets', href: '/admin/tickets', icon: TicketCheck, minRole: 'moderator' },
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote, minRole: 'moderator' },
   { label: 'Referrals', href: '/admin/referrals', icon: Users, minRole: 'moderator' },
@@ -72,6 +72,7 @@ export default function AdminTopbar() {
   });
 
   const [pendingOrders, setPendingOrders] = useState(0);
+  const [chatUnread, setChatUnread] = useState(0);
 
   useEffect(() => {
     if (isTrader) return;
@@ -85,16 +86,28 @@ export default function AdminTopbar() {
         }
       } catch { /* silent */ }
     }
+    async function fetchChatUnread() {
+      try {
+        const res = await fetch('/api/admin/chat/unread');
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted) setChatUnread(data.data?.count ?? 0);
+        }
+      } catch { /* silent */ }
+    }
     fetchPendingCount();
-    const interval = setInterval(fetchPendingCount, 30_000);
-    return () => { mounted = false; clearInterval(interval); };
+    fetchChatUnread();
+    const orderInterval = setInterval(fetchPendingCount, 30_000);
+    const chatInterval = setInterval(fetchChatUnread, 15_000);
+    return () => { mounted = false; clearInterval(orderInterval); clearInterval(chatInterval); };
   }, [isTrader]);
 
   useEffect(() => {
     if (pathname.startsWith('/admin/orders')) setPendingOrders(0);
+    if (pathname.startsWith('/admin/chat')) setChatUnread(0);
   }, [pathname]);
 
-  const badgeCounts: Record<string, number> = { orders: pendingOrders };
+  const badgeCounts: Record<string, number> = { orders: pendingOrders, chat: chatUnread };
 
   return (
     <>
