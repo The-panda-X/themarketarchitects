@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Loader2, MessageCircle, Shield } from 'lucide-react';
+import { Send, Loader2, MessageCircle, Shield, Sparkles } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Avatar from '@/components/ui/Avatar';
 import useAuth from '@/hooks/useAuth';
@@ -191,24 +191,34 @@ export default function UserChatPage() {
 
           {messages.map((msg) => {
             const isUser = msg.senderRole === 'USER';
+            const isBot = msg.senderRole === 'ASSISTANT';
             const staffName = msg.senderName ?? 'Support Team';
             return (
               <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex items-end gap-2 max-w-[80%] ${isUser ? 'flex-row-reverse' : ''}`}>
                   {!isUser && (
-                    <Avatar name={staffName} size="xs" />
+                    isBot ? (
+                      <div className="w-7 h-7 rounded-full bg-accent-primary/20 flex items-center justify-center shrink-0">
+                        <Sparkles className="h-3.5 w-3.5 text-accent-primary" />
+                      </div>
+                    ) : (
+                      <Avatar name={staffName} size="xs" />
+                    )
                   )}
                   <div>
                     {!isUser && (
-                      <p className="text-[11px] text-text-tertiary mb-0.5 ml-1 font-medium">
-                        {staffName}
+                      <p className="text-[11px] text-text-tertiary mb-0.5 ml-1 font-medium flex items-center gap-1">
+                        {isBot ? 'AI Assistant' : staffName}
+                        {isBot && <Sparkles className="h-2.5 w-2.5 text-accent-primary" />}
                       </p>
                     )}
                     <div
                       className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                         isUser
                           ? 'bg-accent-primary text-white rounded-br-md'
-                          : 'bg-white/[0.06] text-text-primary rounded-bl-md'
+                          : isBot
+                            ? 'bg-accent-primary/10 border border-accent-primary/20 text-text-primary rounded-bl-md'
+                            : 'bg-white/[0.06] text-text-primary rounded-bl-md'
                       }`}
                     >
                       {msg.body}

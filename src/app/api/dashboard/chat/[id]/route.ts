@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { generateAIResponse } from '@/lib/ai-chat';
 
 /** GET – fetch messages for a conversation (user side) */
 export async function GET(
@@ -82,6 +83,8 @@ export async function POST(
         staffUnread: { increment: 1 },
       },
     });
+
+    await generateAIResponse(params.id, message.trim());
 
     return successResponse(msg, 201);
   } catch (err) {
