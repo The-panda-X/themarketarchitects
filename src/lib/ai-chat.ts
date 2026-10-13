@@ -15,13 +15,20 @@ interface KnowledgeBase {
   firms: { name: string }[];
 }
 
+let cachedKB: KnowledgeBase | null = null;
+let cacheTime = 0;
+const CACHE_TTL = 5 * 60_000;
+
 async function loadKnowledge(): Promise<KnowledgeBase> {
+  if (cachedKB && Date.now() - cacheTime < CACHE_TTL) return cachedKB;
   const [faqs, plans, firms] = await Promise.all([
     prisma.fAQItem.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
     prisma.servicePlan.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
     prisma.propFirm.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
   ]);
-  return { faqs, plans, firms };
+  cachedKB = { faqs, plans, firms };
+  cacheTime = Date.now();
+  return cachedKB;
 }
 
 function normalize(text: string): string {
