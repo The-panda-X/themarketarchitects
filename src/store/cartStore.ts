@@ -50,6 +50,8 @@ const useCartStore = create<CartState>((set, get) => ({
       accountSize: null,
       firmName: null,
       price: 0,
+      couponCode: null,
+      discountAmount: 0,
     }),
 
   setPlan: (planId, planName, tier, price) =>

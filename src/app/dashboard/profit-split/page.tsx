@@ -179,7 +179,7 @@ export default function ProfitSplitPage() {
       setSplits((prev) => [data.data.split, ...prev]);
       setShowForm(false);
       setForm({ accountType: 'challenge', accountId: '', totalPayout: '',
-                amountSent: '', network: 'TRC20', txHash: '', notes: '' });
+                amountSent: '', network: 'BEP20 (BSC)', txHash: '', notes: '' });
       setProofFile(null);
       addToast('Profit split submitted successfully!', 'success');
     } catch (err: unknown) {
