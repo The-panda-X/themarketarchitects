@@ -114,7 +114,7 @@ export default function Navbar() {
                 >
                   Sign In
                 </Link>
-                <Link href="/dashboard/purchase">
+                <Link href="/login?callbackUrl=%2Fdashboard%2Fpurchase">
                   <button
                     type="button"
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white transition-all duration-300 cursor-pointer btn-glow-pulse"

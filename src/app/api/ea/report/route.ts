@@ -44,6 +44,20 @@ export async function POST(req: NextRequest) {
       return errorResponse('token is required', 400);
     }
 
+    const numFields = ['balance', 'equity', 'openProfit', 'currentProfit', 'currentDrawdown',
+      'winRate', 'daysTraded', 'totalTrades', 'winCount', 'openTrades'] as const;
+    for (const field of numFields) {
+      const val = body[field];
+      if (val !== undefined) {
+        if (typeof val !== 'number' || !Number.isFinite(val)) {
+          return errorResponse(`${field} must be a finite number`, 400);
+        }
+        if (val < -1e9 || val > 1e9) {
+          return errorResponse(`${field} value out of range`, 400);
+        }
+      }
+    }
+
     // ── Find active challenge ─────────────────────────────────────────
     const include = { user: { select: { name: true, email: true } } };
     const challenge = await prisma.challenge.findFirst({
@@ -130,6 +144,13 @@ export async function POST(req: NextRequest) {
         newStatus             = 'PHASE_2';
         updateData.status     = 'PHASE_2';
         updateData.currentPhase = 2;
+        updateData.startBalance   = body.balance ?? null;
+        updateData.currentProfit  = 0;
+        updateData.currentDrawdown = 0;
+        updateData.totalTrades    = 0;
+        updateData.winCount       = 0;
+        updateData.daysTraded     = 0;
+        updateData.winRate        = 0;
         notificationMsg       =
           `Phase 1 target reached! ` +
           `You made $${effectiveProfit.toFixed(0)} profit (target: $${challenge.targetProfit.toFixed(0)}). ` +

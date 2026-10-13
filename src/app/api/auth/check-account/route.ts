@@ -22,11 +22,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user || !user.passwordHash) {
-      return Response.json({ code: 'NO_ACCOUNT' }, { status: 404 });
+      return Response.json({ code: 'OK' });
     }
 
     if (!user.emailVerified) {
-      return Response.json({ code: 'EMAIL_NOT_VERIFIED' }, { status: 403 });
+      return Response.json({ code: 'EMAIL_NOT_VERIFIED' });
     }
 
     return Response.json({ code: 'OK' });

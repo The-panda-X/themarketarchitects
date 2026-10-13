@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -74,38 +74,40 @@ export default function AdminTopbar() {
   const [pendingOrders, setPendingOrders] = useState(0);
   const [chatUnread, setChatUnread] = useState(0);
 
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/orders/pending-count');
+      if (res.ok) {
+        const data = await res.json();
+        setPendingOrders(data.data?.count ?? 0);
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  const fetchChatUnread = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/chat/unread');
+      if (res.ok) {
+        const data = await res.json();
+        setChatUnread(data.data?.count ?? 0);
+      }
+    } catch { /* silent */ }
+  }, []);
+
   useEffect(() => {
     if (isTrader) return;
-    let mounted = true;
-    async function fetchPendingCount() {
-      try {
-        const res = await fetch('/api/admin/orders/pending-count');
-        if (res.ok) {
-          const data = await res.json();
-          if (mounted) setPendingOrders(data.data?.count ?? 0);
-        }
-      } catch { /* silent */ }
-    }
-    async function fetchChatUnread() {
-      try {
-        const res = await fetch('/api/admin/chat/unread');
-        if (res.ok) {
-          const data = await res.json();
-          if (mounted) setChatUnread(data.data?.count ?? 0);
-        }
-      } catch { /* silent */ }
-    }
     fetchPendingCount();
     fetchChatUnread();
     const orderInterval = setInterval(fetchPendingCount, 30_000);
     const chatInterval = setInterval(fetchChatUnread, 15_000);
-    return () => { mounted = false; clearInterval(orderInterval); clearInterval(chatInterval); };
-  }, [isTrader]);
+    return () => { clearInterval(orderInterval); clearInterval(chatInterval); };
+  }, [isTrader, fetchPendingCount, fetchChatUnread]);
 
   useEffect(() => {
-    if (pathname.startsWith('/admin/orders')) setPendingOrders(0);
-    if (pathname.startsWith('/admin/chat')) setChatUnread(0);
-  }, [pathname]);
+    if (isTrader) return;
+    if (pathname.startsWith('/admin/orders')) fetchPendingCount();
+    if (pathname.startsWith('/admin/chat')) fetchChatUnread();
+  }, [pathname, isTrader, fetchPendingCount, fetchChatUnread]);
 
   const badgeCounts: Record<string, number> = { orders: pendingOrders, chat: chatUnread };
 

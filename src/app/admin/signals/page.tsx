@@ -91,6 +91,8 @@ export default function AdminSignalsPage() {
   const [traderStats, setTraderStats] = useState<TraderStat[]>([]);
   const [resultCounts, setResultCounts] = useState<ResultCount[]>([]);
   const [senderFilter, setSenderFilter] = useState<string | null>(null);
+  const [weeklyCount, setWeeklyCount] = useState(0);
+  const [weeklySkipped, setWeeklySkipped] = useState(0);
 
   /* ── Result update state ───────────────────────────────────────── */
   const [resultTarget, setResultTarget] = useState<SignalLog | null>(null);
@@ -169,6 +171,8 @@ export default function AdminSignalsPage() {
         setTotal(d.data.total ?? 0);
         setTraderStats(d.data.traderStats ?? []);
         setResultCounts(d.data.resultCounts ?? []);
+        setWeeklyCount(d.data.weeklyCount ?? 0);
+        setWeeklySkipped(d.data.weeklySkipped ?? 0);
       }
     } finally {
       setLoading(false);
@@ -418,7 +422,7 @@ export default function AdminSignalsPage() {
                 <CheckCircle className="h-5 w-5 text-success" />
                 <div>
                   <p className="text-2xl font-bold font-mono">
-                    {signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).length}
+                    {weeklyCount}
                   </p>
                   <p className="text-xs text-text-tertiary">Signals This Week</p>
                 </div>
@@ -429,7 +433,7 @@ export default function AdminSignalsPage() {
                 <AlertTriangle className="h-5 w-5 text-warning" />
                 <div>
                   <p className="text-2xl font-bold font-mono">
-                    {signals.filter(s => new Date(s.sentAt) > new Date(Date.now() - 7*86400000)).reduce((a,s) => a + s.totalSkipped, 0)}
+                    {weeklySkipped}
                   </p>
                   <p className="text-xs text-text-tertiary">Skipped This Week</p>
                 </div>

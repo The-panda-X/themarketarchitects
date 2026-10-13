@@ -45,6 +45,7 @@ export default function SettingsPage() {
   const [verifying, setVerifying] = useState(false);
   const [sending, setSending] = useState(false);
   const [disabling, setDisabling] = useState(false);
+  const [disablePassword, setDisablePassword] = useState('');
 
   const profileForm = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
@@ -185,15 +186,22 @@ export default function SettingsPage() {
   };
 
   const handleDisable2FA = async () => {
+    if (!disablePassword) { addToast('Please enter your password', 'error'); return; }
     setDisabling(true);
     try {
-      const res = await fetch('/api/dashboard/two-factor', { method: 'DELETE' });
+      const res = await fetch('/api/dashboard/two-factor', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: disablePassword }),
+      });
       if (res.ok) {
         setTwoFAEnabled(false);
         setShowDisableModal(false);
+        setDisablePassword('');
         addToast('Two-factor authentication disabled', 'success');
       } else {
-        addToast('Failed to disable 2FA', 'error');
+        const data = await res.json().catch(() => ({}));
+        addToast(data.error ?? 'Failed to disable 2FA', 'error');
       }
     } catch {
       addToast('Failed to disable 2FA', 'error');
@@ -440,21 +448,29 @@ export default function SettingsPage() {
       </Modal>
 
       {/* ── Disable 2FA Modal ── */}
-      <Modal isOpen={showDisableModal} onClose={() => setShowDisableModal(false)} title="Disable Two-Factor Authentication" size="sm">
+      <Modal isOpen={showDisableModal} onClose={() => { setShowDisableModal(false); setDisablePassword(''); }} title="Disable Two-Factor Authentication" size="sm">
         <div className="space-y-4">
           <p className="text-sm text-text-secondary">
-            Are you sure you want to disable two-factor authentication? Your account will be less secure.
+            Are you sure you want to disable two-factor authentication? Enter your password to confirm.
           </p>
+          <input
+            type="password"
+            placeholder="Enter your password"
+            value={disablePassword}
+            onChange={(e) => setDisablePassword(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleDisable2FA(); }}
+            className="w-full px-3 py-2.5 rounded-xl border border-white/[0.10] bg-white/[0.05] text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent-primary focus:ring-1 focus:ring-accent-primary/30 outline-none"
+          />
           <div className="flex justify-end gap-2">
             <button
-              onClick={() => setShowDisableModal(false)}
+              onClick={() => { setShowDisableModal(false); setDisablePassword(''); }}
               className="px-4 py-2 rounded-xl text-sm text-text-secondary hover:bg-white/[0.04]"
             >
               Cancel
             </button>
             <button
               onClick={handleDisable2FA}
-              disabled={disabling}
+              disabled={disabling || !disablePassword}
               className="flex items-center gap-2 px-5 py-2 rounded-xl bg-danger text-white text-sm font-medium disabled:opacity-40"
             >
               {disabling && <Loader2 className="h-4 w-4 animate-spin" />} Disable 2FA
