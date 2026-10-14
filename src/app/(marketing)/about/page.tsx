@@ -6,7 +6,7 @@ import { Shield, Target, TrendingUp, Users, Award, ArrowRight } from 'lucide-rea
 export const metadata: Metadata = {
   title: 'About Us',
   description:
-    'The Market Architects was founded by traders, for traders. Learn about our story, values, and the team behind 2,400+ successful prop firm challenges.',
+    'The Market Architects is a New York-based team of professional traders. Learn about our story, values, and the team behind 2,400+ successful prop firm challenges.',
 };
 
 const stats = [
@@ -41,20 +41,20 @@ const values = [
 
 const team = [
   {
-    name: 'Alex Rivera',
-    role: 'Head Trader',
+    name: 'Head Trader',
+    role: 'Trading Lead',
     specialty: 'FTMO Specialist',
     photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
   },
   {
-    name: 'Marcus Chen',
-    role: 'Risk Manager',
+    name: 'Risk Manager',
+    role: 'Risk Management',
     specialty: 'Drawdown Expert',
     photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80',
   },
   {
-    name: 'Sofia Laurent',
-    role: 'Operations Lead',
+    name: 'Operations Lead',
+    role: 'Client Operations',
     specialty: 'Client Relations',
     photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
   },
@@ -89,7 +89,7 @@ export default function AboutPage() {
           ABOUT <span className="text-gradient-red">US</span>
         </h1>
         <p className="text-zinc-400 text-lg max-w-2xl mx-auto leading-relaxed">
-          The Market Architects was founded by traders, for traders. We exist to democratize access to
+          Based in New York, The Market Architects was founded by traders, for traders. We exist to democratize access to
           funded accounts through professional challenge passing and expert account management.
         </p>
       </div>
@@ -118,12 +118,12 @@ export default function AboutPage() {
               Built by Traders Who Know the Struggle
             </h2>
             <p className="text-zinc-500 text-sm leading-relaxed mb-4">
-              We started as independent traders frustrated by the prop firm challenge process. After
+              Operating from New York, we started as independent traders frustrated by the prop firm challenge process. After
               spending thousands on failed attempts, we developed a systematic approach that
               consistently beats every major firm's requirements.
             </p>
             <p className="text-zinc-500 text-sm leading-relaxed mb-6">
-              Today, we've channeled that expertise into a service that helps hundreds of traders every
+              Today, our New York-based team has channeled that expertise into a service that helps hundreds of traders every
               month access funding they deserve — without the stress or wasted capital.
             </p>
             <Link
@@ -198,7 +198,7 @@ export default function AboutPage() {
             Meet the <span className="text-gradient-red">Architects</span>
           </h2>
           <p className="mt-4 text-zinc-400 text-lg max-w-2xl mx-auto leading-relaxed">
-            Our team of elite traders and professionals.
+            Our New York-based team of elite traders and professionals.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

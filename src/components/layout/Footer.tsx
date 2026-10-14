@@ -43,7 +43,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-xs text-text-tertiary leading-relaxed max-w-[200px]">
-              Professional prop firm challenge passing and funded account management.
+              Professional prop firm challenge passing and funded account management. Based in New York, USA.
             </p>
           </div>
 

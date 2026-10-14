@@ -23,8 +23,6 @@ export async function resolveSignalSender(userId: string): Promise<{
   const senderNickname =
     user?.signalNickname?.trim() ||
     user?.staffNickname?.trim() ||
-    user?.name?.trim() ||
-    user?.email?.split('@')[0] ||
     'Admin';
 
   return { senderId: userId, senderNickname };
