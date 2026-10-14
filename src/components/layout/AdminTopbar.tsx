@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -40,7 +40,7 @@ const mobileAdminItems: { label: string; href: string; icon: typeof LayoutDashbo
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders', minRole: 'moderator' },
   { label: 'Challenges', href: '/admin/challenges', icon: Target, minRole: 'moderator' },
   { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'trader' },
-  { label: 'Chat', href: '/admin/chat', icon: MessageCircle, minRole: 'moderator' },
+  { label: 'Chat', href: '/admin/chat', icon: MessageCircle, badgeKey: 'chat', minRole: 'moderator' },
   { label: 'Tickets', href: '/admin/tickets', icon: TicketCheck, minRole: 'moderator' },
   { label: 'Payouts', href: '/admin/payouts', icon: Banknote, minRole: 'moderator' },
   { label: 'Referrals', href: '/admin/referrals', icon: Users, minRole: 'moderator' },
@@ -72,29 +72,44 @@ export default function AdminTopbar() {
   });
 
   const [pendingOrders, setPendingOrders] = useState(0);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/orders/pending-count');
+      if (res.ok) {
+        const data = await res.json();
+        setPendingOrders(data.data?.count ?? 0);
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  const fetchChatUnread = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/chat/unread');
+      if (res.ok) {
+        const data = await res.json();
+        setChatUnread(data.data?.count ?? 0);
+      }
+    } catch { /* silent */ }
+  }, []);
 
   useEffect(() => {
     if (isTrader) return;
-    let mounted = true;
-    async function fetchPendingCount() {
-      try {
-        const res = await fetch('/api/admin/orders/pending-count');
-        if (res.ok) {
-          const data = await res.json();
-          if (mounted) setPendingOrders(data.data?.count ?? 0);
-        }
-      } catch { /* silent */ }
-    }
     fetchPendingCount();
-    const interval = setInterval(fetchPendingCount, 30_000);
-    return () => { mounted = false; clearInterval(interval); };
-  }, [isTrader]);
+    fetchChatUnread();
+    const orderInterval = setInterval(fetchPendingCount, 30_000);
+    const chatInterval = setInterval(fetchChatUnread, 15_000);
+    return () => { clearInterval(orderInterval); clearInterval(chatInterval); };
+  }, [isTrader, fetchPendingCount, fetchChatUnread]);
 
   useEffect(() => {
-    if (pathname.startsWith('/admin/orders')) setPendingOrders(0);
-  }, [pathname]);
+    if (isTrader) return;
+    if (pathname.startsWith('/admin/orders')) fetchPendingCount();
+    if (pathname.startsWith('/admin/chat')) fetchChatUnread();
+  }, [pathname, isTrader, fetchPendingCount, fetchChatUnread]);
 
-  const badgeCounts: Record<string, number> = { orders: pendingOrders };
+  const badgeCounts: Record<string, number> = { orders: pendingOrders, chat: chatUnread };
 
   return (
     <>

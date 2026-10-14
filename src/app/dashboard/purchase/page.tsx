@@ -380,7 +380,11 @@ export default function PurchasePage() {
       formData.append('orderId', cryptoOrderId ?? '');
       formData.append('network', activeWallet.network);
 
-      await fetch('/api/dashboard/payment-proof', { method: 'POST', body: formData });
+      const res = await fetch('/api/dashboard/payment-proof', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error ?? 'Upload failed');
+      }
 
       addToast('Payment proof submitted! Now submit your trading credentials.', 'success');
       cart.setStep(4); // Go to credential step

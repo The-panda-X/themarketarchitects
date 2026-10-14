@@ -28,8 +28,8 @@ export async function GET(
       return errorResponse('User not found', 404);
     }
 
-    // Omit password hash
-    const { passwordHash: _pw, ...safeUser } = user as typeof user & { passwordHash?: string };
+    // Omit sensitive fields
+    const { passwordHash: _pw, twoFactorSecret: _tfs, otpAttempts: _oa, otpLockedUntil: _ol, ...safeUser } = user as typeof user & { passwordHash?: string; twoFactorSecret?: string | null; otpAttempts?: number; otpLockedUntil?: Date | null };
     return successResponse(safeUser);
   } catch (err) {
     return handleApiError(err);

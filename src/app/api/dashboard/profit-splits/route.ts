@@ -4,6 +4,7 @@ import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
 import { uploadProofImage } from '@/lib/storage';
+import { notifyAdmins } from '@/lib/admin-notify';
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -142,21 +143,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const admins = await prisma.user.findMany({
-      where: { role: 'ADMIN' },
-      select: { id: true },
+    await notifyAdmins({
+      title: 'New Profit Split Submission',
+      message: `A client submitted a profit split payment of $${amountSent.toFixed(2)} ${currency} (due: $${amountDue.toFixed(2)}).`,
+      type: 'info',
+      link: '/admin/payouts',
     });
-    if (admins.length > 0) {
-      await prisma.notification.createMany({
-        data: admins.map((a) => ({
-          userId:  a.id,
-          title:   'New Profit Split Submission',
-          message: `A client submitted a profit split payment of $${amountSent.toFixed(2)} ${currency} (due: $${amountDue.toFixed(2)}).`,
-          type:    'info',
-          link:    '/admin/payouts',
-        })),
-      });
-    }
 
     return successResponse({ split }, 201);
   } catch (err) {

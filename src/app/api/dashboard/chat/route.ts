@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { type NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse, errorResponse } from '@/lib/api-helpers';
+import { generateAIResponse } from '@/lib/ai-chat';
 
 /** GET  – list user's conversations */
 export async function GET() {
@@ -26,10 +27,11 @@ export async function POST(req: NextRequest) {
 
     if (!message?.trim()) return errorResponse('Message is required', 400);
 
-    // Check if user already has an open conversation
     let conversation = await prisma.conversation.findFirst({
       where: { userId: session.user.id, isClosed: false },
     });
+
+    const isNew = !conversation;
 
     if (!conversation) {
       conversation = await prisma.conversation.create({
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
           userId: session.user.id,
           subject: subject || null,
           lastMessage: message.trim().slice(0, 200),
-          staffUnread: 1,
+          staffUnread: 0,
           lastAt: new Date(),
         },
       });
@@ -52,15 +54,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Update conversation metadata
     await prisma.conversation.update({
       where: { id: conversation.id },
       data: {
         lastMessage: message.trim().slice(0, 200),
         lastAt: new Date(),
-        staffUnread: { increment: conversation.id ? 1 : 0 },
+        staffUnread: { increment: 1 },
       },
     });
+
+    await generateAIResponse(conversation.id, message.trim());
 
     return successResponse({ conversationId: conversation.id }, 201);
   } catch (err) {

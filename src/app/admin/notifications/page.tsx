@@ -21,6 +21,7 @@ const typeIcons: Record<string, typeof Info> = {
   info: Info,
   success: Check,
   warning: AlertCircle,
+  error: AlertCircle,
   payment: CreditCard,
   challenge: Target,
 };

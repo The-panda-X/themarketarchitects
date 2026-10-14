@@ -75,6 +75,14 @@ export async function GET(req: NextRequest) {
       }));
     }
 
+    // Weekly aggregates (server-side, not limited by pagination)
+    const weekAgo = new Date(Date.now() - 7 * 86400000);
+    const weekWhere = { ...where, sentAt: { gte: weekAgo } };
+    const [weeklyCount, weeklySkipped] = await Promise.all([
+      prisma.signalLog.count({ where: weekWhere }),
+      prisma.signalLog.aggregate({ where: weekWhere, _sum: { totalSkipped: true } }),
+    ]);
+
     // Result breakdown for trader stats cards (uses same where filter)
     const resultCounts = trader
       ? await prisma.signalLog.groupBy({
@@ -92,6 +100,8 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit),
       traderStats,
       resultCounts: resultCounts.map(r => ({ result: r.result, count: r._count.id })),
+      weeklyCount,
+      weeklySkipped: weeklySkipped._sum.totalSkipped ?? 0,
     });
   } catch (err) {
     return handleApiError(err);

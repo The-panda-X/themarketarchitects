@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth, handleApiError, successResponse } from '@/lib/api-helpers';
 import { uploadProofImage } from '@/lib/storage';
+import { notifyAdmins } from '@/lib/admin-notify';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
@@ -43,8 +44,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Notify admin via a system notification (using a special userId convention)
-    // Also update user notification
     await prisma.notification.create({
       data: {
         userId: session.user.id,
@@ -53,6 +52,18 @@ export async function POST(req: NextRequest) {
         type: 'info',
         link: '/dashboard/payments',
       },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true, name: true },
+    });
+
+    await notifyAdmins({
+      title: 'Payment Proof Submitted',
+      message: `${user?.name ?? user?.email ?? 'A customer'} submitted payment proof for order #${orderId.slice(-8).toUpperCase()} ($${order.totalAmount}) — ready for verification.`,
+      type: 'payment',
+      link: `/admin/orders/${order.id}`,
     });
 
     return successResponse({ proofUrl });

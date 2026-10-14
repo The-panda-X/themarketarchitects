@@ -88,16 +88,18 @@ export default function PayoutProof() {
           ))}
         </StaggerContainer>
 
-        {/* View all */}
+        {/* Scroll to contact for more info */}
         <ScrollReveal delay={0.3}>
           <div className="text-center mt-10">
-            <Button
-              variant="secondary"
-              icon={<ExternalLink className="h-4 w-4" />}
-              iconPosition="right"
-            >
-              View All Proof
-            </Button>
+            <a href="#contact">
+              <Button
+                variant="secondary"
+                icon={<ExternalLink className="h-4 w-4" />}
+                iconPosition="right"
+              >
+                Get Started Today
+              </Button>
+            </a>
           </div>
         </ScrollReveal>
       </div>

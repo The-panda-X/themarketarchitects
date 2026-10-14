@@ -112,10 +112,31 @@ export async function PUT(req: Request) {
   }
 }
 
-/** DELETE — disable 2FA */
-export async function DELETE() {
+/** DELETE — disable 2FA (requires password confirmation) */
+export async function DELETE(req: Request) {
   try {
     const session = await requireAuth();
+    const body = await req.json().catch(() => ({}));
+    const { password } = body as { password?: string };
+
+    if (!password) {
+      return errorResponse('Password is required to disable 2FA', 400);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { passwordHash: true },
+    });
+
+    if (!user?.passwordHash) {
+      return errorResponse('Cannot disable 2FA for OAuth-only accounts', 400);
+    }
+
+    const bcrypt = await import('bcryptjs');
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      return errorResponse('Incorrect password', 403);
+    }
 
     await prisma.user.update({
       where: { id: session.user.id },

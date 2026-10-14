@@ -15,6 +15,7 @@ import {
   Trash2,
   Pencil,
   Save,
+  Sparkles,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Avatar from '@/components/ui/Avatar';
@@ -611,6 +612,7 @@ export default function AdminChatPage() {
                 ) : (
                   messages.map((msg) => {
                     const isStaff = msg.senderRole !== 'USER';
+                    const isBot = msg.senderRole === 'ASSISTANT';
                     const isEditing = editingMsgId === msg.id;
                     return (
                       <div
@@ -632,8 +634,9 @@ export default function AdminChatPage() {
                           <div className="flex-1 min-w-0">
                             {isStaff && (
                               <p
-                                className={`text-[10px] text-text-tertiary mb-0.5 text-right`}
+                                className={`text-[10px] text-text-tertiary mb-0.5 text-right flex items-center justify-end gap-1`}
                               >
+                                {isBot && <Sparkles className="h-2.5 w-2.5 text-accent-primary" />}
                                 {msg.senderName ?? (msg.senderRole === 'USER' ? 'User' : 'Support')}
                               </p>
                             )}
@@ -667,9 +670,11 @@ export default function AdminChatPage() {
                               <div className={`flex items-center gap-1 ${isStaff ? 'flex-row-reverse' : ''}`}>
                                 <div
                                   className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                                    isStaff
-                                      ? 'bg-accent-primary text-white rounded-br-md'
-                                      : 'bg-white/[0.06] text-text-primary rounded-bl-md'
+                                    isBot
+                                      ? 'bg-accent-primary/10 border border-accent-primary/20 text-text-primary rounded-br-md'
+                                      : isStaff
+                                        ? 'bg-accent-primary text-white rounded-br-md'
+                                        : 'bg-white/[0.06] text-text-primary rounded-bl-md'
                                   }`}
                                 >
                                   {msg.body}

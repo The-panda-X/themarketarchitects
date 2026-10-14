@@ -13,7 +13,10 @@ export async function GET() {
 
     const count = await prisma.order.count({
       where: {
-        status: { in: ['PENDING_PAYMENT', 'PAID'] },
+        OR: [
+          { status: 'PENDING_PAYMENT', proofImage: { not: null } },
+          { status: 'PAID' },
+        ],
       },
     });
 

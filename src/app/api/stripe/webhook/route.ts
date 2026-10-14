@@ -57,13 +57,6 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        if (order.couponCode) {
-          await prisma.coupon.updateMany({
-            where: { code: order.couponCode, isActive: true },
-            data: { usedCount: { increment: 1 } },
-          });
-        }
-
         await prisma.notification.create({
           data: {
             userId,

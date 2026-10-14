@@ -58,16 +58,27 @@ export async function DELETE(
 
     await prisma.chatMessage.delete({ where: { id: params.id } });
 
-    // If this was the last message in the conversation, recompute lastMessage/lastAt
     const remaining = await prisma.chatMessage.findFirst({
       where: { conversationId: existing.conversationId },
       orderBy: { createdAt: 'desc' },
     });
+
+    const [staffUnreadCount, userUnreadCount] = await Promise.all([
+      prisma.chatMessage.count({
+        where: { conversationId: existing.conversationId, senderRole: 'USER', read: false },
+      }),
+      prisma.chatMessage.count({
+        where: { conversationId: existing.conversationId, senderRole: { not: 'USER' }, read: false },
+      }),
+    ]);
+
     await prisma.conversation.update({
       where: { id: existing.conversationId },
       data: {
         lastMessage: remaining ? remaining.body.slice(0, 200) : null,
         lastAt: remaining ? remaining.createdAt : new Date(),
+        staffUnread: staffUnreadCount,
+        userUnread: userUnreadCount,
       },
     });
 

@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { successResponse, errorResponse, handleApiError } from '@/lib/api-helpers';
 import { contactFormSchema } from '@/lib/validations';
 import { formLimiter, getClientIp } from '@/lib/rate-limit';
+import { notifyAdmins } from '@/lib/admin-notify';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,13 +21,10 @@ export async function POST(req: NextRequest) {
 
     const { name, email, subject, message } = parsed.data;
 
-    await prisma.notification.create({
-      data: {
-        userId: 'system',
-        title: `Contact: ${subject}`,
-        message: `From ${name} (${email}): ${message.substring(0, 200)}`,
-        type: 'info',
-      },
+    await notifyAdmins({
+      title: `Contact: ${subject}`,
+      message: `From ${name} (${email}): ${message.substring(0, 200)}`,
+      type: 'info',
     });
 
     console.log('[Contact Form]', { name, email, subject, message: message.substring(0, 100) });
