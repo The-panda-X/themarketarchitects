@@ -1,0 +1,22 @@
+{
+  "name": "tma-discord-server",
+  "version": "1.0.0",
+  "description": "The Market Architects - Advanced Discord Community Server Bot",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "setup": "tsx src/setup-server.ts",
+    "register-commands": "tsx src/register-commands.ts"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  }
+}
