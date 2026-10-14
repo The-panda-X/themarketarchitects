@@ -136,6 +136,15 @@ function detectAffirmative(msg: string, lastAiIntent: string | null): IntentResu
     safety: "You can also check out client testimonials on our website to see real results from traders we've helped. Want to know more about our process or pricing?",
     timeframe: "The exact duration depends on your firm's rules (minimum trading days, profit targets, etc.). Our team works as efficiently as possible while staying within all rules. Want to know about a specific prop firm's requirements?",
     profit_split: "The profit split varies by plan — it's always clearly stated before you sign up, so no surprises. Would you like to see our current plans and their split details?",
+    refund_policy: "The Elite Plan includes a 100% money-back guarantee. For Starter and Pro, you get a free retry instead. Want to compare all the plans side by side?",
+    free_retry: "With the free retry, the only cost from our side is the initial service fee — no repeat charges. You would only need to pay the prop firm's evaluation fee again. Want to know which plan is best for your situation?",
+    trader_types: "Senior traders are reserved for Elite plan clients and have our highest success rates. Would you like to see the full plan comparison or get started with Elite?",
+    hidden_fees: "Just the plan price from us, and the prop firm's own evaluation fee. No hidden costs at all! Ready to pick a plan?",
+    best_firms: "A team member can recommend the best firm based on your goals — fastest payout, easiest rules, or largest accounts. Want me to connect you with someone?",
+    disqualification: "For detailed compliance information about a specific prop firm, a team member can walk you through their policies. Want to chat with someone about this?",
+    public_reviews: "Check out our homepage for client testimonials and payout proofs! Want to know anything else about our services?",
+    plan_comparison: "Would you like detailed pricing for a specific plan, or help choosing between them? A team member can also give personalized recommendations!",
+    approval_time: "Most orders are reviewed within 24-48 hours, then trading starts right away. The challenge duration depends on the prop firm's rules. Which firm are you considering?",
   };
 
   if (lastAiIntent && followUps[lastAiIntent]) {
@@ -204,12 +213,32 @@ function detectCredentials(msg: string): IntentResult | null {
   return null;
 }
 
-function detectRefund(msg: string): IntentResult | null {
+function detectRefundPolicy(msg: string, kb: KnowledgeBase): IntentResult | null {
+  if (containsAny(msg, ['refund policy', 'money back guarantee', 'guarantee policy', 'refund work', 'how does refund', 'what is the refund', 'whats the refund', 'can i get refund', 'do you offer refund', 'is there a guarantee', 'money back if', 'refund if not passed', 'refund if challenge', 'guarantee if'])) {
+    const planNames = kb.plans.map(p => p.name).join(', ') || 'Starter, Pro, and Elite';
+    return {
+      intent: 'refund_policy',
+      response: `Great question about our refund policy! Here's how it works:\n\n🛡️ **Elite Plan** — Includes a **100% money-back guarantee** if the challenge is not passed within the given timeframe\n📋 **Pro & Starter Plans** — These plans include a **free retry** if the challenge is failed, but do not include a money-back guarantee\n\n💡 The guarantee means: if our team cannot pass your challenge within the agreed timeframe on the Elite plan, you receive a full refund of the service fee. For other plans, we retry at no extra cost.\n\nFor specific refund questions about your order, a team member can help with the details!`,
+      confidence: 0.95,
+    };
+  }
+
   if (containsAny(msg, ['refund', 'money back', 'cancel order', 'cancellation', 'chargeback', 'get my money back', 'cancel my'])) {
     return {
       intent: 'refund',
       response: `For refund and cancellation requests, a team member will assist you shortly with your specific case. You can also email us directly at ${CONTACT_EMAIL} for a faster response.`,
       confidence: 0.9,
+    };
+  }
+  return null;
+}
+
+function detectFreeRetry(msg: string): IntentResult | null {
+  if (containsAny(msg, ['free retry', 'retry if fail', 'what if fail', 'challenge fail', 'if i fail', 'if it fails', 'failed challenge', 'do i repay', 'repay the', 'pay again', 'try again', 'second attempt', 'another attempt', 'what happens if fail', 'need to repay', 'risk is the challenge', 'only money', 'only risking', 'money im risking', 'money i risk', 'what do i risk', 'what am i risking'])) {
+    return {
+      intent: 'free_retry',
+      response: "Great question about our retry policy! Here's how it works:\n\n🔄 **Free Retry** — If the challenge is failed, we retry it at **no additional cost from us**. You don't pay The Market Architects again.\n💰 **Prop Firm Cost** — You would only need to repurchase the challenge from the prop firm itself (their evaluation fee). We have no control over that cost.\n✅ **Your risk** — The only money you're risking is the prop firm's challenge fee + our one-time service fee. If we fail, you get a free retry from us.\n\n📌 **Elite Plan** also includes a 100% money-back guarantee on our service fee if the challenge isn't passed within the timeframe.\n\nWant to know more about a specific plan?",
+      confidence: 0.92,
     };
   }
   return null;
@@ -377,14 +406,23 @@ function detectTimeframe(msg: string): IntentResult | null {
 }
 
 function detectProfitSplit(msg: string): IntentResult | null {
-  if (containsAny(msg, ['profit split', 'profit sharing', 'payout', 'withdrawal', 'profits', 'earnings', 'how much do i keep', 'split', 'revenue share', 'my share', 'your cut', 'take home'])) {
+  if (!containsAny(msg, ['profit split', 'profit sharing', 'payout', 'withdrawal', 'profits', 'earnings', 'how much do i keep', 'split', 'revenue share', 'my share', 'your cut', 'take home', '80/20', '70/30', '60/40', '50/50'])) {
+    return null;
+  }
+
+  if (containsAny(msg, ['80/20', '8020', 'eighty twenty'])) {
     return {
-      intent: 'profit_split',
-      response: "Profit splits depend on the specific service and plan you choose:\n\n💰 The split is **clearly defined upfront** — no hidden fees or surprises\n📊 You can view exact terms in your dashboard once set up\n📋 For managed accounts, you keep the majority of the profits\n\nWant to know the split for a specific plan? Ask me about pricing or a specific service!",
-      confidence: 0.85,
+      intent: 'profit_split_elite',
+      response: "The profit split varies by plan and is always clearly stated upfront:\n\n📊 **Elite Plan** — The profit split details (such as 80/20) are defined in your plan terms. The exact split depends on the prop firm and account type.\n📋 Each plan has its own split structure — you'll see the exact terms before you commit.\n💰 There are **no hidden fees** — what you see is what you get.\n\nFor the exact split on your specific plan, check the plan details on our pricing page or ask a team member for a personalized breakdown!",
+      confidence: 0.9,
     };
   }
-  return null;
+
+  return {
+    intent: 'profit_split',
+    response: "Profit splits depend on the specific service and plan you choose:\n\n💰 The split is **clearly defined upfront** — no hidden fees or surprises\n📊 You can view exact terms in your dashboard once set up\n📋 For managed accounts, you keep the majority of the profits\n\nOur plans (Starter, Pro, Elite) each have different split structures. Want to know the split for a specific plan?",
+    confidence: 0.85,
+  };
 }
 
 function detectReferral(msg: string): IntentResult | null {
@@ -437,6 +475,104 @@ function detectAccountSize(msg: string): IntentResult | null {
       intent: 'account_size',
       response: "We support a range of account sizes depending on the prop firm! Common sizes include $10K, $25K, $50K, $100K, and $200K.\n\nThe price varies based on the size and firm. Check our pricing page for exact costs per size, or tell me your preferred firm and size and I'll help you find the right plan!",
       confidence: 0.85,
+    };
+  }
+  return null;
+}
+
+function detectTraderTypes(msg: string): IntentResult | null {
+  if (containsAny(msg, ['senior trader', 'dedicated trader', 'what is a senior', 'what is a dedicated', 'difference between senior', 'difference between dedicated', 'senior vs dedicated', 'dedicated vs senior', 'type of trader', 'who trades', 'who will trade', 'trader assigned', 'which trader'])) {
+    return {
+      intent: 'trader_types',
+      response: "Great question! Here's the difference between our trader tiers:\n\n👤 **Dedicated Trader** (Pro Plan) — A skilled, experienced trader is assigned to your account. They follow all prop firm rules and work to pass your challenge efficiently.\n\n⭐ **Senior Trader** (Elite Plan) — Our most experienced and top-performing traders. They have the highest success rates, handle the most complex challenges, and are prioritized for your account. Senior traders typically have years of professional trading experience.\n\n💡 **Key difference**: Senior traders have a proven track record of higher pass rates and faster completions. The Elite Plan's premium pricing reflects this higher expertise level.\n\nWant to compare the full plan features?",
+      confidence: 0.93,
+    };
+  }
+  return null;
+}
+
+function detectHiddenFees(msg: string): IntentResult | null {
+  if (containsAny(msg, ['hidden fee', 'setup fee', 'management fee', 'service fee', 'additional cost', 'extra cost', 'extra fee', 'any other fee', 'other charges', 'initial fee', 'only cost', 'only pay', 'anything else to pay', 'additional charge', 'setup cost', 'management setup'])) {
+    return {
+      intent: 'hidden_fees',
+      response: "No hidden fees! Here's what you pay:\n\n💰 **One-time service fee** — The plan price listed on our website (e.g., $380 for Elite). That's it from our side.\n🏢 **Prop firm challenge fee** — This is paid separately to the prop firm when you purchase/start the evaluation. This is not charged by us.\n\n✅ **No setup fees**\n✅ **No management fees**\n✅ **No monthly charges**\n✅ **No hidden costs**\n\nThe price you see on our pricing page is the total cost for our service. The only other cost is the prop firm's own evaluation fee. Any questions about a specific plan?",
+      confidence: 0.93,
+    };
+  }
+  return null;
+}
+
+function detectBestFirms(msg: string, kb: KnowledgeBase): IntentResult | null {
+  if (containsAny(msg, ['most success', 'best prop firm', 'which firm is best', 'recommended firm', 'recommend a firm', 'top firm', 'top 2', 'top 3', 'top firms', 'best firm to use', 'quickest payout', 'fastest payout', 'best payout', 'which firm do you recommend', 'highest success', 'best results'])) {
+    const firmList = kb.firms.length > 0
+      ? `\n\nWe currently work with: ${kb.firms.map(f => f.name).join(', ')}.`
+      : '';
+
+    return {
+      intent: 'best_firms',
+      response: `Great question! Our success rates and payout speed vary by prop firm. Here's what we can share:\n\n🏆 We have strong results across all our supported firms, but specific success rates and payout timelines depend on each firm's rules, minimum trading days, and payout processing times.\n\n⚡ For the **quickest payouts**, it depends on the firm — some process within days, others take 1-2 weeks after passing.\n\n💡 A team member can recommend the **best firm for your specific goals** — whether that's fastest payout, easiest rules, or largest account sizes.${firmList}\n\nWant to chat with a team member about which firm is best for you?`,
+      confidence: 0.92,
+    };
+  }
+  return null;
+}
+
+function detectDisqualification(msg: string): IntentResult | null {
+  if (containsAny(msg, ['disqualif', 'disqualified', 'risk of disqualif', 'get disqualified', 'banned', 'account banned', 'violate rules', 'break rules', 'against rules', 'terms of service', 'tos violation', 'is it allowed', 'allowed to trade', 'trade on behalf', 'trade for clients', 'trade for me legal', 'permission to trade', 'legal to trade', 'regulation', 'agreement', 'proof of permission', 'compliance'])) {
+    return {
+      intent: 'disqualification',
+      response: "This is an important question and we appreciate your diligence! Here's what you should know:\n\n📋 **Prop firm policies vary** — Each firm has its own terms of service regarding third-party trading. Some firms explicitly allow it, others have specific guidelines.\n\n🔒 **Our approach**:\n• We follow each prop firm's rules precisely\n• Our traders operate within all firm guidelines\n• We use professional risk management to avoid rule violations\n• We keep your credentials encrypted and secure\n\n⚠️ **Important**: For specific questions about a prop firm's policy on third-party trading, applicable regulations, or legal agreements, we recommend reviewing the firm's terms directly. A team member can walk you through the specifics for your chosen firm.\n\nThis is a detailed topic best handled by our team — someone will be with you shortly to address your compliance concerns!",
+      confidence: 0.92,
+    };
+  }
+  return null;
+}
+
+function detectPublicReviews(msg: string): IntentResult | null {
+  if (containsAny(msg, ['public review', 'client review', 'customer review', 'where are the review', 'where can i see review', 'see reviews', 'read reviews', 'user review', 'buyer review', 'people who bought', 'bought the service', 'real review', 'honest review', 'verified review', 'trustpilot', 'google review'])) {
+    return {
+      intent: 'public_reviews',
+      response: "You can find reviews and proof of our work in several places:\n\n⭐ **Website testimonials** — Real client testimonials are featured on our homepage\n💰 **Payout proofs** — Verified payout screenshots from clients on our website\n📊 **Dashboard results** — Once you're a client, you can see real-time challenge progress\n\n🔗 Check our website's homepage to see client testimonials and payout proofs. We're proud of our track record and happy to share results!\n\nWant to see specific examples? A team member can share more detailed case studies with you.",
+      confidence: 0.92,
+    };
+  }
+  return null;
+}
+
+function detectPlanComparison(msg: string, kb: KnowledgeBase): IntentResult | null {
+  if (containsAny(msg, ['compare plan', 'plan comparison', 'difference between plan', 'starter vs pro', 'pro vs elite', 'starter vs elite', 'which plan', 'best plan', 'plan difference', 'what about pro', 'what about starter', 'what about elite', 'elite plan', 'pro plan', 'starter plan', 'elite vs', 'vs pro', 'vs starter'])) {
+    if (kb.plans.length > 0) {
+      const planDetails = kb.plans.map(p => {
+        let line = `**${p.name}** (${p.serviceType})`;
+        if (p.price) line += ` — $${p.price}`;
+        if (p.features && p.features.length > 0) {
+          line += '\n' + p.features.slice(0, 5).map(f => `  ✓ ${f}`).join('\n');
+        }
+        return `• ${line}`;
+      }).join('\n\n');
+
+      return {
+        intent: 'plan_comparison',
+        response: `Here's a comparison of our plans:\n\n${planDetails}\n\n💡 **Key differences**: Higher-tier plans include more experienced traders, faster completion times, and additional guarantees (like the Elite Plan's money-back guarantee).\n\nWant to know more about a specific plan?`,
+        confidence: 0.9,
+      };
+    }
+
+    return {
+      intent: 'plan_comparison',
+      response: "We offer three main plans — **Starter**, **Pro**, and **Elite** — each with different features, trader levels, and guarantees:\n\n• **Starter** — Great entry point with a dedicated trader and free retry\n• **Pro** — Enhanced service with a dedicated trader and priority support\n• **Elite** — Premium service with a senior trader, 100% money-back guarantee, and fastest completion times\n\nVisit our pricing page for full details, or ask about a specific plan!",
+      confidence: 0.88,
+    };
+  }
+  return null;
+}
+
+function detectApprovalTime(msg: string): IntentResult | null {
+  if (containsAny(msg, ['time to be approved', 'approval time', 'how long to get approved', 'how long for approval', 'when do i get approved', 'how fast approved', 'approved for the', 'start after payment', 'after i pay', 'when do you start', 'how soon', 'when does trading start', 'onboarding time'])) {
+    return {
+      intent: 'approval_time',
+      response: "After you place your order and submit payment, here's what to expect:\n\n⏱️ **Order review** — Our team reviews your order typically within **24-48 hours**\n🔑 **Credentials setup** — Once approved, you'll provide your trading account credentials securely\n📈 **Trading begins** — Our trader starts working on your challenge right away\n\n📋 **Timeframes vary by prop firm** — Each firm has different minimum trading days:\n• Some require 5+ trading days minimum\n• Others require 10+ or 30+ days\n• Profit targets and drawdown limits also affect the timeline\n\nA team member can give you an exact estimate for your specific prop firm and account size!",
+      confidence: 0.9,
     };
   }
   return null;
@@ -548,19 +684,27 @@ function generateResponse(userMessage: string, kb: KnowledgeBase, lastAiIntent: 
     detectGoodbye(msg),
     detectHumanAgent(msg),
     detectContact(msg),
-    detectRefund(msg),
+    detectRefundPolicy(msg, kb),
+    detectFreeRetry(msg),
     detectCredentials(msg),
     detectOrderStatus(msg),
     detectPayment(msg),
     detectRisk(msg),
+    detectDisqualification(msg),
     detectHowItWorks(msg),
     detectSafety(msg),
     detectTimeframe(msg),
+    detectApprovalTime(msg),
     detectProfitSplit(msg),
+    detectTraderTypes(msg),
+    detectHiddenFees(msg),
     detectReferral(msg),
     detectDashboard(msg),
     detectResults(msg),
+    detectPublicReviews(msg),
     detectAccountSize(msg),
+    detectPlanComparison(msg, kb),
+    detectBestFirms(msg, kb),
     detectPricingIntent(msg, kb),
     detectServiceIntent(msg, kb),
     detectPropFirmIntent(msg, kb),
@@ -612,6 +756,15 @@ function getLastAiIntent(recentMessages: { senderRole: string; body: string }[])
     if (body.includes('AES-256') || body.includes('security is our top priority')) return 'safety';
     if (body.includes('1-4 weeks') || body.includes('timeframe')) return 'timeframe';
     if (body.includes('Profit splits') || body.includes('profit split')) return 'profit_split';
+    if (body.includes('money-back guarantee') || body.includes('refund policy')) return 'refund_policy';
+    if (body.includes('Free Retry') || body.includes('free retry')) return 'free_retry';
+    if (body.includes('Senior Trader') || body.includes('Dedicated Trader')) return 'trader_types';
+    if (body.includes('No hidden fees') || body.includes('setup fees')) return 'hidden_fees';
+    if (body.includes('success rates') && body.includes('prop firm')) return 'best_firms';
+    if (body.includes('disqualif') || body.includes('third-party trading')) return 'disqualification';
+    if (body.includes('reviews') && body.includes('testimonials')) return 'public_reviews';
+    if (body.includes('Starter') && body.includes('Pro') && body.includes('Elite')) return 'plan_comparison';
+    if (body.includes('Order review') || body.includes('24-48 hours')) return 'approval_time';
     return null;
   }
   return null;
