@@ -11,8 +11,12 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status') ?? '';
     const search = searchParams.get('search') ?? '';
 
-    const where = {
-      ...(status && { status: status as never }),
+    const where: Record<string, unknown> = {
+      ...(status
+        ? { status: status as never }
+        : {
+            NOT: { status: 'PENDING_PAYMENT', proofImage: null },
+          }),
       ...(search && {
         OR: [
           { planName: { contains: search, mode: 'insensitive' as const } },
