@@ -91,7 +91,7 @@ function detectGreeting(msg: string): IntentResult | null {
 }
 
 function detectThanks(msg: string): IntentResult | null {
-  if (containsAny(msg, ['thank', 'thanks', 'thx', 'appreciate', 'ty', 'tysm', 'thank you'])) {
+  if (containsAny(msg, ['thank', 'thanks', 'thx', 'appreciate', 'ty', 'tysm', 'thank you']) && normalize(msg).split(' ').length <= 10) {
     return {
       intent: 'thanks',
       response: pick([
@@ -443,7 +443,7 @@ function detectAccountSize(msg: string): IntentResult | null {
 }
 
 function detectHumanAgent(msg: string): IntentResult | null {
-  if (containsAny(msg, ['speak to a human', 'real person', 'talk to someone', 'human agent', 'live agent', 'speak to someone', 'need a person', 'real agent', 'talk to a person', 'staff', 'representative', 'support agent', 'live chat'])) {
+  if (containsAny(msg, ['speak to a human', 'real person', 'talk to someone', 'human agent', 'live agent', 'speak to someone', 'need a person', 'real agent', 'talk to a person', 'representative', 'support agent', 'live chat']) && normalize(msg).split(' ').length <= 20) {
     return {
       intent: 'human_agent',
       response: `Of course! A team member will be with you shortly. 👤\n\nIn the meantime, feel free to ask me any questions — I might be able to help right away! You can also reach us directly at ${CONTACT_EMAIL}.`,
@@ -489,10 +489,58 @@ function matchFAQ(msg: string, faqs: KnowledgeBase['faqs']): IntentResult | null
   return null;
 }
 
+// ── Complexity detection ────────────────────────────────────────────────
+
+function isComplexQuery(msg: string): boolean {
+  const words = normalize(msg).split(' ');
+  const questionMarks = (msg.match(/\?/g) || []).length;
+  if (questionMarks >= 3) return true;
+  if (words.length >= 80 && questionMarks >= 2) return true;
+  if (words.length >= 120) return true;
+  return false;
+}
+
+function buildComplexQueryResponse(msg: string, kb: KnowledgeBase): string {
+  const topics: string[] = [];
+  if (containsAny(msg, ['refund', 'money back', 'guarantee', 'money back guarantee'])) topics.push('refund policy & guarantees');
+  if (containsAny(msg, ['price', 'pricing', 'cost', 'fee', 'how much', '$'])) topics.push('pricing details');
+  if (containsAny(msg, ['profit split', 'split', '80/20', '70/30', 'profit sharing'])) topics.push('profit split');
+  if (containsAny(msg, ['prop firm', 'ftmo', 'fundednext', 'e8', 'funding pips', 'alpha capital', 'apex', 'goat funded', 'blue guardian', 'fundedfx', 'funded trader'])) topics.push('prop firm compatibility');
+  if (containsAny(msg, ['time', 'timeframe', 'how long', 'approved', 'approval', 'duration'])) topics.push('timeframes & approval');
+  if (containsAny(msg, ['elite', 'pro', 'starter', 'plan', 'senior trader', 'dedicated trader'])) topics.push('plan differences');
+  if (containsAny(msg, ['retry', 'free retry', 'failed', 'fail'])) topics.push('retry policy');
+  if (containsAny(msg, ['review', 'testimonial', 'proof', 'public review'])) topics.push('reviews & testimonials');
+  if (containsAny(msg, ['risk', 'disqualif', 'safe', 'legal', 'regulation', 'agreement', 'permission', 'transparent'])) topics.push('compliance & safety');
+  if (containsAny(msg, ['setup fee', 'hidden fee', 'additional cost', 'management fee', 'service fee'])) topics.push('fees');
+  if (containsAny(msg, ['payout', 'quickest payout', 'fastest payout', 'success'])) topics.push('payout speed & success');
+
+  const topicList = topics.length > 0
+    ? `I can see you're asking about: **${topics.join(', ')}**.`
+    : "You've raised some great points.";
+
+  const planInfo = kb.plans.length > 0
+    ? `\n\nHere's a quick overview of our plans:\n${kb.plans.map(p => {
+        let line = `• **${p.name}** (${p.serviceType})`;
+        if (p.price) line += ` — $${p.price}`;
+        return line;
+      }).join('\n')}`
+    : '';
+
+  const firmInfo = kb.firms.length > 0
+    ? `\n\nWe currently work with: ${kb.firms.map(f => f.name).join(', ')}.`
+    : '';
+
+  return `Thank you for your detailed message! ${topicList}\n\nThese are great questions that deserve thorough, personalized answers. A team member will be with you shortly to address each of your points in detail.${planInfo}${firmInfo}\n\nIn the meantime, you can also:\n• Check our website for client testimonials and payout proofs\n• Browse our pricing page for plan comparisons\n• Email us at ${CONTACT_EMAIL}\n\nWe appreciate your diligence in researching before getting started — that's exactly the right approach! 🙌`;
+}
+
 // ── Response generation ─────────────────────────────────────────────────
 
 function generateResponse(userMessage: string, kb: KnowledgeBase, lastAiIntent: string | null): string {
   const msg = userMessage.trim();
+
+  if (isComplexQuery(msg)) {
+    return buildComplexQueryResponse(msg, kb);
+  }
 
   const checks: (IntentResult | null)[] = [
     detectGreeting(msg),
