@@ -147,6 +147,15 @@ function detectAffirmative(msg: string, lastAiIntent: string | null): IntentResu
     approval_time: "Most orders are reviewed within 24-48 hours, then trading starts right away. The challenge duration depends on the prop firm's rules. Which firm are you considering?",
     location: "Yes, we're based in New York, USA and serve clients worldwide! Want to know about our services, or is there something specific I can help with?",
     staff_identity: "Our team includes experienced traders, risk managers, and client support specialists — all based in New York. Want to know about our services or plans?",
+    specific_firm_usage: "Yes, we can work with most major prop firms! Just pick a plan on our pricing page and we'll handle everything. Which firm are you with?",
+    passing_speed: "Most challenges are completed in 1-4 weeks. Want to get started? Check out our plans or ask about a specific prop firm's timeline!",
+    post_pass_management: "After passing, our Account Management service lets you earn profits hands-free! Want to see our plans?",
+    referral_issue: "A team member is looking into your referral setup. In the meantime, would you like to learn about our services?",
+    trading_progress: "Our traders take a strategic, patient approach for the best results. A team member can give you a specific update on your account!",
+    partnership: "We'd love to explore working together! A team member will be in touch. Want to learn more about our referral program in the meantime?",
+    whatsapp_request: "A team member will review your request and reach out soon! Is there anything else I can help with?",
+    payment_after_pass: "Our service fee is a one-time investment that gets you a funded account. With a 98.4% success rate, it's a smart move! Ready to check out our plans?",
+    failure_refund: "With a 98.4% success rate and safety nets on every plan, your investment is well protected! Want to see which plan is best for you?",
   };
 
   if (lastAiIntent && followUps[lastAiIntent]) {
@@ -239,7 +248,7 @@ function detectFreeRetry(msg: string): IntentResult | null {
   if (containsAny(msg, ['free retry', 'retry if fail', 'what if fail', 'challenge fail', 'if i fail', 'if it fails', 'failed challenge', 'do i repay', 'repay the', 'pay again', 'try again', 'second attempt', 'another attempt', 'what happens if fail', 'need to repay', 'risk is the challenge', 'only money', 'only risking', 'money im risking', 'money i risk', 'what do i risk', 'what am i risking'])) {
     return {
       intent: 'free_retry',
-      response: "Great question about our retry policy! Here's how it works:\n\n🔄 **Free Retry** — If the challenge is failed, we retry it at **no additional cost from us**. You don't pay The Market Architects again.\n💰 **Prop Firm Cost** — You would only need to repurchase the challenge from the prop firm itself (their evaluation fee). We have no control over that cost.\n✅ **Your risk** — The only money you're risking is the prop firm's challenge fee + our one-time service fee. If we fail, you get a free retry from us.\n\n📌 **Elite Plan** also includes a 100% money-back guarantee on our service fee if the challenge isn't passed within the timeframe.\n\nWant to know more about a specific plan?",
+      response: "Great question! First, keep in mind our **98.4% success rate** — failure is very rare! 💪\n\nBut here's your safety net:\n\n🔄 **Free Retry** — If the challenge is failed, we retry it at **no additional cost from us**. You don't pay The Market Architects again.\n💰 **Prop Firm Cost** — You would only need to repurchase the challenge from the prop firm itself (their evaluation fee).\n✅ **Your risk** — The only money you're risking is the prop firm's challenge fee + our one-time service fee. If we fail, you get a free retry from us.\n\n📌 **Elite Plan** also includes a **100% money-back guarantee** on our service fee — the ultimate protection!\n\nWith our track record, you're in great hands. Ready to get started?",
       confidence: 0.92,
     };
   }
@@ -580,6 +589,110 @@ function detectApprovalTime(msg: string): IntentResult | null {
   return null;
 }
 
+function detectSpecificFirmUsage(msg: string, kb: KnowledgeBase): IntentResult | null {
+  if (containsAny(msg, ['use my account', 'use my ftmo', 'pass my account', 'pass my ftmo', 'pass my challenge', 'can you use my', 'can you pass my', 'trade on my account', 'trade my account', 'work on my account', 'take my account', 'handle my account', 'my ftmo account', 'my fundednext account', 'my e8 account', 'my funded account'])) {
+    const firmList = kb.firms.length > 0
+      ? `\n\nWe currently work with: **${kb.firms.map(f => f.name).join(', ')}** — so yes, we most likely support your firm!`
+      : '';
+    return {
+      intent: 'specific_firm_usage',
+      response: `Absolutely! We can work with your account. Here's how it works:\n\n✅ **Challenge Passing** — We log into your prop firm account and pass the challenge for you\n✅ **Account Management** — After passing, we can also manage your funded account to generate profits\n🔒 **Secure** — Your credentials are encrypted with AES-256 military-grade encryption${firmList}\n\n📊 With a **98.4% success rate**, you're in great hands! Just pick a plan on our pricing page and we'll get started. Which prop firm are you with?`,
+      confidence: 0.93,
+    };
+  }
+  return null;
+}
+
+function detectPassingSpeed(msg: string): IntentResult | null {
+  if (containsAny(msg, ['how fast can you pass', 'how quickly can you pass', 'how fast to pass', 'how long to pass', 'how many days to pass', 'speed of passing', 'fast can you complete', 'quickly pass', 'days to pass', 'weeks to pass', 'when will you pass', 'how soon pass', 'fast you can pass', 'how much time you take', 'time to pass', 'how much time to pass'])) {
+    return {
+      intent: 'passing_speed',
+      response: "Great question! Here's what you can expect:\n\n⚡ **Most challenges are passed within 1-4 weeks** depending on the prop firm's rules\n📋 Each firm has its own requirements (minimum trading days, profit targets, etc.)\n🏆 Our **98.4% success rate** means we get it done right the first time\n\n💡 **Factors that affect speed:**\n• Minimum trading days required by the firm (some need 5, 10, or 30+ days)\n• Profit target percentage\n• Market conditions\n\nOur traders work efficiently while following every rule to ensure your challenge is passed safely. Ready to get started? Check out our plans!",
+      confidence: 0.92,
+    };
+  }
+  return null;
+}
+
+function detectPostPassManagement(msg: string): IntentResult | null {
+  if (containsAny(msg, ['manage it after', 'manage after passing', 'after you pass', 'once passed', 'after challenge passed', 'after passing can you', 'manage the funded', 'manage funded account', 'keep trading after', 'continue trading', 'trade after passing', 'what happens after pass'])) {
+    return {
+      intent: 'post_pass_management',
+      response: "Yes! After we pass your challenge, you have great options:\n\n📈 **Account Management** — We continue trading your funded account professionally, generating profits for you\n💰 **Profit Sharing** — You keep the majority of the profits while our expert traders do the work\n🛡️ **Risk Management** — We follow strict drawdown limits to protect your account\n\n🎯 Many of our clients start with Challenge Passing and then move to Account Management — it's the perfect combination for hands-off income!\n\nWant to bundle both services? Check out our plans or ask a team member for the best package!",
+      confidence: 0.92,
+    };
+  }
+  return null;
+}
+
+function detectReferralIssue(msg: string): IntentResult | null {
+  if (containsAny(msg, ['referral not working', 'referral system not', 'referal system not', 'referal not ready', 'cant invite', 'cannot invite', 'invite not working', 'referral link broken', 'referral not ready', 'join members', 'bring people', 'refer not working', 'referral system down', 'referal system down', 'invite someone but', 'not ready to invite', 'after referral launch', 'after referal launch', 'when referral ready', 'when referal ready', 'future referrals', 'come under my team', 'under my referral', 'under my referal'])) {
+    return {
+      intent: 'referral_issue',
+      response: "Thanks for your interest in our referral program! 🎉\n\nIf you're having trouble with the referral system, here's what to know:\n\n🔧 Our referral system may be undergoing updates — a team member can check the current status for you\n👥 We appreciate your enthusiasm for bringing people on board!\n📩 Please reach out to a team member who can assist with your referral setup and ensure everything is linked properly\n\nA team member will be with you shortly to help get your referral system sorted out. In the meantime, feel free to ask me anything else about our services!",
+      confidence: 0.9,
+    };
+  }
+  return null;
+}
+
+function detectTradingProgress(msg: string): IntentResult | null {
+  if (containsAny(msg, ['no trading', 'no trades', 'not trading', 'no activity', 'why no trading', 'when start trading', 'havent traded', 'havent started', 'no trade yet', 'only one order', 'only one trade', 'just one order', 'limit order only', 'pending order only', 'slow trading', 'slow progress', 'not started yet', 'why havent you started', 'days and no trading', 'days ago no trading', 'days but no trade', 'waiting for trade'])) {
+    return {
+      intent: 'trading_progress',
+      response: "We understand the wait can feel long, but there's a good reason! Here's what you should know:\n\n📊 **Strategic approach** — Our traders don't rush into trades. They wait for the **best market conditions** to maximize the chance of passing\n🎯 **Quality over quantity** — Fewer, high-quality trades are safer than many risky ones\n⏱️ **Pending/limit orders** — If you see pending orders, it means our trader is actively monitoring the market and has a setup ready\n🛡️ **Risk management** — We prioritize protecting your account over speed\n\n💡 Most challenges are completed within **1-4 weeks**. Our **98.4% success rate** comes from this patient, disciplined approach.\n\nFor a specific update on your account, a team member can provide detailed progress information!",
+      confidence: 0.92,
+    };
+  }
+  return null;
+}
+
+function detectPartnership(msg: string): IntentResult | null {
+  if (containsAny(msg, ['work with you', 'partnership', 'partner with', 'business partner', 'grow business', 'join your team', 'business opportunity', 'work together', 'collaborate', 'be your agent', 'represent you', 'bring clients', 'build team', 'expand business', 'business in my country', 'my team can join', 'good team', 'join all in'])) {
+    return {
+      intent: 'partnership',
+      response: "Thank you for your interest in working with The Market Architects! 🤝\n\nWe appreciate your enthusiasm! Here are the ways you can work with us:\n\n🎉 **Referral Program** — Earn commissions by referring clients to our services. Check your dashboard for your referral link!\n📈 **Client Services** — Start by experiencing our services yourself — Challenge Passing, Account Management, or Account Growth\n📩 **Business Inquiries** — For partnership or business development opportunities, a team member will be with you shortly to discuss further\n\nA senior team member will review your message and get in touch with you soon. We're always open to growing together! 🚀",
+      confidence: 0.88,
+    };
+  }
+  return null;
+}
+
+function detectWhatsAppRequest(msg: string): IntentResult | null {
+  if (containsAny(msg, ['whatsapp number', 'contact me on whatsapp', 'my whatsapp', 'call me on', 'my number is', 'my phone number', 'contact me directly', 'forward to senior', 'forward my message', 'senior person contact', 'most senior', 'contact to me', 'reach me on', 'text me on', 'message me on whatsapp', 'here is my number', 'pls contact me'])) {
+    return {
+      intent: 'whatsapp_request',
+      response: `Thank you for sharing your contact details! 📱\n\nWe've noted your request. Here's how we handle communication:\n\n💬 **This chat** — The fastest way to get help and updates\n📩 **Email** — ${CONTACT_EMAIL} for detailed inquiries\n👤 **Team contact** — A team member will review your message and reach out to you\n\n🔒 For your security, we keep all communications through our official channels.\n\nA team member will be with you shortly to assist with your request!`,
+      confidence: 0.9,
+    };
+  }
+  return null;
+}
+
+function detectPaymentAfterPass(msg: string): IntentResult | null {
+  const hasPaymentWords = containsAny(msg, ['payment', 'paid', 'money', 'fee', 'return', 'refund']);
+  const hasPassWords = containsAny(msg, ['pass', 'passed', 'passing', 'after pass']);
+  if (hasPaymentWords && hasPassWords && containsAny(msg, ['return', 'refund', 'back', 'will be return', 'will return'])) {
+    return {
+      intent: 'payment_after_pass',
+      response: "Great question! Here's how our pricing works:\n\n💰 **Our service fee is a one-time payment** — This covers our team's work in passing your challenge. Once the challenge is passed, you have a **funded account** that can generate ongoing profits!\n\n📈 **Think of it as an investment** — You pay once for our service, and in return you get:\n• A passed prop firm challenge\n• Access to a funded trading account\n• Potential ongoing profit payouts from the firm\n\n🎯 With our **98.4% success rate**, your service fee leads to a funded account that can earn you money month after month!\n\nWant to see our plans and start your journey to a funded account?",
+      confidence: 0.95,
+    };
+  }
+  return null;
+}
+
+function detectFailureRefund(msg: string): IntentResult | null {
+  if (containsAny(msg, ['if you fail', 'what if you fail', 'suppose you fail', 'suppose if you fail', 'fail to pass', 'you cant pass', 'you cannot pass', 'if challenge fail', 'fee return if fail', 'fail then refund', 'fail what happens to my money', 'unable to pass', 'dont pass', 'if not passed', 'cant pass my challenge', 'cannot pass my challenge', 'what if you cant pass'])) {
+    return {
+      intent: 'failure_refund',
+      response: "We understand the concern, but let us put your mind at ease! 💪\n\n🏆 **98.4% success rate** — We pass almost every challenge we take on. Our professional traders have years of experience and follow proven strategies.\n\n📋 **But here's your safety net by plan:**\n• **Elite Plan** — Includes a **100% money-back guarantee** if we don't pass within the timeframe\n• **Pro Plan** — Includes a **free retry** at no additional cost from us\n• **Starter Plan** — Also includes a **free retry** — you only pay the prop firm's evaluation fee again\n\n✅ So your investment is protected either way! The real question isn't *if* we'll pass — it's *how fast* we'll get you funded.\n\nReady to get started? The Elite Plan gives you the ultimate peace of mind with a full money-back guarantee! 🚀",
+      confidence: 0.95,
+    };
+  }
+  return null;
+}
+
 function detectLocation(msg: string): IntentResult | null {
   if (containsAny(msg, ['where are you located', 'where are you based', 'where is your office', 'your location', 'your address', 'office address', 'based in', 'located in', 'what country', 'which country', 'which city', 'what city', 'where do you operate', 'headquarters', 'head office', 'physical office', 'come to your office', 'visit your office', 'where is your company', 'where you from', 'where are you from'])) {
     return {
@@ -680,6 +793,10 @@ function buildComplexQueryResponse(msg: string, kb: KnowledgeBase): string {
   if (containsAny(msg, ['risk', 'disqualif', 'safe', 'legal', 'regulation', 'agreement', 'permission', 'transparent'])) topics.push('compliance & safety');
   if (containsAny(msg, ['setup fee', 'hidden fee', 'additional cost', 'management fee', 'service fee'])) topics.push('fees');
   if (containsAny(msg, ['payout', 'quickest payout', 'fastest payout', 'success'])) topics.push('payout speed & success');
+  if (containsAny(msg, ['use my account', 'pass my account', 'my ftmo', 'trade my account'])) topics.push('account usage');
+  if (containsAny(msg, ['manage after', 'after passing', 'funded account manage'])) topics.push('post-pass management');
+  if (containsAny(msg, ['no trading', 'no trades', 'slow progress', 'not started'])) topics.push('trading progress');
+  if (containsAny(msg, ['partnership', 'work with you', 'business', 'collaborate'])) topics.push('partnership opportunities');
 
   const topicList = topics.length > 0
     ? `I can see you're asking about: **${topics.join(', ')}**.`
@@ -716,11 +833,16 @@ function generateResponse(userMessage: string, kb: KnowledgeBase, lastAiIntent: 
     detectStaffIdentity(msg),
     detectLocation(msg),
     detectHumanAgent(msg),
+    detectWhatsAppRequest(msg),
     detectContact(msg),
+    detectFailureRefund(msg),
     detectRefundPolicy(msg, kb),
     detectFreeRetry(msg),
+    detectPaymentAfterPass(msg),
     detectCredentials(msg),
     detectOrderStatus(msg),
+    detectTradingProgress(msg),
+    detectPassingSpeed(msg),
     detectPayment(msg),
     detectRisk(msg),
     detectDisqualification(msg),
@@ -731,6 +853,10 @@ function generateResponse(userMessage: string, kb: KnowledgeBase, lastAiIntent: 
     detectProfitSplit(msg),
     detectTraderTypes(msg),
     detectHiddenFees(msg),
+    detectSpecificFirmUsage(msg, kb),
+    detectPostPassManagement(msg),
+    detectPartnership(msg),
+    detectReferralIssue(msg),
     detectReferral(msg),
     detectDashboard(msg),
     detectResults(msg),
@@ -800,6 +926,15 @@ function getLastAiIntent(recentMessages: { senderRole: string; body: string }[])
     if (body.includes('Order review') || body.includes('24-48 hours')) return 'approval_time';
     if (body.includes('New York') && body.includes('based')) return 'location';
     if (body.includes('identities') && body.includes('confidential')) return 'staff_identity';
+    if (body.includes('log into your prop firm') || body.includes('we can work with your account')) return 'specific_firm_usage';
+    if (body.includes('challenges are passed within') || body.includes('Factors that affect speed')) return 'passing_speed';
+    if (body.includes('After we pass') || body.includes('Account Management')) return 'post_pass_management';
+    if (body.includes('referral system') && body.includes('updates')) return 'referral_issue';
+    if (body.includes('Strategic approach') || body.includes('wait for the best market')) return 'trading_progress';
+    if (body.includes('partnership') || body.includes('Business Inquiries')) return 'partnership';
+    if (body.includes("noted your request") && body.includes('official channels')) return 'whatsapp_request';
+    if (body.includes('one-time payment') && body.includes('funded account')) return 'payment_after_pass';
+    if (body.includes('98.4% success rate') && body.includes('safety net')) return 'failure_refund';
     return null;
   }
   return null;
