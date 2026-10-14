@@ -145,6 +145,8 @@ function detectAffirmative(msg: string, lastAiIntent: string | null): IntentResu
     public_reviews: "Check out our homepage for client testimonials and payout proofs! Want to know anything else about our services?",
     plan_comparison: "Would you like detailed pricing for a specific plan, or help choosing between them? A team member can also give personalized recommendations!",
     approval_time: "Most orders are reviewed within 24-48 hours, then trading starts right away. The challenge duration depends on the prop firm's rules. Which firm are you considering?",
+    location: "Yes, we're based in New York, USA and serve clients worldwide! Want to know about our services, or is there something specific I can help with?",
+    staff_identity: "Our team includes experienced traders, risk managers, and client support specialists — all based in New York. Want to know about our services or plans?",
   };
 
   if (lastAiIntent && followUps[lastAiIntent]) {
@@ -578,6 +580,35 @@ function detectApprovalTime(msg: string): IntentResult | null {
   return null;
 }
 
+function detectLocation(msg: string): IntentResult | null {
+  if (containsAny(msg, ['where are you located', 'where are you based', 'where is your office', 'your location', 'your address', 'office address', 'based in', 'located in', 'what country', 'which country', 'which city', 'what city', 'where do you operate', 'headquarters', 'head office', 'physical office', 'come to your office', 'visit your office', 'where is your company', 'where you from', 'where are you from'])) {
+    return {
+      intent: 'location',
+      response: "The Market Architects is based in **New York, USA** 🇺🇸\n\nWe operate from New York and serve clients globally. However, for security reasons, our exact office location is not disclosed publicly.\n\nIf you need to reach us, the best way is through:\n• This live chat\n• Email: support@themarketarchitects.com\n\nHow can we help you today?",
+      confidence: 0.95,
+    };
+  }
+  return null;
+}
+
+function detectStaffIdentity(msg: string): IntentResult | null {
+  if (containsAny(msg, ['who are you', 'who runs this', 'who owns this', 'who is the founder', 'who is the owner', 'who is the ceo', 'who is behind', 'your name', 'staff names', 'team members', 'who works here', 'who are the traders', 'your team name', 'who founded', 'founder name', 'owner name', 'ceo name', 'whos the owner', 'whos the founder', 'who manages', 'real name', 'your real name', 'who am i talking to', 'are you a bot', 'are you ai', 'are you human', 'are you real', 'who is this', 'can i know your name', 'identity'])) {
+    if (containsAny(msg, ['are you a bot', 'are you ai', 'are you human', 'are you real'])) {
+      return {
+        intent: 'staff_identity',
+        response: "I'm TMA's AI assistant! I can help answer your questions about our services, pricing, prop firms, and more. If you'd like to speak with a human team member, just let me know and someone will be with you shortly! 🤖\n\nThe Market Architects is a professional team of traders based in New York, USA. How can I help you?",
+        confidence: 0.95,
+      };
+    }
+    return {
+      intent: 'staff_identity',
+      response: "The Market Architects is a professional team of experienced traders and operations specialists based in **New York, USA** 🇺🇸\n\nFor security and privacy reasons, the identities of our staff and team members are kept confidential. This protects both our team and our clients.\n\nWhat we can share:\n• We're a team of professional traders with years of experience\n• We have dedicated traders, risk managers, and client support specialists\n• We've helped pass 2,400+ prop firm challenges\n\nIf you have questions about our services, I'm happy to help — or I can connect you with a team member!",
+      confidence: 0.95,
+    };
+  }
+  return null;
+}
+
 function detectHumanAgent(msg: string): IntentResult | null {
   if (containsAny(msg, ['speak to a human', 'real person', 'talk to someone', 'human agent', 'live agent', 'speak to someone', 'need a person', 'real agent', 'talk to a person', 'representative', 'support agent', 'live chat']) && normalize(msg).split(' ').length <= 20) {
     return {
@@ -682,6 +713,8 @@ function generateResponse(userMessage: string, kb: KnowledgeBase, lastAiIntent: 
     detectGreeting(msg),
     detectThanks(msg),
     detectGoodbye(msg),
+    detectStaffIdentity(msg),
+    detectLocation(msg),
     detectHumanAgent(msg),
     detectContact(msg),
     detectRefundPolicy(msg, kb),
@@ -765,6 +798,8 @@ function getLastAiIntent(recentMessages: { senderRole: string; body: string }[])
     if (body.includes('reviews') && body.includes('testimonials')) return 'public_reviews';
     if (body.includes('Starter') && body.includes('Pro') && body.includes('Elite')) return 'plan_comparison';
     if (body.includes('Order review') || body.includes('24-48 hours')) return 'approval_time';
+    if (body.includes('New York') && body.includes('based')) return 'location';
+    if (body.includes('identities') && body.includes('confidential')) return 'staff_identity';
     return null;
   }
   return null;

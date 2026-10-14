@@ -45,7 +45,7 @@ const DEMO_FEATURED: PostCard = {
   excerpt:
     'A step-by-step breakdown of the exact strategy we use to pass FTMO challenges consistently, including risk management tips and trade selection criteria.',
   readTime: '8 min read',
-  author: 'Alex Rivera',
+  author: 'TMA Team',
   image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80',
   slug: null,
 };
