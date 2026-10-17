@@ -11,7 +11,7 @@ export async function GET() {
     const [user, referrals] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { referralCode: true, referralBalance: true },
+        select: { referralCode: true, referralSlug: true, referralBalance: true },
       }),
       prisma.referral.findMany({
         where: { referrerId: userId },
@@ -61,6 +61,7 @@ export async function GET() {
 
     return successResponse({
       referralCode: user?.referralCode ?? '',
+      referralSlug: user?.referralSlug ?? null,
       referralBalance: user?.referralBalance ?? 0,
       commissionRate: 20, // percent
       totalReferrals: referrals.length,
