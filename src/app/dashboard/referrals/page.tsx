@@ -16,6 +16,8 @@ import {
   ExternalLink,
   Loader2,
   AlertTriangle,
+  Pencil,
+  Link as LinkIcon,
 } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
@@ -63,6 +65,7 @@ interface ReferralRow {
 
 interface ReferralData {
   referralCode: string;
+  referralSlug: string | null;
   referralBalance: number;
   commissionRate: number;
   totalReferrals: number;
@@ -81,6 +84,10 @@ export default function ReferralsPage() {
   const [claimOpen, setClaimOpen] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [claimForm, setClaimForm] = useState({ amount: '', method: 'USDT_TRC20', wallet: '' });
+  const [slugEditing, setSlugEditing] = useState(false);
+  const [slugValue, setSlugValue] = useState('');
+  const [slugSaving, setSlugSaving] = useState(false);
+  const [slugError, setSlugError] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -155,10 +162,62 @@ export default function ReferralsPage() {
     }
   };
 
+  const shortLink =
+    data && typeof window !== 'undefined'
+      ? data.referralSlug
+        ? `${window.location.origin}/r/${data.referralSlug}`
+        : null
+      : null;
+
   const referralLink =
     data?.referralCode && typeof window !== 'undefined'
       ? `${window.location.origin}/register?ref=${encodeURIComponent(data.referralCode)}`
       : '';
+
+  const displayLink = shortLink || referralLink;
+
+  const openSlugEditor = () => {
+    setSlugValue(data?.referralSlug ?? '');
+    setSlugError('');
+    setSlugEditing(true);
+  };
+
+  const handleSlugSave = async () => {
+    const trimmed = slugValue.trim().toLowerCase();
+    if (trimmed.length < 3) {
+      setSlugError('Minimum 3 characters');
+      return;
+    }
+    if (trimmed.length > 30) {
+      setSlugError('Maximum 30 characters');
+      return;
+    }
+    if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(trimmed)) {
+      setSlugError('Only letters, numbers, and hyphens (cannot start/end with hyphen)');
+      return;
+    }
+    setSlugSaving(true);
+    setSlugError('');
+    try {
+      const res = await fetch('/api/dashboard/referrals/slug', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: trimmed }),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        addToast('Custom link saved!', 'success');
+        setSlugEditing(false);
+        setData((prev) => prev ? { ...prev, referralSlug: d.data.slug } : prev);
+      } else {
+        setSlugError(d.error ?? 'Failed to save');
+      }
+    } catch {
+      setSlugError('Network error');
+    } finally {
+      setSlugSaving(false);
+    }
+  };
 
   const handleCopy = async (value: string, label: string) => {
     try {
@@ -270,22 +329,70 @@ export default function ReferralsPage() {
         </div>
 
         <div className="space-y-3">
-          {/* Full link */}
+          {/* Short link (primary) */}
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
               <p className="text-sm font-mono text-text-secondary truncate">
-                {referralLink || '—'}
+                {displayLink || '—'}
               </p>
             </div>
             <Button
               variant="secondary"
               size="sm"
               icon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              onClick={() => referralLink && handleCopy(referralLink, 'Referral link')}
+              onClick={() => displayLink && handleCopy(displayLink, 'Referral link')}
             >
               {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
+
+          {/* Customize slug */}
+          {!slugEditing ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <LinkIcon className="h-3.5 w-3.5 text-text-tertiary" />
+              {data.referralSlug ? (
+                <span className="text-xs text-text-secondary">
+                  Custom link: <span className="font-mono text-accent-primary">/r/{data.referralSlug}</span>
+                </span>
+              ) : (
+                <span className="text-xs text-text-tertiary">No custom link set — using default code</span>
+              )}
+              <button
+                onClick={openSlugEditor}
+                className="text-xs text-accent-primary hover:underline inline-flex items-center gap-1"
+              >
+                <Pencil className="h-3 w-3" /> {data.referralSlug ? 'Change' : 'Customize'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              <label className="text-xs text-text-secondary font-medium">Custom Referral Slug</label>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center flex-1 min-w-0 rounded-xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+                  <span className="pl-3 text-xs text-text-tertiary whitespace-nowrap select-none">/r/</span>
+                  <input
+                    type="text"
+                    value={slugValue}
+                    onChange={(e) => { setSlugValue(e.target.value); setSlugError(''); }}
+                    placeholder="your-name"
+                    maxLength={30}
+                    className="flex-1 min-w-0 bg-transparent px-1 py-2 text-sm font-mono text-text-primary outline-none placeholder:text-text-tertiary"
+                  />
+                </div>
+                <Button variant="primary" size="sm" loading={slugSaving} onClick={handleSlugSave}>
+                  Save
+                </Button>
+                <button
+                  onClick={() => !slugSaving && setSlugEditing(false)}
+                  className="text-xs text-text-tertiary hover:text-text-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+              {slugError && <p className="text-xs text-red-400">{slugError}</p>}
+              <p className="text-[10px] text-text-tertiary">3–30 characters. Letters, numbers, and hyphens only.</p>
+            </div>
+          )}
 
           {/* Code + share */}
           <div className="flex items-center gap-2 flex-wrap">
