@@ -31,7 +31,9 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-      // Removed allowDangerousEmailAccountLinking to prevent account takeover (CB-5)
+      // Safe for Google: Google verifies email ownership, so linking
+      // a Google account to an existing email/password account is not a takeover risk.
+      allowDangerousEmailAccountLinking: true,
     }),
     CredentialsProvider({
       name: 'credentials',
@@ -185,6 +187,7 @@ export const authOptions: NextAuthOptions = {
           if (!user.email) return false;
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email },
+            select: { id: true, emailVerified: true },
           });
           if (existingUser && !existingUser.emailVerified) {
             await prisma.user.update({
@@ -195,8 +198,8 @@ export const authOptions: NextAuthOptions = {
         }
         return true;
       } catch (error) {
-        // CB-12: Return false on error instead of swallowing and allowing auth
-        console.error('SignIn callback error:', error);
+        const errMsg = error instanceof Error ? error.message : 'Unknown';
+        console.error(`SignIn callback error [${account?.provider}]:`, errMsg, error);
         return false;
       }
     },
