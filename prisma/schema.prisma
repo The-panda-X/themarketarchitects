@@ -180,6 +180,7 @@ model Order {
   notes          String?
   proofImage     String?
   paymentNetwork String?
+  cryptoTxId     String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 

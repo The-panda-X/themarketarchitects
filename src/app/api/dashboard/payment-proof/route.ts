@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
     const orderId = formData.get('orderId') as string | null;
     const network = formData.get('network') as string | null;
+    const txId = (formData.get('txId') as string | null)?.trim() || null;
 
     if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     if (!orderId) return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
@@ -40,7 +41,8 @@ export async function POST(req: NextRequest) {
       data: {
         proofImage: proofUrl,
         paymentNetwork: network ?? 'Unknown',
-        notes: `Crypto payment proof submitted. Network: ${network ?? 'Unknown'}.`,
+        cryptoTxId: txId,
+        notes: `Crypto payment proof submitted. Network: ${network ?? 'Unknown'}.${txId ? ` TxID: ${txId}` : ''}`,
       },
     });
 
