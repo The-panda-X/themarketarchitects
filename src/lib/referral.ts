@@ -3,6 +3,9 @@ import prisma from '@/lib/prisma';
 /** Flat 20% commission rate on every paid referred order. */
 export const REFERRAL_COMMISSION_RATE = 0.2;
 
+/** Service types that are refundable security deposits — no referral commission. */
+const EXCLUDED_SERVICE_TYPES = ['ACCOUNT_MANAGEMENT', 'ACCOUNT_GROWTH'];
+
 interface CreditResult {
   credited: boolean;
   amount?: number;
@@ -29,6 +32,7 @@ export async function creditReferralCommission(orderId: string): Promise<CreditR
       id: true,
       totalAmount: true,
       planName: true,
+      serviceType: true,
       user: {
         select: { id: true, email: true, referredBy: true },
       },
@@ -36,6 +40,9 @@ export async function creditReferralCommission(orderId: string): Promise<CreditR
   });
 
   if (!order) return { credited: false, reason: 'order_not_found' };
+  if (order.serviceType && EXCLUDED_SERVICE_TYPES.includes(order.serviceType)) {
+    return { credited: false, reason: 'excluded_service_type' };
+  }
   if (order.totalAmount <= 0) return { credited: false, reason: 'zero_amount' };
 
   const referrerId = order.user.referredBy;
