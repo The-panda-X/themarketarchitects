@@ -231,17 +231,18 @@ export default function ReferralsPage() {
   };
 
   const handleShare = async () => {
-    if (!referralLink) return;
+    const shareUrl = displayLink || referralLink;
+    if (!shareUrl) return;
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Join The Market Architects',
           text: 'Get funded with the prop-firm challenge specialists. Use my link to sign up:',
-          url: referralLink,
+          url: shareUrl,
         });
       } catch { /* user cancelled */ }
     } else {
-      handleCopy(referralLink, 'Referral link');
+      handleCopy(shareUrl, 'Referral link');
     }
   };
 

@@ -13,7 +13,13 @@ export async function POST(request: NextRequest) {
     const { success } = authLimiter.check(getClientIp(request));
     if (!success) return errorResponse('Too many requests. Please try again later.', 429);
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse('Invalid request body', 400);
+    }
+
     const parsed = forgotPasswordSchema.safeParse(body);
     if (!parsed.success) return errorResponse('A valid email address is required', 400);
     const { email } = parsed.data;
@@ -50,7 +56,8 @@ export async function POST(request: NextRequest) {
 
     return successResponse({ message: 'If that email exists, a reset link was sent.' });
   } catch (error) {
-    console.error('Forgot password error:', error);
-    return errorResponse('Request failed', 500);
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Forgot password error:', errMsg, error);
+    return errorResponse('Request failed. Please try again.', 500);
   }
 }
