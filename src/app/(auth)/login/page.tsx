@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -14,6 +14,14 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import useToast from '@/hooks/useToast';
 
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked: 'This email is already registered with a password. Please sign in with your email and password instead.',
+  Callback: 'Sign-in failed. Please try again or use email/password.',
+  OAuthSignin: 'Could not start Google sign-in. Please try again.',
+  OAuthCallback: 'Google sign-in was interrupted. Please try again.',
+  Default: 'Something went wrong during sign-in. Please try again.',
+};
+
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,6 +29,15 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { addToast } = useToast();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error) {
+      const message = OAUTH_ERROR_MESSAGES[error] ?? OAUTH_ERROR_MESSAGES.Default;
+      addToast(message, 'error');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 2FA state
   const [needs2FA, setNeeds2FA] = useState(false);
