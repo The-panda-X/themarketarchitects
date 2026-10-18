@@ -26,6 +26,7 @@ import {
   Home,
   TicketCheck,
   Bell,
+  Bitcoin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
@@ -41,6 +42,7 @@ const adminNavItems: { label: string; href: string; icon: typeof LayoutDashboard
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: 'moderator' },
   { label: 'Users', href: '/admin/users', icon: Users, minRole: 'moderator' },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, badgeKey: 'orders', minRole: 'moderator' },
+  { label: 'Crypto Payments', href: '/admin/crypto-payments', icon: Bitcoin, minRole: 'admin' },
   { label: 'Challenges', href: '/admin/challenges', icon: Target, minRole: 'moderator' },
   { label: 'Signal Hub', href: '/admin/signals', icon: Radio, minRole: 'trader' },
   { label: 'Chat', href: '/admin/chat', icon: MessageCircle, badgeKey: 'chat', minRole: 'moderator' },

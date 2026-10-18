@@ -218,6 +218,7 @@ export default function PurchasePage() {
   const [cryptoAmount, setCryptoAmount] = useState<number>(0);
   const [selectedWallet, setSelectedWallet] = useState<string>(CRYPTO_WALLETS[0].id);
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [cryptoTxId, setCryptoTxId] = useState('');
 
   // Credential fields (Step 4)
   const [credPlatform, setCredPlatform] = useState('');
@@ -379,6 +380,7 @@ export default function PurchasePage() {
       formData.append('file', proofFile);
       formData.append('orderId', cryptoOrderId ?? '');
       formData.append('network', activeWallet.network);
+      if (cryptoTxId.trim()) formData.append('txId', cryptoTxId.trim());
 
       const res = await fetch('/api/dashboard/payment-proof', { method: 'POST', body: formData });
       if (!res.ok) {
@@ -680,6 +682,21 @@ export default function PurchasePage() {
                   <div className="p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 flex items-start gap-2 mb-6">
                     <AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
                     <p className="text-xs text-yellow-300">{activeWallet.note}. Sending wrong network or coin may result in permanent loss of funds.</p>
+                  </div>
+
+                  {/* Transaction ID */}
+                  <div className="mb-6">
+                    <label className="text-xs text-text-tertiary font-medium uppercase tracking-wide block mb-2">
+                      Transaction ID (TxID)
+                    </label>
+                    <input
+                      type="text"
+                      value={cryptoTxId}
+                      onChange={(e) => setCryptoTxId(e.target.value)}
+                      placeholder="Paste your transaction hash here"
+                      className="w-full px-4 py-3 rounded-xl border border-white/[0.10] bg-white/[0.04] text-white text-sm font-mono focus:outline-none focus:border-accent-primary transition-colors placeholder:text-text-tertiary/50"
+                    />
+                    <p className="text-xs text-text-tertiary mt-1.5">Copy the transaction hash from your wallet app for faster verification.</p>
                   </div>
 
                   {/* Proof upload */}
